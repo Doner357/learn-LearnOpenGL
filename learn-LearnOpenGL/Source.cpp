@@ -6,16 +6,35 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 
-// Width and Height setting
+// Screen Width and Height setting
 const unsigned int SCR_WIDTH  = 800;
 const unsigned int SCR_HEIGHT = 600;
+
+// Vertex shader and Fragment shader setting
+// vertex shader
+const char *vertexShaderSource =
+	"#version 330 core\n"
+	"layout (location = 0) in vec3 aPos;\n"
+	"void main() {\n"
+	"	gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+	"}\0";
+
+// fragment shader
+const char *fragmentShaderSource =
+	"#version 330 core\n"
+	"out vec4 FragColor;\n"
+	"void main() {\n"
+	"	FragColor = vec4(1.0, 0.5, 0.2, 1.0);\n"
+	"}\0";
+
+
 
 int main(void) {
 
 	/*
-	 * glfw: Initialize and configure
-	 * --------------------------------------------------------------------------------------------------------------------
-	 */
+	* glfw: Initialize and configure
+	* --------------------------------------------------------------------------------------------------------------------
+	*/
 
 	// Initialize the glfw
 	glfwInit();
@@ -35,9 +54,9 @@ int main(void) {
 
 
 	/*
-	 * glfw: Window creation
-	 * --------------------------------------------------------------------------------------------------------------------
-	 */
+	* glfw: Window creation
+	* --------------------------------------------------------------------------------------------------------------------
+	*/
 
 	GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
 
@@ -55,14 +74,108 @@ int main(void) {
 
 
 	/*
-	 * glad: load all OpenGL function pointers
-	 * --------------------------------------------------------------------------------------------------------------------
-	 */
+	* glad: load all OpenGL function pointers
+	* --------------------------------------------------------------------------------------------------------------------
+	*/
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
+
+
+
+	/*
+	* Build and compile shader program
+	* --------------------------------------------------------------------------------------------------------------------
+	*/
+
+	// Vertex shader
+	unsigned int vertexShader;
+	vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	// Attach the shader source and compile the shader
+	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+	glCompileShader(vertexShader);
+	// Check for fhader compile errors
+	int success;
+	char infoLog[512];
+	// Get compile status
+	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+	if (!success) {
+		// Get error massage
+		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAIFED\n" << infoLog << std::endl;
+	}
+
+	// Fragment shader
+	unsigned int fragmentShader;
+	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	// Attach the shader source and compile the shader
+	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+	glCompileShader(fragmentShader);
+	// Check for fhader compile errors
+	// Get compile status
+	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+	if (!success) {
+		// Get error massage
+		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+	}
+
+	// Link shaders
+	// Get ID
+	unsigned int shaderProgram;
+	shaderProgram = glCreateProgram();
+	// Attach the shader to the program
+	glAttachShader(shaderProgram, vertexShader);
+	glAttachShader(shaderProgram, fragmentShader);
+	// Link
+	glLinkProgram(shaderProgram);
+	// Check for linking errors
+	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+	if (!success) {
+		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+	}
+	
+	// We can active the shaderProgram by calling glUseProgram(shaderProgram)
+
+	// Don't forget to delete the shader object once we've linked them into the program object
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+
+
+
+	/*
+	* Set up vertex data (and buffer(s)) and configure vertex attributes
+	* --------------------------------------------------------------------------------------------------------------------
+	*/
+
+	float verticies[]{
+		-0.5f, -0.5f, 0.0f,     // bottom-left
+		 0.5f, -0.5f, 0.0f,     // bottom-right
+		 0.0f,  0.5f, 0.0f      // top
+	};
+
+	// Create vertex buffer object(VBO) and vertex attribute object(VAO)
+	unsigned int VBO, VAO;
+	glGenBuffers(1, &VBO);
+	glGenVertexArrays(1, &VAO);
+
+	// Bind VAO
+	glBindVertexArray(VAO);
+
+	// Bind the VBO
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	// Copy the vertex data to into the buffer's memory
+	glBufferData(GL_ARRAY_BUFFER, sizeof(verticies), verticies, GL_STATIC_DRAW);
+	// Set vertex attributes pointers
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+	glEnableVertexAttribArray(0);
+
+	// Bind the Buffer to nothing
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
 
@@ -82,12 +195,25 @@ int main(void) {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		// Draw the triangle
+		glUseProgram(shaderProgram);
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
 		// glfw: Swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		//-----------------------------------------------------------------------------------------------------------------
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
+	// optional: de-allocate all resources once they've outlived their purpose:
+	// --------------------------------------------------------------------------------------------------------------------
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteProgram(shaderProgram);
+
+	// glfw: terminate, clearing all previously allocated GLFW resources.
+	// --------------------------------------------------------------------------------------------------------------------
 	glfwTerminate();
 	return 0;
 }
