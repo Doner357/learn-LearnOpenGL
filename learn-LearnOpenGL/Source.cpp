@@ -250,7 +250,9 @@ int main(void) {
 	// optional: de-allocate all resources once they've outlived their purpose:
 	// --------------------------------------------------------------------------------------------------------------------
 	glDeleteVertexArrays(1, &VAO1);
+	glDeleteVertexArrays(1, &VAO2);
 	glDeleteBuffers(1, &VBO1);
+	glDeleteBuffers(1, &VBO2);
 	glDeleteProgram(shaderProgram);
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
