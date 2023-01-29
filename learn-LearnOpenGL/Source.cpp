@@ -14,17 +14,20 @@ const unsigned int SCR_HEIGHT = 600;
 // vertex shader
 const char *vertexShaderSource =
 	"#version 330 core\n"
-	"layout (location = 0) in vec3 aPos;\n"
+	"layout (location = 0) in vec3 aPos;\n"          // The position variable has attribute position 0
+	"out vec4 vertexColor;\n"                        // Specify a color ooutput
 	"void main() {\n"
-	"	gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+	"	gl_Position = vec4(aPos, 1.0);\n"            // See how we directly give a vec3 to vec4's constructor
+	"	vertexColor = vec4(0.5, 0.0, 0.0, 1.0);\n"   // Ste the output variable to a dark-red color
 	"}\0";
 
 // fragment shader
 const char *fragmentShaderSource =
 	"#version 330 core\n"
 	"out vec4 FragColor;\n"
+	"in vec4 vertexColor;\n"                         // The input variable from the vertex shader (same name and same type)
 	"void main() {\n"
-	"	FragColor = vec4(1.0, 0.5, 0.2, 1.0);\n"
+	"	FragColor = vertexColor;\n"
 	"}\0";
 
 
@@ -82,6 +85,20 @@ int main(void) {
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
+
+
+
+	/*
+	* Extra function
+	* --------------------------------------------------------------------------------------------------------------------
+	*/
+
+	// You can enable this function to querying how many vertex attribute that your hardware allow
+	/*
+	int nrAttributes;
+	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
+	std::cout << "Maximum nr of vertex attributes supported: " << nrAttributes << std::endl;
+	*/
 
 
 
@@ -152,20 +169,14 @@ int main(void) {
 	*/
 
 	float vertices[] = {
-		 0.5f,  0.5f, 0.0f,  // top right
-		 0.5f, -0.5f, 0.0f,  // bottom right
-		-0.5f, -0.5f, 0.0f,  // bottom left
-		-0.5f,  0.5f, 0.0f   // top left
-	};
-	unsigned int indices[] = {     // Note we start from 0!
-		0, 1, 3,   // first triangle
-		1, 2, 3    // second triangle
+		-0.5f, -0.5f, 0.0f,   // bottom left
+		 0.5f, -0.5f, 0.0f,   // bottom right
+		 0.0f,  0.5f, 0.0f    // top
 	};
 
-	// Create vertex buffer object(VBO), vertex attribute object(VAO) and element buffer object(EBO)
-	unsigned int VBO, VAO, EBO;
+	// Create vertex buffer object(VBO) and vertex attribute object(VAO)
+	unsigned int VBO, VAO;
 	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
 	glGenVertexArrays(1, &VAO);
 
 	// Bind VAO
@@ -176,20 +187,12 @@ int main(void) {
 	// Copy the vertex data into the buffer's memory
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	// Bind EBO
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	// Copy the index data into the buffer's memory
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
 	// Set vertex attributes pointers
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(0);
 
 	// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	// remember: do NOT unbind the EBO while a VAO is active as the bound element buffer object IS stored in the VAO; keep the EBO bound.
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	// You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
 	// VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
@@ -229,7 +232,7 @@ int main(void) {
 		// Draw the triangle
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		// glfw: Swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		//-----------------------------------------------------------------------------------------------------------------
@@ -241,7 +244,6 @@ int main(void) {
 	// --------------------------------------------------------------------------------------------------------------------
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-	glDeleteBuffers(1, &EBO);
 	glDeleteProgram(shaderProgram);
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
