@@ -1,31 +1,35 @@
+/********************************************************************************************************/
+/* EXERCISES-1:                                                                                         */
+/* --Try to draw 2 triangles next to each other using glDrawArrays by adding more vertices to your data */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include <iostream>
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
 
 // Screen Width and Height setting
-const unsigned int SCR_WIDTH  = 800;
+const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 // Vertex shader and Fragment shader setting
 // vertex shader
 const char *vertexShaderSource =
-	"#version 330 core\n"
-	"layout (location = 0) in vec3 aPos;\n"
-	"void main() {\n"
-	"	gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-	"}\0";
+"#version 330 core\n"
+"layout (location = 0) in vec3 aPos;\n"
+"void main() {\n"
+"	gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+"}\0";
 
 // fragment shader
 const char *fragmentShaderSource =
-	"#version 330 core\n"
-	"out vec4 FragColor;\n"
-	"void main() {\n"
-	"	FragColor = vec4(1.0, 0.5, 0.2, 1.0);\n"
-	"}\0";
+"#version 330 core\n"
+"out vec4 FragColor;\n"
+"void main() {\n"
+"	FragColor = vec4(1.0, 0.5, 0.2, 1.0);\n"
+"}\0";
 
 
 
@@ -137,7 +141,7 @@ int main(void) {
 		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
 		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
 	}
-	
+
 	// We can active the shaderProgram by calling glUseProgram(shaderProgram)
 
 	// Don't forget to delete the shader object once we've linked them into the program object
@@ -152,9 +156,15 @@ int main(void) {
 	*/
 
 	float vertices[] = {
-		-0.5f, -0.5f, 0.0f,     // bottom-left
-		 0.5f, -0.5f, 0.0f,     // bottom-right
-		 0.0f,  0.5f, 0.0f      // top
+		// first triangle
+		-0.9f,  -0.5f, 0.0f,   // bottom left
+		 0.0f,  -0.5f, 0.0f,   // bottom right
+		-0.45f,  0.5f, 0.0f,   // top
+
+		// second triangle
+		 0.0f,  -0.5f, 0.0f,   // bottom left
+		 0.9f,  -0.5f, 0.0f,   // bottom right
+		 0.45f,  0.5f, 0.0f,   // top
 	};
 
 	// Create vertex buffer object(VBO) and vertex attribute object(VAO)
@@ -198,7 +208,7 @@ int main(void) {
 		// Draw the triangle
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		// glfw: Swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		//-----------------------------------------------------------------------------------------------------------------
@@ -220,14 +230,14 @@ int main(void) {
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // --------------------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow* window) {
+void processInput(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)                     // Press the ESC
 		glfwSetWindowShouldClose(window, true);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // --------------------------------------------------------------------------------------------------------------------
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 	// make sure the viewport matches the new window dimensions; note that width and 
 	// height will be significantly larger than specified on retina displays.
 	glViewport(0, 0, width, height);
