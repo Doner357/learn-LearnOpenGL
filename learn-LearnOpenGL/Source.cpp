@@ -1,8 +1,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "learnopengl/shader_s.h"
+
 #include <iostream>
-#include <cmath>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -10,27 +11,6 @@ void processInput(GLFWwindow *window);
 // Screen Width and Height setting
 const unsigned int SCR_WIDTH  = 800;
 const unsigned int SCR_HEIGHT = 600;
-
-// Vertex shader and Fragment shader setting
-// vertex shader
-const char *vertexShaderSource =
-	"#version 330 core\n"
-	"layout (location = 0) in vec3 aPos;\n"    // the position variable has attribute position 0
-	"layout (location = 1) in vec3 aColor;\n"  // the color variable has attribute position 1
-	"out vec3 ourColor;\n"                     // output a color to the fragment shader
-	"void main() {\n"
-	"	gl_Position = vec4(aPos, 1.0);\n"
-	"	ourColor = aColor;\n"                  // set ourColor to the input color we got from the vertex data
-	"}\0";
-
-// fragment shader
-const char *fragmentShaderSource =
-	"#version 330 core\n"
-	"in vec3 ourColor;\n"
-	"out vec4 FragColor;\n"
-	"void main() {\n"
-	"	FragColor = vec4(ourColor, 1.0);\n"
-	"}\0";
 
 
 
@@ -109,59 +89,7 @@ int main(void) {
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
 
-	// Vertex shader
-	unsigned int vertexShader;
-	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	// Attach the shader source and compile the shader
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	glCompileShader(vertexShader);
-	// Check for fhader compile errors
-	int success;
-	char infoLog[512];
-	// Get compile status
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		// Get error massage
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAIFED\n" << infoLog << std::endl;
-	}
-
-	// Fragment shader
-	unsigned int fragmentShader;
-	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	// Attach the shader source and compile the shader
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	glCompileShader(fragmentShader);
-	// Check for fhader compile errors
-	// Get compile status
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		// Get error massage
-		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-	// Link shaders
-	// Get ID
-	unsigned int shaderProgram;
-	shaderProgram = glCreateProgram();
-	// Attach the shader to the program
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	// Link
-	glLinkProgram(shaderProgram);
-	// Check for linking errors
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-	}
-	
-	// We can active the shaderProgram by calling glUseProgram(shaderProgram)
-
-	// Don't forget to delete the shader object once we've linked them into the program object
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
+	Shader shader("shaders/vertex shaders/shader.vs", "shaders/fragment shaders/shader.fs");
 
 
 
@@ -246,7 +174,7 @@ int main(void) {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// Active the shader program
-		glUseProgram(shaderProgram);
+		shader.use();
 
 		// Draw the triangle
 		glBindVertexArray(VAO);
@@ -262,7 +190,7 @@ int main(void) {
 	// --------------------------------------------------------------------------------------------------------------------
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-	glDeleteProgram(shaderProgram);
+	shader.clear();
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// --------------------------------------------------------------------------------------------------------------------
