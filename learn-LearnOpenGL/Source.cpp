@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 
 #include <iostream>
+#include <cmath>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -14,20 +15,18 @@ const unsigned int SCR_HEIGHT = 600;
 // vertex shader
 const char *vertexShaderSource =
 	"#version 330 core\n"
-	"layout (location = 0) in vec3 aPos;\n"          // The position variable has attribute position 0
-	"out vec4 vertexColor;\n"                        // Specify a color ooutput
+	"layout (location = 0) in vec3 aPos;\n"
 	"void main() {\n"
-	"	gl_Position = vec4(aPos, 1.0);\n"            // See how we directly give a vec3 to vec4's constructor
-	"	vertexColor = vec4(0.5, 0.0, 0.0, 1.0);\n"   // Ste the output variable to a dark-red color
+	"	gl_Position = vec4(aPos, 1.0);\n"
 	"}\0";
 
 // fragment shader
 const char *fragmentShaderSource =
 	"#version 330 core\n"
 	"out vec4 FragColor;\n"
-	"in vec4 vertexColor;\n"                         // The input variable from the vertex shader (same name and same type)
+	"uniform vec4 ourColor;\n"     // we set this variable in the OpenGL code.
 	"void main() {\n"
-	"	FragColor = vertexColor;\n"
+	"	FragColor = ourColor;\n"
 	"}\0";
 
 
@@ -204,6 +203,15 @@ int main(void) {
 
 
 	/*
+	 * Uniform setting
+	 * --------------------------------------------------------------------------------------------------------------------
+	 */
+
+	// Get the location of uniform
+	int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+
+
+	/*
 	 * Render type setting
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
@@ -229,8 +237,18 @@ int main(void) {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		// Draw the triangle
+		// Note that you need to active the shader program before updating any value to uniform
 		glUseProgram(shaderProgram);
+
+		// Set the uniform value
+		// Get the time
+		float timeValue = glfwGetTime();
+		// Restrict the value of time in the range of 0.0 ~ 1.0
+		float greenValue = (sin(timeValue) / 2) + 0.5f;
+		// Update the value to uniform
+		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+
+		// Draw the triangle
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
