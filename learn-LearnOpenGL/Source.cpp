@@ -134,9 +134,6 @@ int main(void) {
 	// VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
 	glBindVertexArray(0);
 
-	// Unbind the EBO
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
 
 
 	/*
