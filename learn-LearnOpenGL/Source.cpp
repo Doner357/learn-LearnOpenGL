@@ -89,7 +89,7 @@ int main(void) {
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
 
-	Shader shader("shaders/vertex shaders/shader.vs", "shaders/fragment shaders/shader.fs");
+	Shader ourshader("shaders/vertex shaders/shader.vs", "shaders/fragment shaders/shader.fs");
 
 
 
@@ -140,11 +140,11 @@ int main(void) {
 
 
 	/*
-	 * Uniform setting
+	 * Uniform value setting
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	// This time we not use uniform to input color
+	float offSet = 0.5f;   // Set the value of off set
 
 
 	/*
@@ -174,7 +174,9 @@ int main(void) {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// Active the shader program
-		shader.use();
+		ourshader.use();
+		// Update the uniform
+		ourshader.setFloat("xoffSet", offSet);
 
 		// Draw the triangle
 		glBindVertexArray(VAO);
@@ -190,7 +192,7 @@ int main(void) {
 	// --------------------------------------------------------------------------------------------------------------------
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-	shader.clear();
+	ourshader.clear();
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// --------------------------------------------------------------------------------------------------------------------
