@@ -89,7 +89,7 @@ int main(void) {
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
 
-	Shader ourshader("shaders/vertex shaders/shader.vs", "shaders/fragment shaders/shader.fs");
+	Shader ourShader("shaders/vertex shaders/shader.vs", "shaders/fragment shaders/shader.fs");
 
 
 
@@ -100,10 +100,10 @@ int main(void) {
 
 	// Create the vertices containing two attributes: positions and colors
 	float vertices[] = {
-		// positions          // colors
-		-0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   // bottom left
-		 0.5f, -0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   // bottom right
-		 0.0f,  0.5f, 0.0f,   0.0f, 0.0f, 1.0f    // top
+		// positions
+		-0.5f, -0.5f, 0.0f,   // bottom left
+		 0.5f, -0.5f, 0.0f,   // bottom right
+		 0.0f,  0.5f, 0.0f    // top
 	};
 
 	// Create vertex buffer object(VBO) and vertex attribute object(VAO)
@@ -121,11 +121,8 @@ int main(void) {
 
 	// Set vertex attributes pointers
 	// positions:
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(0);
-	// colors:
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
 
 	// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -144,8 +141,7 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	float offSet = 0.5f;   // Set the value of off set
-
+	
 
 	/*
 	 * Render type setting
@@ -174,9 +170,7 @@ int main(void) {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// Active the shader program
-		ourshader.use();
-		// Update the uniform
-		ourshader.setFloat("xoffSet", offSet);
+		ourShader.use();
 
 		// Draw the triangle
 		glBindVertexArray(VAO);
@@ -192,7 +186,7 @@ int main(void) {
 	// --------------------------------------------------------------------------------------------------------------------
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-	ourshader.clear();
+	ourShader.clear();
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// --------------------------------------------------------------------------------------------------------------------
