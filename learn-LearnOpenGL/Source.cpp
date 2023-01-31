@@ -101,12 +101,12 @@ int main(void) {
 
 
 
-	/*
-	* Set up vertex data (and buffer(s)) and configure vertex attributes
-	* --------------------------------------------------------------------------------------------------------------------
-	*/
+	 /*
+	 * Set up vertex data (and buffer(s)) and configure vertex attributes
+	 * --------------------------------------------------------------------------------------------------------------------
+	 */
 
-	// Create the vertices containing two attributes: positions and colors
+	 // Create the vertices containing two attributes: positions and colors
 	float vertices[] = {
 		// positions          // colors           // texture coords
 		 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
@@ -170,7 +170,7 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	// Create a texture reference
+	 // Create a texture reference
 	unsigned int texture;
 	glGenTextures(1, &texture);
 
@@ -196,7 +196,7 @@ int main(void) {
 	else {
 		std::cout << "Failed to load texture" << std::endl;
 	}
-	
+
 	// Free the image memory
 	stbi_image_free(data);
 
@@ -244,6 +244,7 @@ int main(void) {
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
+	glDeleteTextures(1, &texture);
 	ourShader.clear();
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
