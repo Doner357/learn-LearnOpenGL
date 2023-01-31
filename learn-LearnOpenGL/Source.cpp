@@ -5,11 +5,11 @@
 
 #include <iostream>
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
 
 // Screen Width and Height setting
-const unsigned int SCR_WIDTH  = 800;
+const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 
@@ -89,7 +89,7 @@ int main(void) {
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
 
-	Shader shader("shaders/vertex shaders/shader.vs", "shaders/fragment shaders/shader.fs");
+	Shader ourshader("shaders/vertex shaders/shader.vs", "shaders/fragment shaders/shader.fs");
 
 
 
@@ -140,11 +140,11 @@ int main(void) {
 
 
 	/*
-	 * Uniform setting
+	 * Uniform value setting
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	// This time we not use uniform to input color
+	float offSet = 0.5f;   // Set the value of off set
 
 
 	/*
@@ -152,15 +152,15 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	/*Enable this if you wnat to draw triangle in wireframe mode*/
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	 /*Enable this if you wnat to draw triangle in wireframe mode*/
+	 //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 
 
-	/*
-	 * Render loop
-	 * --------------------------------------------------------------------------------------------------------------------
-	 */
+	 /*
+	  * Render loop
+	  * --------------------------------------------------------------------------------------------------------------------
+	  */
 
 	while (!glfwWindowShouldClose(window)) {
 
@@ -174,7 +174,9 @@ int main(void) {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// Active the shader program
-		shader.use();
+		ourshader.use();
+		// Update the uniform
+		ourshader.setFloat("xoffSet", offSet);
 
 		// Draw the triangle
 		glBindVertexArray(VAO);
@@ -190,7 +192,7 @@ int main(void) {
 	// --------------------------------------------------------------------------------------------------------------------
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-	shader.clear();
+	ourshader.clear();
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// --------------------------------------------------------------------------------------------------------------------
@@ -200,14 +202,14 @@ int main(void) {
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // --------------------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow* window) {
+void processInput(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)                     // Press the ESC
 		glfwSetWindowShouldClose(window, true);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // --------------------------------------------------------------------------------------------------------------------
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 	// make sure the viewport matches the new window dimensions; note that width and 
 	// height will be significantly larger than specified on retina displays.
 	glViewport(0, 0, width, height);
