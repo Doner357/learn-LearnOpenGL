@@ -244,6 +244,7 @@ int main(void) {
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
+	glDeleteTextures(1, &texture);
 	ourShader.clear();
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
