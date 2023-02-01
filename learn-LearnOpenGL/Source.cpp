@@ -95,13 +95,6 @@ int main(void) {
 
 
 	/*
-	 * Uniform value setting
-	 * --------------------------------------------------------------------------------------------------------------------
-	 */
-
-
-
-	/*
 	* Set up vertex data (and buffer(s)) and configure vertex attributes
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
@@ -170,12 +163,16 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
+	/* Tell stb_image.h to flip loaded texture's on the y-axis. */
+	stbi_set_flip_vertically_on_load(true);
+
+	// --Texture1--
 	// Create a texture reference
-	unsigned int texture;
-	glGenTextures(1, &texture);
+	unsigned int texture1;
+	glGenTextures(1, &texture1);
 
 	// Bind the texture
-	glBindTexture(GL_TEXTURE_2D, texture);
+	glBindTexture(GL_TEXTURE_2D, texture1);
 
 	// Set the texture wrapping/filtering option (on the currently bound texture object)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -186,7 +183,6 @@ int main(void) {
 	// Get the necessary data by using stbi_load
 	int width, height, nrChannels;
 	unsigned char *data = stbi_load("textures/container.jpg", &width, &height, &nrChannels, 0);
-
 	if (data) {
 		// Start generating texture
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -196,9 +192,56 @@ int main(void) {
 	else {
 		std::cout << "Failed to load texture" << std::endl;
 	}
+
+	
+	// --Texture2--
+	// Create the reference of the texture
+	unsigned int texture2;
+	glGenTextures(1, &texture2);
+
+	// Bind the texture
+	glBindTexture(GL_TEXTURE_2D, texture2);
+
+	// Set the texture wrapping/filtering option (on the currently bound texture object)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// Get the necessary data by using stbi_load
+	data = stbi_load("textures/awesomeface.png", &width, &height, &nrChannels, 0);
+	if (data) {
+		std::cout << data << std::endl;
+		// Start generating texture
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		// Generate mipmap
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else {
+		std::cout << "Failed to load texture" << std::endl;
+	}
 	
 	// Free the image memory
 	stbi_image_free(data);
+	
+	// Unbind the texture
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+
+
+	/*
+	 * Uniform value setting
+	 * --------------------------------------------------------------------------------------------------------------------
+	 */
+
+	// Activate the shader
+	ourShader.use();
+
+	// Set the location of the texture variable in shader
+	glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0); // set it manually
+	ourShader.setInt("texture2", 1);                                // or with shader class
+	// Unuse the shader
+	glUseProgram(0);
 
 	/*
 	 * Render type setting
@@ -223,13 +266,22 @@ int main(void) {
 
 		// Render command
 		//--------------------------------------------------
+		// Clear Buffer
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		// Active the shader program
-		ourShader.use();
+		// Activate the texture unit and bind the correspond texture
+		// --container texture--
+		// Activate the texture before binding
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture1);
+		// --awesomeface texture--
+		// Activate the texture before binding
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texture2);
 
-		// Draw the triangle
+		// render container
+		ourShader.use();
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
@@ -244,7 +296,8 @@ int main(void) {
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
-	glDeleteTextures(1, &texture);
+	glDeleteTextures(1, &texture1);
+	glDeleteTextures(1, &texture2);
 	ourShader.clear();
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
