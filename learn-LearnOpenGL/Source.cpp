@@ -222,7 +222,8 @@ int main(void) {
 	if (data) {
 		std::cout << data << std::endl;
 		// Start generating texture
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		// Note that we store the image as RGBA because we need the alpha value
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		// Generate mipmap
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
