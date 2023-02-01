@@ -37,10 +37,10 @@ public:
 			vShaderFile.close();
 			fShaderFile.close();
 			// Convert stream into string
-			vertexCode   = vShaderStream.str();
+			vertexCode = vShaderStream.str();
 			fragmentCode = fShaderStream.str();
 		}
-		catch(std::ifstream::failure e){
+		catch (std::ifstream::failure e) {
 			std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
 		}
 		const char *vShaderCode = vertexCode.c_str();
@@ -64,7 +64,7 @@ public:
 		glShaderSource(fragment, 1, &fShaderCode, NULL);
 		glCompileShader(fragment);
 		// Print compile errors if any
-		checkCompileErrors(vertex, "FRAGMENT");
+		checkCompileErrors(fragment, "FRAGMENT");
 
 		// shader program
 		ID = glCreateProgram();
@@ -72,7 +72,7 @@ public:
 		glAttachShader(ID, fragment);
 		glLinkProgram(ID);
 		// Print linking errors if any
-		checkCompileErrors(vertex, "PROGRAM");
+		checkCompileErrors(ID, "PROGRAM");
 
 		// Delete the shaders ad they're linked into our program and no longer necessary
 		glDeleteShader(vertex);
@@ -90,12 +90,15 @@ public:
 	void setBool(const std::string &name, bool value) const {
 		glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
 	};
+	// --------------------------------------------------------------------------------
 	void setInt(const std::string &name, int value) const {
 		glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
 	};
+	// --------------------------------------------------------------------------------
 	void setFloat(const std::string &name, float value) const {
 		glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
 	};
+	// --------------------------------------------------------------------------------
 
 private:
 	// utility function for checking shader compilation/linking errors.
