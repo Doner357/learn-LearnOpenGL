@@ -229,7 +229,7 @@ int main(void) {
 		// Active the shader program
 		ourShader.use();
 
-		// Draw the triangle
+		// Render the container
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
