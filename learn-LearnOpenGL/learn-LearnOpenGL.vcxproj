@@ -148,8 +148,8 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\fragment\fShader.fs" />
-    <None Include="shaders\vertex\vShader.vs" />
+    <None Include="shaders\fragment\fShader.frag" />
+    <None Include="shaders\vertex\vShader.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\container.jpg" />
