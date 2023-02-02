@@ -144,10 +144,10 @@
     <ClInclude Include="learnopengl\shader_s.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="shaders\fragment shaders\shader.frag">
+    <Text Include="shaders\fragment\fShader.frag">
       <FileType>Document</FileType>
     </Text>
-    <Text Include="shaders\vertex shaders\shader.vert">
+    <Text Include="shaders\vertex\vShader.vert">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>
