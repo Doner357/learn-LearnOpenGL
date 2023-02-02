@@ -43,10 +43,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\fragment\fShader.fs">
+    <None Include="shaders\fragment\fShader.frag">
       <Filter>Resource Files\shaders\fragment</Filter>
     </None>
-    <None Include="shaders\vertex\vShader.vs">
+    <None Include="shaders\vertex\vShader.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
     </None>
   </ItemGroup>
@@ -55,6 +55,9 @@
       <Filter>Resource Files\textures</Filter>
     </Image>
     <Image Include="textures\wall.jpg">
+      <Filter>Resource Files\textures</Filter>
+    </Image>
+    <Image Include="textures\awesomeface.png">
       <Filter>Resource Files\textures</Filter>
     </Image>
   </ItemGroup>
