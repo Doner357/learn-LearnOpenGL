@@ -93,7 +93,7 @@ int main(void) {
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
 
-	Shader shader("shaders/vertex shaders/shader.vs", "shaders/fragment shaders/shader.fs");
+	Shader shader("shaders/vertex/vShader.vert", "shaders/fragment/fShader.frag");
 
 
 
