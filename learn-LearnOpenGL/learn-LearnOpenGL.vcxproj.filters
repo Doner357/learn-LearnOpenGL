@@ -28,10 +28,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="shaders\fragment shaders\shader.fs">
+    <Text Include="shaders\fragment\fShader.frag">
       <Filter>Resource Files</Filter>
     </Text>
-    <Text Include="shaders\vertex shaders\shader.vs">
+    <Text Include="shaders\vertex\vShader.vert">
       <Filter>Resource Files</Filter>
     </Text>
   </ItemGroup>
