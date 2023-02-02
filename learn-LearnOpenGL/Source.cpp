@@ -1,9 +1,3 @@
-/********************************************************************************************************/
-/* EXERCISES-4:                                                                                         */
-/* --Use a uniform variable as the mix function's third parameter to vary the amount the two textures   */
-/*   are visible. Use the up and down arrow keys to change how much the container or the smiley face    */
-/*   is visible                                                                                         */
-/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
@@ -18,9 +12,6 @@ void processInput(GLFWwindow *window);
 // Screen Width and Height setting
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
-
-// This is used to control the mix range of two textures
-float mixValue = 0.2f;
 
 
 
@@ -222,8 +213,7 @@ int main(void) {
 	if (data) {
 		std::cout << data << std::endl;
 		// Start generating texture
-		// Note that we store the image as RGBA because we need the alpha value
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		// Generate mipmap
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
@@ -290,12 +280,9 @@ int main(void) {
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture2);
 
-		// Set the uniform
-		// Don't forget to activate the shader before update the uniform
-		ourShader.use();
-		ourShader.setFloat("mixValue", mixValue);
 
 		// render container
+		ourShader.use();
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
@@ -325,18 +312,6 @@ int main(void) {
 void processInput(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)                     // Press the ESC
 		glfwSetWindowShouldClose(window, true);
-
-	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {                       // Press the up arrow
-		mixValue += 0.01f;
-		if (mixValue >= 1.0f)
-			mixValue = 1.0f;
-	}
-
-	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {                     // Press the down arrow
-		mixValue -= 0.01f;
-		if (mixValue <= 0.0f)
-			mixValue = 0.0f;
-	}
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
