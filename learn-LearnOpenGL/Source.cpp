@@ -283,6 +283,9 @@ int main(void) {
 		// Activate shader
 		ourShader.use();
 
+		// First container
+		// ---------------------
+
 		// --Uniform--
 		// transform setting
 		glm::mat4 trans = glm::mat4(1.0f);
@@ -303,9 +306,23 @@ int main(void) {
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture2);
 
-
 		// render container
 		glBindVertexArray(VAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		// Second transformation
+		// ---------------------
+		// Reset it to identity matrix
+		trans = glm::mat4(1.0f);
+		// Translate the container to the top-left corner
+		trans = glm::translate(trans, glm::vec3(-0.5f, 0.5f, 0.0f));
+		// Get the scale by passing time into sin function, the sin limit the scale amount between -1.0 and 1.0
+		float scaleAmount = static_cast<float>(sin(glfwGetTime()));
+		// Scale the container
+		trans = glm::scale(trans, glm::vec3(scaleAmount, scaleAmount, scaleAmount));
+		// this time take the matrix value array's first element as its memory pointer value
+		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, &trans[0][0]);
+
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		// glfw: Swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
