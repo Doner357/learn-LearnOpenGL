@@ -1,3 +1,8 @@
+/********************************************************************************************************/
+/* EXERCISES-1:                                                                                         */
+/* --Using the last transformation on the container, try switching the order around by first rotating   */
+/*   and then translating. See what happens and try to reason why this happens                          */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
@@ -286,10 +291,11 @@ int main(void) {
 		// --Uniform--
 		// transform setting
 		glm::mat4 trans = glm::mat4(1.0f);
-		// translate the container to the bottom-right corner
-		trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
 		// rotate the container according on the time
 		trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+		// translate the container to the bottom-right corner
+		trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+
 		// Update the data to the shader
 		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 
