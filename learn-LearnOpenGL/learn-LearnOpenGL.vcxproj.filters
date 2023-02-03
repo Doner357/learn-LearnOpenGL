@@ -54,9 +54,6 @@
     <Image Include="textures\container.jpg">
       <Filter>Resource Files\textures</Filter>
     </Image>
-    <Image Include="textures\wall.jpg">
-      <Filter>Resource Files\textures</Filter>
-    </Image>
     <Image Include="textures\awesomeface.png">
       <Filter>Resource Files\textures</Filter>
     </Image>
