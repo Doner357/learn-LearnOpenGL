@@ -74,6 +74,11 @@ int main(void) {
 	}
 
 
+	// Configure global opengl state
+	// -----------------------------
+	glEnable(GL_DEPTH_TEST);
+
+
 
 	/*
 	* Extra function
@@ -103,24 +108,55 @@ int main(void) {
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
 
-	// Create the vertices containing two attributes: positions and colors
+	// Create the vertices containing two attributes: positions and texture coordinates
 	float vertices[] = {
-		// positions          // texture coords
-		 0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
-		 0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
-		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
-		-0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
+		// positions          // texCoord
+		-0.5f, -0.5f, -0.5f,   0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,   1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,   1.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,   1.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,   0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,   0.0f, 0.0f,
+
+		-0.5f, -0.5f,  0.5f,   0.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,   1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,   1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,   1.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,   0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,   0.0f, 0.0f,
+
+		-0.5f,  0.5f,  0.5f,   1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,   1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,   0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,   0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,   0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,   1.0f, 0.0f,
+
+		 0.5f,  0.5f,  0.5f,   1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,   1.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,   0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,   0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,   0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,   1.0f, 0.0f,
+
+		-0.5f, -0.5f, -0.5f,   0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,   1.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,   1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,   1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,   0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,   0.0f, 1.0f,
+
+		-0.5f,  0.5f, -0.5f,   0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,   1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,   1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,   1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,   0.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,   0.0f, 1.0f
 	};
 
-	unsigned int indices[] = {
-		0, 1, 3,  // first triangle
-		1, 2, 3   // second triangle
-	};
-
-	// Create VBO, VAO, EBO
-	unsigned int VBO, VAO, EBO;
+	// Create VBO, VAO
+	unsigned int VBO, VAO;
 	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
 	glGenVertexArrays(1, &VAO);
 
 	// Bind VAO
@@ -130,11 +166,6 @@ int main(void) {
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	// Copy the vertex data into the buffer's memory
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	// Bind the EBO
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	// Copy the vertex data into the buffer's memory
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// Set vertex attributes pointers
 	// positions:
@@ -152,9 +183,6 @@ int main(void) {
 	// You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
 	// VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
 	glBindVertexArray(0);
-
-	// Unbind the EBO
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 
 
@@ -244,7 +272,7 @@ int main(void) {
 	// Get the uniform loction of transformation matrices in vertex shader
 	int modelLoc      = glGetUniformLocation(ourShader.ID, "model");
 	int viewLoc       = glGetUniformLocation(ourShader.ID, "view");
-	int projectionLoc =glGetUniformLocation(ourShader.ID, "projection");
+	int projectionLoc = glGetUniformLocation(ourShader.ID, "projection");
 
 	// Unuse the shader
 	glUseProgram(0);
@@ -274,7 +302,7 @@ int main(void) {
 		//--------------------------------------------------
 		// Clear Buffer
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);   // also clear the depth buffer now!
 
 
 		// Activate shader
@@ -298,7 +326,7 @@ int main(void) {
 		//-------------------------
 		// --model matrix--
 		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
 
 		// --view matrix--
 		glm::mat4 view = glm::mat4(1.0f);
@@ -318,7 +346,7 @@ int main(void) {
 		// Render container
 		//---------------------------
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
 		// glfw: Swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -331,7 +359,6 @@ int main(void) {
 	// --------------------------------------------------------------------------------------------------------------------
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-	glDeleteBuffers(1, &EBO);
 	glDeleteTextures(1, &texture1);
 	glDeleteTextures(1, &texture2);
 	ourShader.clear();
