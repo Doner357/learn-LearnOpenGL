@@ -1,3 +1,8 @@
+/********************************************************************************************************/
+/* EXERCISES-2:                                                                                         */
+/* --Play with the view matrix by translating in several directions and see how the scene changes.      */
+/*   Think of the view matrix as a camera object.                                                       */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
@@ -9,6 +14,7 @@
 #include "learnopengl/shader_s.h"
 
 #include <iostream>
+#include <cmath>
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -282,10 +288,10 @@ int main(void) {
 	// Set the location of the texture variable in shader
 	glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0); // set it manually
 	ourShader.setInt("texture2", 1);                                // or with shader class
-	
+
 	// Get the uniform loction of transformation matrices in vertex shader
 	//int modelLoc    = glGetUniformLocation(ourShader.ID, "model");     // This time update the uniform by using shader class
-	int viewLoc       = glGetUniformLocation(ourShader.ID, "view");
+	int viewLoc = glGetUniformLocation(ourShader.ID, "view");
 	int projectionLoc = glGetUniformLocation(ourShader.ID, "projection");
 
 	// Unuse the shader
@@ -345,7 +351,9 @@ int main(void) {
 		// --view matrix--
 		glm::mat4 view = glm::mat4(1.0f);
 		// note that we're translating the scene in the reverse direction of where we want to move
-		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+		double time = glfwGetTime();
+		float radius = 3.0f;
+		view = glm::translate(view, glm::vec3((float)sin(time) * radius, 0.0f, (float)cos(time) * radius));
 
 		// --projection matrix--
 		glm::mat4 projection;
@@ -354,7 +362,7 @@ int main(void) {
 		// Update to uniform
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-		
+
 
 		// Render container
 		//---------------------------
@@ -369,7 +377,7 @@ int main(void) {
 			// Set the rotation angle
 			float angle = 20.0f * i;
 			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-			
+
 			// Update model matrix to the shader 
 			ourShader.setMat4("model", model);
 
