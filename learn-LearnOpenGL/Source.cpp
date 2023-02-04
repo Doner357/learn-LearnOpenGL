@@ -1,3 +1,8 @@
+/********************************************************************************************************/
+/* EXERCISES-1:                                                                                         */
+/* --Try experimenting with the FoV and aspect-ratio parameters of GLM's projection function. See if    */
+/*   you can figure out how those affect the perspective frustum                                        */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
@@ -9,6 +14,7 @@
 #include "learnopengl/shader_s.h"
 
 #include <iostream>
+#include <cmath>
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -349,7 +355,8 @@ int main(void) {
 
 		// --projection matrix--
 		glm::mat4 projection;
-		projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		// The values in radians will change over time
+		projection = glm::perspective(glm::radians(90.0f * (float)(sin(glfwGetTime()) / 2 + 0.5)), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
 		// Update to uniform
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
