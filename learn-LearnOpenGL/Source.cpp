@@ -163,7 +163,7 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	/* Tell stb_image.h to flip loaded texture's on the y-axis. */
+	 /* Tell stb_image.h to flip loaded texture's on the y-axis. */
 	stbi_set_flip_vertically_on_load(true);
 
 	// --Texture1--
@@ -193,7 +193,7 @@ int main(void) {
 		std::cout << "Failed to load texture" << std::endl;
 	}
 
-	
+
 	// --Texture2--
 	// Create the reference of the texture
 	unsigned int texture2;
@@ -220,10 +220,10 @@ int main(void) {
 	else {
 		std::cout << "Failed to load texture" << std::endl;
 	}
-	
+
 	// Free the image memory
 	stbi_image_free(data);
-	
+
 	// Unbind the texture
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -234,12 +234,18 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	// Activate the shader
+	 // Activate the shader
 	ourShader.use();
 
 	// Set the location of the texture variable in shader
 	glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0); // set it manually
 	ourShader.setInt("texture2", 1);                                // or with shader class
+	
+	// Get the uniform loction of transformation matrices in vertex shader
+	int modelLoc      = glGetUniformLocation(ourShader.ID, "model");
+	int viewLoc       = glGetUniformLocation(ourShader.ID, "view");
+	int projectionLoc =glGetUniformLocation(ourShader.ID, "projection");
+
 	// Unuse the shader
 	glUseProgram(0);
 
@@ -270,21 +276,50 @@ int main(void) {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+
+		// Activate shader
+		ourShader.use();
+
+
 		// Activate the texture unit and bind the correspond texture
+		//-------------------------
 		// --container texture--
 		// Activate the texture before binding
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1);
+
 		// --awesomeface texture--
 		// Activate the texture before binding
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture2);
 
 
-		// render container
-		ourShader.use();
+		// Create transformations
+		//-------------------------
+		// --model matrix--
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+		// --view matrix--
+		glm::mat4 view = glm::mat4(1.0f);
+		// note that we're translating the scene in the reverse direction of where we want to move
+		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+
+		// --projection matrix--
+		glm::mat4 projection;
+		projection = glm::perspective(glm::radians(45.0f), static_cast<float>(SCR_WIDTH) / SCR_HEIGHT, 0.1f, 100.0f);
+
+		// Update to uniform
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+
+		// Render container
+		//---------------------------
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 
 		// glfw: Swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		//-----------------------------------------------------------------------------------------------------------------
