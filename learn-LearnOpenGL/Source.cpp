@@ -103,7 +103,7 @@ int main(void) {
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
 
-	// Create the vertices containing two attributes: positions and colors
+	// Create the vertices containing two attributes: positions and texture coords
 	float vertices[] = {
 		// positions          // texture coords
 		 0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
@@ -244,7 +244,7 @@ int main(void) {
 	// Get the uniform loction of transformation matrices in vertex shader
 	int modelLoc      = glGetUniformLocation(ourShader.ID, "model");
 	int viewLoc       = glGetUniformLocation(ourShader.ID, "view");
-	int projectionLoc =glGetUniformLocation(ourShader.ID, "projection");
+	int projectionLoc = glGetUniformLocation(ourShader.ID, "projection");
 
 	// Unuse the shader
 	glUseProgram(0);
