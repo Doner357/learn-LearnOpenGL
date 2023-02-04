@@ -74,6 +74,11 @@ int main(void) {
 	}
 
 
+	// Configure global opengl state
+	// -----------------------------
+	glEnable(GL_DEPTH_TEST);
+
+
 
 	/*
 	* Extra function
@@ -103,24 +108,69 @@ int main(void) {
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
 
-	// Create the vertices containing two attributes: positions and colors
+	// Create the vertices containing two attributes: positions and texture coordinates
 	float vertices[] = {
-		// positions          // texture coords
-		 0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
-		 0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
-		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
-		-0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
+		// positions          // texCoord
+		-0.5f, -0.5f, -0.5f,   0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,   1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,   1.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,   1.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,   0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,   0.0f, 0.0f,
+
+		-0.5f, -0.5f,  0.5f,   0.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,   1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,   1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,   1.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,   0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,   0.0f, 0.0f,
+
+		-0.5f,  0.5f,  0.5f,   1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,   1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,   0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,   0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,   0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,   1.0f, 0.0f,
+
+		 0.5f,  0.5f,  0.5f,   1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,   1.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,   0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,   0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,   0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,   1.0f, 0.0f,
+
+		-0.5f, -0.5f, -0.5f,   0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,   1.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,   1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,   1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,   0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,   0.0f, 1.0f,
+
+		-0.5f,  0.5f, -0.5f,   0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,   1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,   1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,   1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,   0.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,   0.0f, 1.0f
 	};
 
-	unsigned int indices[] = {
-		0, 1, 3,  // first triangle
-		1, 2, 3   // second triangle
+	// world space positions of our cubes
+	glm::vec3 cubePositions[] = {
+		glm::vec3(0.0f,  0.0f,  0.0f),
+		glm::vec3(2.0f,  5.0f, -15.0f),
+		glm::vec3(-1.5f, -2.2f, -2.5f),
+		glm::vec3(-3.8f, -2.0f, -12.3f),
+		glm::vec3(2.4f, -0.4f, -3.5f),
+		glm::vec3(-1.7f,  3.0f, -7.5f),
+		glm::vec3(1.3f, -2.0f, -2.5f),
+		glm::vec3(1.5f,  2.0f, -2.5f),
+		glm::vec3(1.5f,  0.2f, -1.5f),
+		glm::vec3(-1.3f,  1.0f, -1.5f)
 	};
 
-	// Create VBO, VAO, EBO
-	unsigned int VBO, VAO, EBO;
+	// Create VBO, VAO
+	unsigned int VBO, VAO;
 	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
 	glGenVertexArrays(1, &VAO);
 
 	// Bind VAO
@@ -130,11 +180,6 @@ int main(void) {
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	// Copy the vertex data into the buffer's memory
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	// Bind the EBO
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	// Copy the vertex data into the buffer's memory
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// Set vertex attributes pointers
 	// positions:
@@ -153,9 +198,6 @@ int main(void) {
 	// VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
 	glBindVertexArray(0);
 
-	// Unbind the EBO
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
 
 
 	/*
@@ -163,7 +205,7 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	/* Tell stb_image.h to flip loaded texture's on the y-axis. */
+	 /* Tell stb_image.h to flip loaded texture's on the y-axis. */
 	stbi_set_flip_vertically_on_load(true);
 
 	// --Texture1--
@@ -193,7 +235,7 @@ int main(void) {
 		std::cout << "Failed to load texture" << std::endl;
 	}
 
-	
+
 	// --Texture2--
 	// Create the reference of the texture
 	unsigned int texture2;
@@ -220,10 +262,10 @@ int main(void) {
 	else {
 		std::cout << "Failed to load texture" << std::endl;
 	}
-	
+
 	// Free the image memory
 	stbi_image_free(data);
-	
+
 	// Unbind the texture
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -234,12 +276,18 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	// Activate the shader
+	 // Activate the shader
 	ourShader.use();
 
 	// Set the location of the texture variable in shader
 	glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0); // set it manually
 	ourShader.setInt("texture2", 1);                                // or with shader class
+
+	// Get the uniform loction of transformation matrices in vertex shader
+	//int modelLoc    = glGetUniformLocation(ourShader.ID, "model");     // This time update the uniform by using shader class
+	int viewLoc = glGetUniformLocation(ourShader.ID, "view");
+	int projectionLoc = glGetUniformLocation(ourShader.ID, "projection");
+
 	// Unuse the shader
 	glUseProgram(0);
 
@@ -268,23 +316,67 @@ int main(void) {
 		//--------------------------------------------------
 		// Clear Buffer
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);   // also clear the depth buffer now!
+
+
+		// Activate shader
+		ourShader.use();
+
 
 		// Activate the texture unit and bind the correspond texture
+		//-------------------------
 		// --container texture--
 		// Activate the texture before binding
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1);
+
 		// --awesomeface texture--
 		// Activate the texture before binding
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture2);
 
 
-		// render container
-		ourShader.use();
+		// Create transformations
+		//-------------------------
+		// --model matrix--
+
+		/* Put the model matrix in the loop to render ten same cubes*/
+
+		// --view matrix--
+		glm::mat4 view = glm::mat4(1.0f);
+		// note that we're translating the scene in the reverse direction of where we want to move
+		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+
+		// --projection matrix--
+		glm::mat4 projection;
+		projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
+		// Update to uniform
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+
+		// Render container
+		//---------------------------
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		// Render ten cubes
+		for (int i = 0; i < 10; i++) {
+			// Create model matrix
+			glm::mat4 model = glm::mat4(1.0f);
+			// Translate cubes according to the positions array
+			model = glm::translate(model, cubePositions[i]);
+			// Set the rotation angle
+			float angle = 20.0f * i;
+			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+
+			// Update model matrix to the shader 
+			ourShader.setMat4("model", model);
+
+			// Render cube
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+
 
 		// glfw: Swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		//-----------------------------------------------------------------------------------------------------------------
@@ -296,7 +388,6 @@ int main(void) {
 	// --------------------------------------------------------------------------------------------------------------------
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-	glDeleteBuffers(1, &EBO);
 	glDeleteTextures(1, &texture1);
 	glDeleteTextures(1, &texture2);
 	ourShader.clear();
