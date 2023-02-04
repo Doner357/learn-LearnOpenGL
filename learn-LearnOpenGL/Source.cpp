@@ -154,6 +154,20 @@ int main(void) {
 		-0.5f,  0.5f, -0.5f,   0.0f, 1.0f
 	};
 
+	// world space positions of our cubes
+	glm::vec3 cubePositions[] = {
+		glm::vec3(0.0f,  0.0f,  0.0f),
+		glm::vec3(2.0f,  5.0f, -15.0f),
+		glm::vec3(-1.5f, -2.2f, -2.5f),
+		glm::vec3(-3.8f, -2.0f, -12.3f),
+		glm::vec3(2.4f, -0.4f, -3.5f),
+		glm::vec3(-1.7f,  3.0f, -7.5f),
+		glm::vec3(1.3f, -2.0f, -2.5f),
+		glm::vec3(1.5f,  2.0f, -2.5f),
+		glm::vec3(1.5f,  0.2f, -1.5f),
+		glm::vec3(-1.3f,  1.0f, -1.5f)
+	};
+
 	// Create VBO, VAO
 	unsigned int VBO, VAO;
 	glGenBuffers(1, &VBO);
@@ -270,7 +284,7 @@ int main(void) {
 	ourShader.setInt("texture2", 1);                                // or with shader class
 	
 	// Get the uniform loction of transformation matrices in vertex shader
-	int modelLoc      = glGetUniformLocation(ourShader.ID, "model");
+	//int modelLoc    = glGetUniformLocation(ourShader.ID, "model");     // This time update the uniform by using shader class
 	int viewLoc       = glGetUniformLocation(ourShader.ID, "view");
 	int projectionLoc = glGetUniformLocation(ourShader.ID, "projection");
 
@@ -325,8 +339,8 @@ int main(void) {
 		// Create transformations
 		//-------------------------
 		// --model matrix--
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+
+		/* Put the model matrix in the loop to render ten same cubes*/
 
 		// --view matrix--
 		glm::mat4 view = glm::mat4(1.0f);
@@ -335,18 +349,33 @@ int main(void) {
 
 		// --projection matrix--
 		glm::mat4 projection;
-		projection = glm::perspective(glm::radians(45.0f), static_cast<float>(SCR_WIDTH) / SCR_HEIGHT, 0.1f, 100.0f);
+		projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
 		// Update to uniform
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
+		
 
 		// Render container
 		//---------------------------
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// Render ten cubes
+		for (int i = 0; i < 10; i++) {
+			// Create model matrix
+			glm::mat4 model = glm::mat4(1.0f);
+			// Translate cubes according to the positions array
+			model = glm::translate(model, cubePositions[i]);
+			// Set the rotation angle
+			float angle = 20.0f * i;
+			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			
+			// Update model matrix to the shader 
+			ourShader.setMat4("model", model);
+
+			// Render cube
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 
 
 		// glfw: Swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
