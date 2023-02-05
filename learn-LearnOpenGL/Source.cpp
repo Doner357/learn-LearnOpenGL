@@ -368,6 +368,8 @@ int main(void) {
 			model = glm::translate(model, cubePositions[i]);
 			// Set the rotation angle
 			float angle = 20.0f * i;
+			if (i % 3 == 0)
+				angle = glfwGetTime() * 20.0f;
 			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 
 			// Update model matrix to the shader 
