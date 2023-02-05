@@ -156,16 +156,16 @@ int main(void) {
 
 	// world space positions of our cubes
 	glm::vec3 cubePositions[] = {
-		glm::vec3(0.0f,  0.0f,  0.0f),
-		glm::vec3(2.0f,  5.0f, -15.0f),
-		glm::vec3(-1.5f, -2.2f, -2.5f),
+		glm::vec3( 0.0f,  0.0f,  0.0f ),
+		glm::vec3( 2.0f,  5.0f, -15.0f),
+		glm::vec3(-1.5f, -2.2f, -2.5f ),
 		glm::vec3(-3.8f, -2.0f, -12.3f),
-		glm::vec3(2.4f, -0.4f, -3.5f),
-		glm::vec3(-1.7f,  3.0f, -7.5f),
-		glm::vec3(1.3f, -2.0f, -2.5f),
-		glm::vec3(1.5f,  2.0f, -2.5f),
-		glm::vec3(1.5f,  0.2f, -1.5f),
-		glm::vec3(-1.3f,  1.0f, -1.5f)
+		glm::vec3( 2.4f, -0.4f, -3.5f ),
+		glm::vec3(-1.7f,  3.0f, -7.5f ),
+		glm::vec3( 1.3f, -2.0f, -2.5f ),
+		glm::vec3( 1.5f,  2.0f, -2.5f ),
+		glm::vec3( 1.5f,  0.2f, -1.5f ),
+		glm::vec3(-1.3f,  1.0f, -1.5f )
 	};
 
 	// Create VBO, VAO
@@ -344,12 +344,19 @@ int main(void) {
 
 		// --view matrix--
 		glm::mat4 view = glm::mat4(1.0f);
-		// note that we're translating the scene in the reverse direction of where we want to move
-		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+		// Get the time to as camera position
+		const float radius = 10.0f;
+		float camX = sin(glfwGetTime()) * radius;
+		float camZ = cos(glfwGetTime()) * radius;
+		// Create look at matrix
+		view = glm::lookAt(glm::vec3(camX, 0.0f, camZ),   // Camera position
+			               glm::vec3(0.0f, 0.0f, 0.0f),   // Camera target
+			               glm::vec3(0.0f, 1.0f, 0.0f));  // Up vector
 
 		// --projection matrix--
 		glm::mat4 projection;
 		projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
 
 		// Update to uniform
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
