@@ -38,7 +38,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="learnopengl\shader_s.h">
+    <ClInclude Include="learnopengl\shader_m.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="learnopengl\camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

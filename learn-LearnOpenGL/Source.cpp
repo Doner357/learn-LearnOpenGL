@@ -6,7 +6,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "learnopengl/shader_s.h"
+#include "learnopengl/shader_m.h"
+#include "learnopengl/camera.h"
 
 #include <iostream>
 #include <cmath>
@@ -20,16 +21,11 @@ void processInput(GLFWwindow *window);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-// Camera setting
+// Camera
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+float lastX = SCR_WIDTH / 2.0f;
+float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
-float yaw = -90.f;
-float pitch = 0.0f;
-float lastX = SCR_WIDTH / 2;
-float lastY = SCR_HEIGHT / 2;
-float fov = 45.0f;
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 // Timing
 float deltaTime = 0.0f;   // Time between current frame and last frame
@@ -373,11 +369,11 @@ int main(void) {
 		// --view matrix--
 		glm::mat4 view = glm::mat4(1.0f);
 		// Create look at matrix
-		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+		view = camera.GetViewMatrix();
 
 		// --projection matrix--
 		glm::mat4 projection;
-		projection = glm::perspective(glm::radians(fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
 
 		// Update to uniform
@@ -427,77 +423,56 @@ int main(void) {
 	return 0;
 }
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// --------------------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window) {
-	// Set the camera speed
-	float cameraSpeed = 2.5f * deltaTime;
-
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)                     // Press the ESC
-		glfwSetWindowShouldClose(window, true);
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		cameraPos += cameraSpeed * cameraFront;
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		cameraPos -= cameraSpeed * cameraFront;
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		cameraPos -= cameraSpeed * glm::normalize(glm::cross(cameraFront, cameraUp));
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		cameraPos += cameraSpeed * glm::normalize(glm::cross(cameraFront, cameraUp));
-}
-
-// glfw: whenever the mouse moves, this callback is called
-// --------------------------------------------------------------------------------------------------------------------
-void mouse_callback(GLFWwindow *window, double xposIn, double yposIn) {
-	// Check if the window is first time be clicked
-	if (firstMouse) {
-		lastX = xposIn;
-		lastY = yposIn;
-		firstMouse = false;
-	}
-
-	// Calculate the x-axis and y-axis offset
-	float xoffset = xposIn - lastX;
-	float yoffset = lastY - yposIn;
-	lastX = xposIn;
-	lastY = yposIn;
-
-	// Add the sensitivity to control the speed
-	float sensitivity = 0.1f;
-	xoffset *= sensitivity;
-	yoffset *= sensitivity;
-
-	// Add the offset to the yaw and pitch
-	yaw += xoffset;
-	pitch += yoffset;
-
-	// We can't let the pitch over 90 because the look at matrix will flip
-	if (pitch > 89.0f)
-		pitch = 89.0f;
-	if (pitch < -89.0f)
-		pitch = -89.0f;
-
-	// Calculate orientation and apply to camera orientation
-	glm::vec3 direction;
-	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-	direction.y = sin(glm::radians(pitch));
-	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	cameraFront = glm::normalize(direction);
-}
-
-// glfw: whenever the mouse scroll wheel scrolls, this callback is called
-// --------------------------------------------------------------------------------------------------------------------
-void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
-	fov -= static_cast<float>(yoffset);
-	if (fov < 1.0f)
-		fov = 1.0f;
-	if (fov > 45.0f)
-		fov = 45.0f;
-}
-
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // --------------------------------------------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 	// make sure the viewport matches the new window dimensions; note that width and 
 	// height will be significantly larger than specified on retina displays.
 	glViewport(0, 0, width, height);
+}
+
+// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+// --------------------------------------------------------------------------------------------------------------------
+void processInput(GLFWwindow *window) {
+
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)                     // Press the ESC
+		glfwSetWindowShouldClose(window, true);
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		camera.ProcessKeyboard(FORWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		camera.ProcessKeyboard(BACKWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		camera.ProcessKeyboard(LEFT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		camera.ProcessKeyboard(RIGHT, deltaTime);
+}
+
+// glfw: whenever the mouse moves, this callback is called
+// --------------------------------------------------------------------------------------------------------------------
+void mouse_callback(GLFWwindow *window, double xposIn, double yposIn) {
+	
+	float xpos = static_cast<float>(xposIn);
+	float ypos = static_cast<float>(yposIn);
+
+	// Check if the window is first time be clicked
+	if (firstMouse) {
+		lastX = xpos;
+		lastY = ypos;
+		firstMouse = false;
+	}
+
+	// Calculate the x-axis and y-axis offset
+	float xoffset = xpos - lastX;
+	float yoffset = lastY - ypos;  // reversed since y-coordinates go from top to bottom
+	lastX = xpos;
+	lastY = ypos;
+
+	camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
+// glfw: whenever the mouse scroll wheel scrolls, this callback is called
+// --------------------------------------------------------------------------------------------------------------------
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
+	camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
