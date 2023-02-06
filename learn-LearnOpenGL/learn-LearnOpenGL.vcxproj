@@ -143,6 +143,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="learnopengl\camera.h" />
+    <ClInclude Include="learnopengl\camera_plus.h" />
     <ClInclude Include="learnopengl\shader_m.h" />
   </ItemGroup>
   <ItemGroup>
