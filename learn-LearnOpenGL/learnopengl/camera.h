@@ -73,6 +73,8 @@ public:
             Position -= Right * velocity;
         if (direction == RIGHT)
             Position += Right * velocity;
+        // Make sure the user stays at the ground level
+        Position.y = 0.0f;
     }
 
     // processes input received from a mouse input system. Expects the offset value in both the x and y direction.
@@ -80,7 +82,7 @@ public:
         xoffset *= MouseSensitivity;
         yoffset *= MouseSensitivity;
 
-        Yaw += xoffset;
+        Yaw   += xoffset;
         Pitch += yoffset;
 
         // make sure that when pitch is out of bounds, screen doesn't get flipped
