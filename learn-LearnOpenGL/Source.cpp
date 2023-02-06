@@ -1,3 +1,9 @@
+/********************************************************************************************************/
+/* EXERCISES-2:                                                                                         */
+/* --Try to create your own LookAt function where you manually create a view matrix as discussed at the */
+/*   start of this chapter. Replace glm's LookAt function with your own implementation and see if it    */
+/*   still acts the same                                                                                */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
