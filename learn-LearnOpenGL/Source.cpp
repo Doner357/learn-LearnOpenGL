@@ -308,6 +308,7 @@ int main(void) {
 		lightingShader.setMat4("view", view);
 		lightingShader.setMat4("projection", projection);
 		lightingShader.setMat3("normalMat", normalMat);
+		lightingShader.setVec3("viewPos", camera.Position);   // Viewer position
 
 		// Render the cube
 		glBindVertexArray(cubeVAO);
