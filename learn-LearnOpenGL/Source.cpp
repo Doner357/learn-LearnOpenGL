@@ -298,10 +298,16 @@ int main(void) {
 		// Set the cube position to the model matrix
 		model = glm::mat4(1.0f);
 
+		/* The matrix below is normal matrix, which can convert normal vector to model space.
+		Inversing matrices is a costly operation for shaders, You'd better calculate this in
+		CPU and send it to the shaders via a uniform before drawing. */
+		glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(model)));   // Calculate normal matrix in CPU
+
 		// Send translation matrices to uniforms
 		lightingShader.setMat4("model", model);
 		lightingShader.setMat4("view", view);
 		lightingShader.setMat4("projection", projection);
+		lightingShader.setMat3("normalMat", normalMat);
 
 		// Render the cube
 		glBindVertexArray(cubeVAO);
