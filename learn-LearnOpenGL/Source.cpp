@@ -131,49 +131,50 @@ int main(void) {
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
 
-	// Vertex attributes
+	// Vertex attributes: positions, normal
 	float vertices[] = {
-		-0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
+		// Positions          // Normal
+		-0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+		 0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+		 0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+		 0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+		-0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+		-0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
 
-		-0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
+		-0.5f, -0.5f,  0.5f,   0.0f,  0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,   0.0f,  0.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,   0.0f,  0.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,   0.0f,  0.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,   0.0f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,   0.0f,  0.0f, 1.0f,
 
-		-0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,
+		-0.5f, -0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,
 
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f,
+		 0.5f,  0.5f, -0.5f,   1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,   1.0f,  0.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f,
 
-		-0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,
+		 0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,
+		-0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,
 
-		-0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f, -0.5f
+		-0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
+		-0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f
 	};
 
 	// Create vertex objects
@@ -187,8 +188,10 @@ int main(void) {
 	// Copy data to memory
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 	// Set up attributes pointer
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 	// Unbind VBO
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	// Unbind cubeVAO
@@ -203,7 +206,7 @@ int main(void) {
 	// We only need to bind to the VBO, the container's VBO's data already contains the data
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	// Set up attributes pointer
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(0);
 	//Unbind VBO
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -284,9 +287,13 @@ int main(void) {
 		// Be sure activate the shader when setting uniforms/drawing objects
 		lightingShader.use();
 
-		// Set the light color and cube color
+		// Set the lighting attributes
+		// cube color
 		lightingShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+		// light color
 		lightingShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+		// light position
+		lightingShader.setVec3("lightPos", lightPos);
 
 		// Set the cube position to the model matrix
 		model = glm::mat4(1.0f);
