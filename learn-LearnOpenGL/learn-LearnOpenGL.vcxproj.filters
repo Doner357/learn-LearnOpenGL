@@ -38,16 +38,28 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="learnopengl\shader_s.h">
+    <ClInclude Include="learnopengl\camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="learnopengl\camera_plus.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="learnopengl\shader_m.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\fragment\fShader.frag">
+    <None Include="shaders\fragment\colors.frag">
       <Filter>Resource Files\shaders\fragment</Filter>
     </None>
-    <None Include="shaders\vertex\vShader.vert">
+    <None Include="shaders\vertex\colors.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
+    </None>
+    <None Include="shaders\vertex\light_cube.vert">
+      <Filter>Resource Files\shaders\vertex</Filter>
+    </None>
+    <None Include="shaders\fragment\light_cube.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

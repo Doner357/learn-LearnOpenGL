@@ -150,8 +150,10 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\fragment\fShader.frag" />
-    <None Include="shaders\vertex\vShader.vert" />
+    <None Include="shaders\fragment\light_cube.frag" />
+    <None Include="shaders\fragment\colors.frag" />
+    <None Include="shaders\vertex\colors.vert" />
+    <None Include="shaders\vertex\light_cube.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\awesomeface.png" />
