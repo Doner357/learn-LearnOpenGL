@@ -155,10 +155,6 @@
     <None Include="shaders\vertex\colors.vert" />
     <None Include="shaders\vertex\light_cube.vert" />
   </ItemGroup>
-  <ItemGroup>
-    <Image Include="textures\awesomeface.png" />
-    <Image Include="textures\container.jpg" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

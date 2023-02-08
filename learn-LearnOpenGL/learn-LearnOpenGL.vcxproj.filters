@@ -63,14 +63,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="textures\container.jpg">
-      <Filter>Resource Files\textures</Filter>
-    </Image>
-    <Image Include="textures\awesomeface.png">
-      <Filter>Resource Files\textures</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
     <Text Include="Using libraries.txt">
       <Filter>Resource Files</Filter>
     </Text>
