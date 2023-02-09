@@ -295,10 +295,22 @@ int main(void) {
 		lightingShader.setFloat("material.shininess", 32.0f);            // shininess value
 
 		// Set the lighting properties
+		glm::vec3 lightColor;
+		// Change light's color over time
+		lightColor.x = sin(glfwGetTime() * 2.0f);
+		lightColor.y = sin(glfwGetTime() * 0.7f);
+		lightColor.z = sin(glfwGetTime() * 1.3f);
+		
+		// Multiply light color with intensity
+		glm::vec3 ambientColor  = lightColor * glm::vec3(0.2f);
+		glm::vec3 diffuseColor  = lightColor * glm::vec3(0.5f);
+		glm::vec3 specularColor = lightColor * glm::vec3(1.0f);
+
+		// Send the properties to uniforms
 		lightingShader.setVec3("light.position", lightPos);
-		lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);      // light's ambient  intensity
-		lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);      // light's diffuse  intensity
-		lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);     // light's specular intensity
+		lightingShader.setVec3("light.ambient", ambientColor);       // light's ambient  intensity
+		lightingShader.setVec3("light.diffuse", diffuseColor);       // light's diffuse  intensity
+		lightingShader.setVec3("light.specular", specularColor);     // light's specular intensity
 		
 
 		// Set the cube position to the model matrix
@@ -326,6 +338,10 @@ int main(void) {
 		
 		// Activate the shader
 		lightCubeShader.use();
+
+
+		// Set light color
+		lightCubeShader.setVec3("lightColor", lightColor);
 
 		// Set the cube position to the model matrix
 		model = glm::mat4(1.0f);
