@@ -294,11 +294,12 @@ int main(void) {
 		lightingShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);   // specular color
 		lightingShader.setFloat("material.shininess", 32.0f);            // shininess value
 
-		// Set the lighting attributes
-		// light color
-		lightingShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
-		// light position
-		lightingShader.setVec3("lightPos", lightPos);
+		// Set the lighting properties
+		lightingShader.setVec3("light.position", lightPos);
+		lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);      // light's ambient  intensity
+		lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);      // light's diffuse  intensity
+		lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);     // light's specular intensity
+		
 
 		// Set the cube position to the model matrix
 		model = glm::mat4(1.0f);
