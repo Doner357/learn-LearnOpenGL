@@ -5,10 +5,18 @@ in vec3 Normal;
 
 out vec4 FragColor;
 
-uniform vec3 objectColor;   // Cube color
-uniform vec3 lightColor;    // Light color
-uniform vec3 lightPos;      // Light position
-uniform vec3 viewPos;       // Viewer position
+// Define material attributes
+struct Material {
+	vec3 ambient;             // ambient  color
+	vec3 diffuse;             // diffuse  color
+	vec3 specular;            // specular color
+	float shininess;          // shininess value
+};
+
+uniform Material material;    // Material attributes
+uniform vec3 lightColor;      // Light color
+uniform vec3 lightPos;        // Light position
+uniform vec3 viewPos;         // Viewer position
 
 void main() {
 	
@@ -27,19 +35,17 @@ void main() {
 	//--------------------------
 
 	// --Ambient--
-	float ambientStrength = 0.1;
-	vec3 ambient = ambientStrength * lightColor;
+	vec3 ambient = lightColor * material.ambient;
 
 	// --Diffuse--
 	float diff = max(dot(norm, lightDir), 0.0);
-	vec3 diffuse = diff * lightColor;
+	vec3 diffuse = lightColor * (diff * material.diffuse);
 
 	// --Specular--
-	float specularStrength = 0.5;
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-	vec3 specular = spec * specularStrength * lightColor;
+	vec3 specular = lightColor * (spec * material.specular);
 
 	// --Result--
-	vec3 result = (ambient + diffuse + specular) * objectColor;
+	vec3 result = ambient + diffuse + specular;
 	FragColor = vec4(result, 1.0);
 }

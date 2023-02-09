@@ -287,9 +287,14 @@ int main(void) {
 		// Be sure activate the shader when setting uniforms/drawing objects
 		lightingShader.use();
 
+		
+		// Set cube material attributes
+		lightingShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);   // ambient  color
+		lightingShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);   // diffuse  color
+		lightingShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);   // specular color
+		lightingShader.setFloat("material.shininess", 32.0f);            // shininess value
+
 		// Set the lighting attributes
-		// cube color
-		lightingShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
 		// light color
 		lightingShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
 		// light position
