@@ -1,3 +1,9 @@
+/********************************************************************************************************/
+/* EXERCISES-1:                                                                                         */
+/* --Right now the light source is a boring static light source that doesn't move. Try to move the      */
+/*   light source around the scene over time using either sin or cos. Watching the lighting change over */
+/*   time gives you a good understanding of Phong's lighting model                                      */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
@@ -279,6 +285,13 @@ int main(void) {
 		// --projection matrix--
 		glm::mat4 projection;
 		projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
+
+		// Update light position
+		//-------------------------
+		float radius = 3.0f;
+		float time = glfwGetTime();
+		lightPos = glm::vec3(static_cast<float>(sin(time) * radius), 1.0f, static_cast<float>(cos(time) * radius));
 
 
 		// Render color cube
