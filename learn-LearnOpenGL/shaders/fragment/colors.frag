@@ -10,6 +10,11 @@ uniform vec3 lightColor;    // Light color
 uniform vec3 lightPos;      // Light position
 uniform vec3 viewPos;       // Viewer position
 
+uniform float ambientStrength;
+uniform float diffuseStrength;
+uniform float specularStrength;
+uniform int shininess;
+
 void main() {
 	
 	// Basic data calculation
@@ -27,19 +32,17 @@ void main() {
 	//--------------------------
 
 	// --Ambient--
-	float ambientStrength = 0.1;
 	vec3 ambient = ambientStrength * lightColor;
 
 	// --Diffuse--
 	float diff = max(dot(norm, lightDir), 0.0);
-	vec3 diffuse = diff * lightColor;
+	vec3 diffuse = diff * diffuseStrength * lightColor;
 
 	// --Specular--
-	float specularStrength = 0.5;
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
 	vec3 specular = spec * specularStrength * lightColor;
 
 	// --Result--
-	vec3 result = (ambient + diffuse + spec) * objectColor;
+	vec3 result = (ambient + diffuse + specular) * objectColor;
 	FragColor = vec4(result, 1.0);
 }

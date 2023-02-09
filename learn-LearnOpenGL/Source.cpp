@@ -1,3 +1,9 @@
+/********************************************************************************************************/
+/* EXERCISES-2:                                                                                         */
+/* --Play around with different ambient, diffuse and specular strengths and see how they impact the     */
+/*   result. Also experiment with the shininess factor. Try to comprehend why certain values have a     */
+/*   certain visual output.                                                                             */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
@@ -12,10 +18,25 @@
 #include <iostream>
 #include <cmath>
 
+// Exercises part
+enum StrengthStatus {
+	STRENGTH_AMBIENT,
+	STRENGTH_DIFFUSE,
+	STRENGTH_SPECULAR,
+	STRENGTH_SHININESS
+};
+StrengthStatus status = STRENGTH_AMBIENT;
+
+float ambientStrength = 0.1f;
+float diffuseStrength = 1.0f;
+float specularStrength = 0.5;
+int shininess = 32;
+
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
+void strength_editor(StrengthStatus status, int key);
 
 // Screen Width and Height setting
 const unsigned int SCR_WIDTH = 800;
@@ -295,6 +316,12 @@ int main(void) {
 		// light position
 		lightingShader.setVec3("lightPos", lightPos);
 
+		//Exersies part
+		lightingShader.setFloat("ambientStrength", ambientStrength);
+		lightingShader.setFloat("diffuseStrength", diffuseStrength);
+		lightingShader.setFloat("specularStrength", specularStrength);
+		lightingShader.setInt("shininess", shininess);
+
 		// Set the cube position to the model matrix
 		model = glm::mat4(1.0f);
 
@@ -383,6 +410,27 @@ void processInput(GLFWwindow *window) {
 		camera.ProcessKeyboard(CAMERA_UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
+
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+		status = STRENGTH_AMBIENT;
+		std::cout << "Ambient mode" << std::endl;
+	}
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+		status = STRENGTH_DIFFUSE;
+		std::cout << "Diffuse mode" << std::endl;
+	}
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+		status = STRENGTH_SPECULAR;
+		std::cout << "Specular mode" << std::endl;
+	}
+	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
+		status = STRENGTH_SHININESS;
+		std::cout << "Shininess mode" << std::endl;
+	}
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+		strength_editor(status, GLFW_KEY_UP);
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+		strength_editor(status, GLFW_KEY_DOWN);
 }
 
 // glfw: whenever the mouse moves, this callback is called
@@ -412,4 +460,51 @@ void mouse_callback(GLFWwindow *window, double xposIn, double yposIn) {
 // --------------------------------------------------------------------------------------------------------------------
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
 	camera.ProcessMouseScroll(static_cast<float>(yoffset));
+}
+
+void strength_editor(StrengthStatus status, int key) {
+	switch (status) {
+	case STRENGTH_AMBIENT:
+		if (key == GLFW_KEY_UP)
+			ambientStrength += 0.02f;
+		else
+			ambientStrength -= 0.02f;
+		if (ambientStrength > 1.0f)
+			ambientStrength = 1.0f;
+		else if (ambientStrength < 0.0f)
+			ambientStrength = 0.0f;
+		break;
+	case STRENGTH_DIFFUSE:
+		if (key == GLFW_KEY_UP)
+			diffuseStrength += 0.02f;
+		else
+			diffuseStrength -= 0.02f;
+		if (diffuseStrength > 1.0f)
+			diffuseStrength = 1.0f;
+		else if (diffuseStrength < 0.0f)
+			diffuseStrength = 0.0f;
+		break;
+	case STRENGTH_SPECULAR:
+		if (key == GLFW_KEY_UP)
+			specularStrength += 0.02f;
+		else
+			specularStrength -= 0.02f;
+		if (specularStrength > 1.0f)
+			specularStrength = 1.0f;
+		else if (specularStrength < 0.0f)
+			specularStrength = 0.0f;
+		break;
+	case STRENGTH_SHININESS:
+		if (key == GLFW_KEY_UP)
+			shininess *= 2;
+		else
+			shininess /= 2;
+		if (shininess > 256)
+			shininess = 256;
+		else if (shininess < 1)
+			shininess = 1;
+		break;
+	default:
+		break;
+	}
 }
