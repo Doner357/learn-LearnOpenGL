@@ -1,3 +1,7 @@
+/********************************************************************************************************/
+/* EXERCISES-4:                                                                                         */
+/* --Implement Gouraud shading instead of Phong shading. Try to reason why it looks so weird            */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
