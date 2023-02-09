@@ -1,3 +1,7 @@
+/********************************************************************************************************/
+/* EXERCISES-3:                                                                                         */
+/* --Do Phong shading in view space instead of world space                                              */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
@@ -293,7 +297,7 @@ int main(void) {
 		// light color
 		lightingShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
 		// light position
-		lightingShader.setVec3("lightPos", lightPos);
+		lightingShader.setVec3("lightPos", glm::vec3(view * glm::vec4(lightPos, 1.0f)));
 
 		// Set the cube position to the model matrix
 		model = glm::mat4(1.0f);
@@ -301,14 +305,14 @@ int main(void) {
 		/* The matrix below is normal matrix, which can convert normal vector to model space.
 		Inversing matrices is a costly operation for shaders, You'd better calculate this in
 		CPU and send it to the shaders via a uniform before drawing. */
-		glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(model)));   // Calculate normal matrix in CPU
+		glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(view * model)));   // Calculate normal matrix in CPU
 
 		// Send translation matrices to uniforms
 		lightingShader.setMat4("model", model);
 		lightingShader.setMat4("view", view);
 		lightingShader.setMat4("projection", projection);
 		lightingShader.setMat3("normalMat", normalMat);
-		lightingShader.setVec3("viewPos", camera.Position);   // Viewer position
+		//lightingShader.setVec3("viewPos", camera.Position);   // In view space, viewer position always at (0, 0, 0)
 
 		// Render the cube
 		glBindVertexArray(cubeVAO);

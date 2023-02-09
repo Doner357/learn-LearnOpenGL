@@ -8,7 +8,7 @@ out vec4 FragColor;
 uniform vec3 objectColor;   // Cube color
 uniform vec3 lightColor;    // Light color
 uniform vec3 lightPos;      // Light position
-uniform vec3 viewPos;       // Viewer position
+//uniform vec3 viewPos;     // In view space, viewer position always at (0, 0, 0)
 
 void main() {
 	
@@ -19,7 +19,7 @@ void main() {
 	// Light direction
 	vec3 lightDir = normalize(lightPos - FragPos);
 	// View direction
-	vec3 viewDir = normalize(viewPos - FragPos);
+	vec3 viewDir = normalize(-FragPos);
 	// Reflect direction
 	vec3 reflectDir = reflect(-lightDir, norm);
 
