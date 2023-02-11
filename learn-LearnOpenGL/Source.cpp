@@ -1,3 +1,7 @@
+/********************************************************************************************************/
+/* EXERCISES-1:                                                                                         */
+/* --Can you make it so that changing the light color changes the color of the light's cube object?     */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
