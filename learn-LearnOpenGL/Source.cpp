@@ -304,7 +304,6 @@ int main(void) {
 		// Multiply light color with intensity
 		glm::vec3 ambientColor  = lightColor * glm::vec3(0.2f);
 		glm::vec3 diffuseColor  = lightColor * glm::vec3(0.5f);
-		glm::vec3 specularColor = lightColor * glm::vec3(1.0f);
 
 		// Send the properties to uniforms
 		lightingShader.setVec3("light.position", lightPos);
