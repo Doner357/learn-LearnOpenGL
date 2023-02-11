@@ -1,21 +1,22 @@
 #version 330 core
 
-in vec3 FragPos;
-in vec3 Normal;
+in vec2 TexCoords;   // Texture coordinate
+in vec3 FragPos;     // Fragment position
+in vec3 Normal;      // Fragment normal(denormalized)
 
 out vec4 FragColor;
 
 // Define material attributes
 struct Material {
-	vec3 ambient;      // ambient  color
-	vec3 diffuse;      // diffuse  color
-	vec3 specular;     // specular color
-	float shininess;   // shininess value
+	//vec3 ambient;      // This is same as diffuse color, we don't need this now since we get it from diffuse color
+	sampler2D diffuse;   // Get the ambient and diffuse colors from texture called diffuse map
+	vec3 specular;       // specular color
+	float shininess;     // shininess value
 };
 
 // Define light properties
 struct Light {
-	vec3 position;
+	vec3 position;     // light's position
 
 	vec3 ambient;      // light's ambient  intensity
 	vec3 diffuse;      // light's diffuse  intensity
@@ -43,11 +44,11 @@ void main() {
 	//--------------------------
 
 	// --Ambient--
-	vec3 ambient = light.ambient * material.ambient;
+	vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
 
 	// --Diffuse--
 	float diff = max(dot(norm, lightDir), 0.0);
-	vec3 diffuse = light.diffuse * (diff * material.diffuse);
+	vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));
 
 	// --Specular--
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
