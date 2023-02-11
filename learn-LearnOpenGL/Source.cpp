@@ -310,7 +310,7 @@ int main(void) {
 		lightingShader.setVec3("light.position", lightPos);
 		lightingShader.setVec3("light.ambient", ambientColor);       // light's ambient  intensity
 		lightingShader.setVec3("light.diffuse", diffuseColor);       // light's diffuse  intensity
-		lightingShader.setVec3("light.specular", specularColor);     // light's specular intensity
+		lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);     // light's specular intensity
 		
 
 		// Set the cube position to the model matrix
@@ -339,9 +339,6 @@ int main(void) {
 		// Activate the shader
 		lightCubeShader.use();
 
-
-		// Set light color
-		lightCubeShader.setVec3("lightColor", lightColor);
 
 		// Set the cube position to the model matrix
 		model = glm::mat4(1.0f);
