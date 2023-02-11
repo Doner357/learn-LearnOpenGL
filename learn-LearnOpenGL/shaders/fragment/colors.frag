@@ -10,7 +10,7 @@ out vec4 FragColor;
 struct Material {
 	//vec3 ambient;      // This is same as diffuse color, we don't need this now since we get it from diffuse color
 	sampler2D diffuse;   // Get the ambient and diffuse colors from texture called diffuse map
-	vec3 specular;       // specular color
+	sampler2D specular;  // Get specular color from specular map
 	float shininess;     // shininess value
 };
 
@@ -51,8 +51,8 @@ void main() {
 	vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));
 
 	// --Specular--
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-	vec3 specular = light.specular * (spec * material.specular);
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+	vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));
 
 	// --Result--
 	vec3 result = ambient + diffuse + specular;

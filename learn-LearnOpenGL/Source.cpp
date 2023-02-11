@@ -230,6 +230,7 @@ int main(void) {
 	stbi_set_flip_vertically_on_load(true);
 
 	unsigned int diffuseMap = loadTexture("textures/container2.png");
+	unsigned int specularMap = loadTexture("textures/container2_specular.png");
 
 
 
@@ -239,10 +240,12 @@ int main(void) {
 	 */
 	
 	// Texture setting
+	//-------------------------
 	// Activate shader
 	lightingShader.use();
 	// Set up texture unit
-	lightingShader.setInt("material.diffuse", 0);
+	lightingShader.setInt("material.diffuse", 0);    // diffuse map
+	lightingShader.setInt("material.specular", 1);   // specular map
 
 	
 	glUseProgram(0);
@@ -322,15 +325,18 @@ int main(void) {
 		// --ambient & diffuse--
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, diffuseMap);                        // Take diffuse map's color as ambient and diffuse color
-		lightingShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);   // specular color
+		// --specular--
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, specularMap);                       // Take specular map's color as specular color/intensity
+		// --shininess--
 		lightingShader.setFloat("material.shininess", 64.0f);            // shininess value
 
 		
 		// Set light properties
 		lightingShader.setVec3("light.position", lightPos);
-		lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);       // ambient intensity
-		lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);       // diffuse intensity
-		lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);      // specular intensity
+		lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);       // light's ambient color/intensity
+		lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);       // light's diffuse color/intensity
+		lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);      // light's specular color/intensity
 
 
 		// Render the cube
@@ -372,6 +378,7 @@ int main(void) {
 	glDeleteVertexArrays(1, &lightCubeVAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteTextures(1, &diffuseMap);
+	glDeleteTextures(1, &specularMap);
 	lightingShader.clear();
 	lightCubeShader.clear();
 
