@@ -74,5 +74,11 @@
     <Image Include="textures\container2_specular.png">
       <Filter>Resource Files\textures</Filter>
     </Image>
+    <Image Include="textures\container2_emission.png">
+      <Filter>Resource Files\textures</Filter>
+    </Image>
+    <Image Include="textures\matrix.jpg">
+      <Filter>Resource Files\textures</Filter>
+    </Image>
   </ItemGroup>
 </Project>

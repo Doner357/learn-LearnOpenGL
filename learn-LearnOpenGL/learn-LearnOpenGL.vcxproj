@@ -157,7 +157,9 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\container2.png" />
+    <Image Include="textures\container2_emission.png" />
     <Image Include="textures\container2_specular.png" />
+    <Image Include="textures\matrix.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

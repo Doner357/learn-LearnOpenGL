@@ -11,6 +11,7 @@ struct Material {
 	//vec3 ambient;      // This is same as diffuse color, we don't need this now since we get it from diffuse color
 	sampler2D diffuse;   // Get the ambient and diffuse colors from texture called diffuse map
 	sampler2D specular;  // Get specular color from specular map
+	sampler2D emission;  // Get emission color from emission map
 	float shininess;     // shininess value
 };
 
@@ -26,6 +27,9 @@ struct Light {
 uniform Material material;    // Material attributes
 uniform Light light;          // Lighti properties
 uniform vec3 viewPos;         // Viewer position
+
+// Exercises part
+uniform float texCoordOffset;   // The offset which will change overtime
 
 void main() {
 	
@@ -53,8 +57,13 @@ void main() {
 	// --Specular--
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
 	vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));
-
+	
+	// --Emission--
+	vec3 emission = vec3(texture(material.emission, vec2(TexCoords.x, TexCoords.y + texCoordOffset)));
+	
 	// --Result--
 	vec3 result = ambient + diffuse + specular;
+	if(vec3(texture(material.specular, TexCoords)).r < 0.1)
+		result += emission;
 	FragColor = vec4(result, 1.0);
 }

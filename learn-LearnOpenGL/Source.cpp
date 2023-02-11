@@ -1,3 +1,12 @@
+/********************************************************************************************************/
+/* EXERCISES-4:                                                                                         */
+/* --Also add something they call an emission map which is a texture that stores emission values per    */
+/*   fragment. Emission values are colors an object may emit as if it contains a light source itself;   */
+/*   this way an object can glow regardless of the light conditions. Emission maps are often what you   */
+/*   see when objects in a game glow (like eyes of a robot, or light strips on a container). Add the    */
+/*   following texture (by creativesam) as an emission map onto the container as if the letters emit    */
+/*   light                                                                                              */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
@@ -34,6 +43,9 @@ float lastFrame = 0.0f;   // Time of last frame
 
 // The podition of light
 glm::vec3 lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
+
+// Exercises part
+bool emissionStatus = true;
 
 
 
@@ -231,6 +243,8 @@ int main(void) {
 
 	unsigned int diffuseMap = loadTexture("textures/container2.png");
 	unsigned int specularMap = loadTexture("textures/container2_specular.png");
+	unsigned int emissionMap1 = loadTexture("textures/matrix.jpg");
+	unsigned int emissionMap2 = loadTexture("textures/container2_emission.png");
 
 
 
@@ -246,6 +260,7 @@ int main(void) {
 	// Set up texture unit
 	lightingShader.setInt("material.diffuse", 0);    // diffuse map
 	lightingShader.setInt("material.specular", 1);   // specular map
+	lightingShader.setInt("material.emission", 2);   // emission map
 
 	
 	glUseProgram(0);
@@ -328,6 +343,18 @@ int main(void) {
 		// --specular--
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, specularMap);                       // Take specular map's color as specular color/intensity
+		// --emission--
+		glActiveTexture(GL_TEXTURE2);
+		if (emissionStatus) {
+			glBindTexture(GL_TEXTURE_2D, emissionMap1);                  // Take emission map's color as emission color
+			lightingShader.setFloat("texCoordOffset", static_cast<float>(glfwGetTime()));
+		}
+		else {
+			glBindTexture(GL_TEXTURE_2D, emissionMap2);
+			lightingShader.setFloat("texCoordOffset", 0.0f);
+		}
+
+
 		// --shininess--
 		lightingShader.setFloat("material.shininess", 64.0f);            // shininess value
 
@@ -379,6 +406,7 @@ int main(void) {
 	glDeleteBuffers(1, &VBO);
 	glDeleteTextures(1, &diffuseMap);
 	glDeleteTextures(1, &specularMap);
+	glDeleteTextures(1, &emissionMap2);
 	lightingShader.clear();
 	lightCubeShader.clear();
 
@@ -415,6 +443,10 @@ void processInput(GLFWwindow *window) {
 		camera.ProcessKeyboard(CAMERA_UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+		emissionStatus = true;
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+		emissionStatus = false;
 }
 
 // glfw: whenever the mouse moves, this callback is called
