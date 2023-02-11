@@ -1,3 +1,8 @@
+/********************************************************************************************************/
+/* EXERCISES-3:                                                                                         */
+/* --Try creating a specular map from the diffuse texture that uses actual colors instead of black and  */
+/*   white and see that the result doesn't look too realistic.                                          */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
@@ -230,7 +235,7 @@ int main(void) {
 	stbi_set_flip_vertically_on_load(true);
 
 	unsigned int diffuseMap = loadTexture("textures/container2.png");
-	unsigned int specularMap = loadTexture("textures/container2_specular.png");
+	unsigned int specularMap = loadTexture("textures/lighting_maps_specular_color.png");
 
 
 
