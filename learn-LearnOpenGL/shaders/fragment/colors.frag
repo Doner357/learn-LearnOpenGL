@@ -42,7 +42,7 @@ void main() {
 	vec3 diffuse = lightColor * (diff * material.diffuse);
 
 	// --Specular--
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
 	vec3 specular = lightColor * (spec * material.specular);
 
 	// --Result--
