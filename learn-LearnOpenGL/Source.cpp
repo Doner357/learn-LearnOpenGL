@@ -1,3 +1,9 @@
+/********************************************************************************************************/
+/* EXERCISES-2:                                                                                         */
+/* --Try inverting the color values of the specular map in the fragment shader so that the wood shows   */
+/*   specular highlights and the steel borders do not (note that due to the cracks in the steel border  */
+/*   the borders still show some specular highlight, although with less intensity)                      */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>

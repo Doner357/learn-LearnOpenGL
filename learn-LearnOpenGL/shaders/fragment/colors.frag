@@ -52,7 +52,7 @@ void main() {
 
 	// --Specular--
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-	vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));
+	vec3 specular = light.specular * spec * (vec3(1.0) - vec3(texture(material.specular, TexCoords)));
 
 	// --Result--
 	vec3 result = ambient + diffuse + specular;
