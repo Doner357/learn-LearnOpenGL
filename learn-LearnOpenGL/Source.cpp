@@ -340,9 +340,6 @@ int main(void) {
 		lightCubeShader.use();
 
 
-		// Set light color
-		lightCubeShader.setVec3("lightColor", lightColor);
-
 		// Set the cube position to the model matrix
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, lightPos);
