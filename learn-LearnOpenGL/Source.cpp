@@ -1,3 +1,8 @@
+/********************************************************************************************************/
+/* EXERCISES-1:                                                                                         */
+/* --Fool around with the light source's ambient, diffuse and specular vectors and see how they affect  */
+/*   the visual output of the container.                                                                */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
@@ -333,10 +338,21 @@ int main(void) {
 
 		
 		// Set light properties
+		glm::vec3 lightColor;
+		float time = glfwGetTime();
+
+		lightColor.x = sin(time * 2.0f);
+		lightColor.y = sin(time * 0.7f);
+		lightColor.z = sin(time * 1.3f);
+
+		// Multiply light color with intensity
+		glm::vec3 ambientColor = lightColor * glm::vec3(0.2f);
+		glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);
+
 		lightingShader.setVec3("light.position", lightPos);
-		lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);       // light's ambient color/intensity
-		lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);       // light's diffuse color/intensity
-		lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);      // light's specular color/intensity
+		lightingShader.setVec3("light.ambient", ambientColor);          // light's ambient color/intensity
+		lightingShader.setVec3("light.diffuse", diffuseColor);          // light's diffuse color/intensity
+		lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);     // light's specular color/intensity
 
 
 		// Render the cube
