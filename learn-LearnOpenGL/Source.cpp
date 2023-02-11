@@ -1,3 +1,10 @@
+/********************************************************************************************************/
+/* EXERCISES-2:                                                                                         */
+/* --Can you simulate some of the real-world objects by defining their respective materials like we've  */
+/*   seen at the start of this chapter? Note that the table's ambient values are not the same as the    */
+/*   diffuse values; they didn't take light intensities into account. To correctly set their values     */
+/*   you'd have to set all the light intensities to vec3(1.0) to get the same output                    */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
@@ -248,7 +255,8 @@ int main(void) {
 	  * Render loop
 	  * --------------------------------------------------------------------------------------------------------------------
 	  */
-
+	// I choose silver material
+	std::cout << "Silver" << std::endl;
 	while (!glfwWindowShouldClose(window)) {
 
 		// Calculate delta time
@@ -289,15 +297,16 @@ int main(void) {
 
 		
 		// Set cube material attributes
-		lightingShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);   // ambient  color
-		lightingShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);   // diffuse  color
-		lightingShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);   // specular color
-		lightingShader.setFloat("material.shininess", 32.0f);            // shininess value
+		// Silver
+		lightingShader.setVec3("material.ambient", 0.19225f, 0.19225f, 0.19225f);       // ambient  color
+		lightingShader.setVec3("material.diffuse", 0.50754f, 0.50754f, 0.50754f);       // diffuse  color
+		lightingShader.setVec3("material.specular", 0.508273f, 0.508273f, 0.508273f);   // specular color
+		lightingShader.setFloat("material.shininess", 0.4f * 128);                      // shininess value
 
 		// Set the lighting properties
 		lightingShader.setVec3("light.position", lightPos);
-		lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);      // light's ambient  intensity
-		lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);      // light's diffuse  intensity
+		lightingShader.setVec3("light.ambient", 1.0f, 1.0f, 1.0f);      // light's ambient  intensity
+		lightingShader.setVec3("light.diffuse", 1.0f, 1.0f, 1.0f);      // light's diffuse  intensity
 		lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);     // light's specular intensity
 		
 
