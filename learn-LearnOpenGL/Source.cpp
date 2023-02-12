@@ -33,7 +33,7 @@ float deltaTime = 0.0f;   // Time between current frame and last frame
 float lastFrame = 0.0f;   // Time of last frame
 
 // The podition of light
-glm::vec3 lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
+//glm::vec3 lightPos = glm::vec3(1.2f, 1.0f, 2.0f);   // Won't be used this time
 
 
 
@@ -178,6 +178,20 @@ int main(void) {
 		-0.5f,  0.5f, -0.5f,    0.0f,  1.0f,  0.0f,    0.0f, 1.0f
 	};
 
+	// Ten different container's positions
+	glm::vec3 cubePositions[] = {
+	glm::vec3( 0.0f,  0.0f,  0.0f),
+	glm::vec3( 2.0f,  5.0f, -15.0f),
+	glm::vec3(-1.5f, -2.2f, -2.5f),
+	glm::vec3(-3.8f, -2.0f, -12.3f),
+	glm::vec3( 2.4f, -0.4f, -3.5f),
+	glm::vec3(-1.7f,  3.0f, -7.5f),
+	glm::vec3( 1.3f, -2.0f, -2.5f),
+	glm::vec3( 1.5f,  2.0f, -2.5f),
+	glm::vec3( 1.5f,  0.2f, -1.5f),
+	glm::vec3(-1.3f,  1.0f, -1.5f)
+	};
+
 	// Create vertex objects
 	unsigned int VBO, cubeVAO;
 	glGenVertexArrays(1, &cubeVAO);
@@ -287,15 +301,12 @@ int main(void) {
 		// Create transformations
 		//-------------------------
 		// --model matrix--
-		// Since each cube has its own position, we initialize the matrix here
-		glm::mat4 model = glm::mat4(1.0f);
+		// Since each cube has its own position, we declare the matrix variable here
+		glm::mat4 model;
 		// --view matrix--
-		glm::mat4 view = glm::mat4(1.0f);
-		// Get look at matrix from camera
-		view = camera.GetViewMatrix();
+		glm::mat4 view = camera.GetViewMatrix();
 		// --projection matrix--
-		glm::mat4 projection;
-		projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
 
 		// Render color cube
@@ -303,22 +314,6 @@ int main(void) {
 		
 		// Be sure activate the shader when setting uniforms/drawing objects
 		lightingShader.use();
-
-
-		// Set the cube position to the model matrix
-		model = glm::mat4(1.0f);
-
-		/* The matrix below is normal matrix, which can convert normal vector to model space.
-		Inversing matrices is a costly operation for shaders, You'd better calculate this in
-		CPU and send it to the shaders via a uniform before drawing. */
-		glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(model)));   // Calculate normal matrix in CPU
-
-		// Send translation matrices to uniforms
-		lightingShader.setMat4("model", model);
-		lightingShader.setMat4("view", view);
-		lightingShader.setMat4("projection", projection);
-		lightingShader.setMat3("normalMat", normalMat);
-		lightingShader.setVec3("viewPos", camera.Position);   // Viewer position
 
 
 		// Set cube material attributes
@@ -333,20 +328,45 @@ int main(void) {
 
 		
 		// Set light properties
-		lightingShader.setVec3("light.position", lightPos);
+		lightingShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);  // light's direction
 		lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);       // light's ambient color/intensity
 		lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);       // light's diffuse color/intensity
 		lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);      // light's specular color/intensity
 
 
-		// Render the cube
+		glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(model)));   // Calculate normal matrix in CPU
+
+		// Send translation matrices to uniforms
+		//lightingShader.setMat4("model", model);             // Since we have mutiple cubes have to draw, we will set model matrix in following loop
+		lightingShader.setMat4("view", view);
+		lightingShader.setMat4("projection", projection);
+		lightingShader.setMat3("normalMat", normalMat);
+		lightingShader.setVec3("viewPos", camera.Position);   // Viewer position
+
+		// Bind VAO
 		glBindVertexArray(cubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		// Set model matrix and render the containers
+		for (unsigned int i = 0; i < 10; i++) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, glm::vec3(cubePositions[i]));
+			float angle = 20.0f * i;
+			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			// Send model matrix to uniform
+			lightingShader.setMat4("model", model);
+
+			// Calculate normal matrix and send it to uniform
+			glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(model)));
+			lightingShader.setMat3("normalMat", normalMat);
+			
+			// Render the cube
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		}
 
 
-		// Render lamp cube
+		// Render lamp cube         // Won't be used this time
 		//-------------------------
-		
+		/*
 		// Activate the shader
 		lightCubeShader.use();
 
@@ -364,6 +384,8 @@ int main(void) {
 		// Render the cube
 		glBindVertexArray(lightCubeVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
+		*/
+		
 
 
 		// glfw: Swap buffers and poll IO events (keys pressed/released, mouse moved etc.)

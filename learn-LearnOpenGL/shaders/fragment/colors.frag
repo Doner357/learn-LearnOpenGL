@@ -16,7 +16,8 @@ struct Material {
 
 // Define light properties
 struct Light {
-	vec3 position;     // light's position
+	//vec3 position;   // no longer necessary when using directional lights
+	vec3 direction;    // Instead, we just use light's drection
 
 	vec3 ambient;      // light's ambient  intensity
 	vec3 diffuse;      // light's diffuse  intensity
@@ -34,7 +35,7 @@ void main() {
 	// Fragment normal
 	vec3 norm = normalize(Normal);
 	// Light direction
-	vec3 lightDir = normalize(light.position - FragPos);
+	vec3 lightDir = normalize(-light.direction);   // Note that we negate the direction, it needs to point towards the light source
 	// View direction
 	vec3 viewDir = normalize(viewPos - FragPos);
 	// Reflect direction
