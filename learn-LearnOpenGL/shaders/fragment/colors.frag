@@ -16,8 +16,10 @@ struct Material {
 
 // Define light properties
 struct Light {
-	vec3 position;       // We use position since this time we implement point light
-	//vec3 direction;    // Not for this time
+	vec3 position;       // light's position
+	vec3 direction;      // light's direction (but this time it's for spotlight direction, not the real light direction)
+	float cutOff;        // light's inner cut off
+	float outerCutOff;   // light's outer cut off
 
 	vec3 ambient;        // light's ambient  intensity
 	vec3 diffuse;        // light's diffuse  intensity
@@ -34,21 +36,35 @@ uniform Light light;          // Lighti properties
 uniform vec3 viewPos;         // Viewer position
 
 void main() {
-	
+
 	// Basic data calculation
 	//--------------------------
+
+	// --Basic Phong lighting elements--
 	// Fragment normal
 	vec3 norm = normalize(Normal);
 	// Light direction
-	vec3 lightDir = normalize(light.position - FragPos);   // Note that we negate the direction, it needs to point towards the light source
+	vec3 lightDir = normalize(light.position - FragPos);
 	// View direction
 	vec3 viewDir = normalize(viewPos - FragPos);
 	// Reflect direction
 	vec3 reflectDir = reflect(-lightDir, norm);
+
+	// --Attenuation elements--
 	// Distance between point light and fragment
 	float distance = length(light.position - FragPos);
 	// Light attenuation
 	float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+
+	// --Spot light elements--
+	// The cosine of the angle between spotlight direction and light direction
+	float theta = dot(lightDir, -light.direction);       // Note that we negate the spotlihgt direction, it needs to point towards the light source
+	// Epsilon ( cosine difference between the inner and the outer cone)
+	float epsilon = light.cutOff - light.outerCutOff;
+	// Intensity ( For spotlight effects on fragment )
+	// clamp function return the medium large number, note that the second number should bigger than the third one
+	float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
+
 
 	// Lighting Calculation
 	//--------------------------
@@ -64,12 +80,18 @@ void main() {
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
 	vec3 specular = light.specular * spec * texture(material.specular, TexCoords).rgb;
 
+	// --Spotlight (soft edges)--
+	// we'll leave ambient unaffected so we always have a little light.
+	diffuse  *= intensity;
+	specular *= intensity;
+
 	// --Attenuation--
-	ambient  *= attenuation;
+	//ambient  *= attenuation;   // remove attenuation from ambient, as otherwise at large distances the light would be darker inside than outside the spotlight due the ambient term in the else branch
 	diffuse  *= attenuation;
 	specular *= attenuation;
 
 	// --Result--
 	vec3 result = ambient + diffuse + specular;
 	FragColor = vec4(result, 1.0);
+
 }

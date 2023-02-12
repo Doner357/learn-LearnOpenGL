@@ -33,7 +33,7 @@ float deltaTime = 0.0f;   // Time between current frame and last frame
 float lastFrame = 0.0f;   // Time of last frame
 
 // The position of point light
-glm::vec3 lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
+//glm::vec3 lightPos = glm::vec3(1.2f, 1.0f, 2.0f);   // This time won't be used
 
 
 
@@ -328,13 +328,20 @@ int main(void) {
 
 		
 		// Set light properties
-		lightingShader.setVec3("light.position", lightPos);              // light's position
-		lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);       // light's ambient color/intensity
-		lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);       // light's diffuse color/intensity
-		lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);      // light's specular color/intensity
-		lightingShader.setFloat("light.constant", 1.0f);                 // constant value for attenuation
-		lightingShader.setFloat("light.linear", 0.09f);                  // linear value for attenuation
-		lightingShader.setFloat("light.quadratic", 0.032f);              // quadratic value for attenuation
+		lightingShader.setVec3("light.position", camera.Position);                   // light's position
+		lightingShader.setVec3("light.direction", camera.SightFront);                // light's driection
+		lightingShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));      // light's cut off
+		lightingShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5)));  // light's outer cut off
+		// we configure the diffuse intensity slightly higher; the right lighting
+		// conditions differ with each lighting method and environment.
+		// each environment and lighting type requires some tweaking to get the 
+		// best out of your environment.
+		lightingShader.setVec3("light.ambient", 0.1f, 0.1f, 0.1f);                // light's ambient color/intensity
+		lightingShader.setVec3("light.diffuse", 0.8f, 0.8f, 0.8f);                // light's diffuse color/intensity
+		lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);               // light's specular color/intensity
+		lightingShader.setFloat("light.constant", 1.0f);                          // constant value for attenuation
+		lightingShader.setFloat("light.linear", 0.09f);                           // linear value for attenuation
+		lightingShader.setFloat("light.quadratic", 0.032f);                       // quadratic value for attenuation
 
 
 		glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(model)));   // Calculate normal matrix in CPU
@@ -367,9 +374,9 @@ int main(void) {
 		}
 
 
-		// Render lamp cube
+		// Render lamp cube      // Not for this time
 		//-------------------------
-		
+		/*
 		// Activate the shader
 		lightCubeShader.use();
 
@@ -387,8 +394,7 @@ int main(void) {
 		// Render the cube
 		glBindVertexArray(lightCubeVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-		
-		
+		*/
 
 
 		// glfw: Swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
