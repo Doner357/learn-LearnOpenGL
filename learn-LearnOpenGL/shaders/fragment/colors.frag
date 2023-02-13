@@ -69,29 +69,36 @@ void main() {
 	// Lighting Calculation
 	//--------------------------
 
-	// --Ambient--
-	vec3 ambient = light.ambient * texture(material.diffuse, TexCoords).rgb;
+	if(theta < light.cutOff) {
+		// --Ambient--
+		vec3 ambient = light.ambient * texture(material.diffuse, TexCoords).rgb;
 
-	// --Diffuse--
-	float diff = max(dot(norm, lightDir), 0.0);
-	vec3 diffuse = light.diffuse * diff * texture(material.diffuse, TexCoords).rgb;
+		// --Diffuse--
+		float diff = max(dot(norm, lightDir), 0.0);
+		vec3 diffuse = light.diffuse * diff * texture(material.diffuse, TexCoords).rgb;
 
-	// --Specular--
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-	vec3 specular = light.specular * spec * texture(material.specular, TexCoords).rgb;
+		// --Specular--
+		float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+		vec3 specular = light.specular * spec * texture(material.specular, TexCoords).rgb;
 
-	// --Spotlight (soft edges)--
-	// we'll leave ambient unaffected so we always have a little light.
-	diffuse  *= intensity;
-	specular *= intensity;
+		// --Spotlight (soft edges)--
+		// we'll leave ambient unaffected so we always have a little light.
+		diffuse  *= intensity;
+		specular *= intensity;
 
-	// --Attenuation--
-	//ambient  *= attenuation;   // remove attenuation from ambient, as otherwise at large distances the light would be darker inside than outside the spotlight due the ambient term in the else branch
-	diffuse  *= attenuation;
-	specular *= attenuation;
+		// --Attenuation--
+		//ambient  *= attenuation;   // remove attenuation from ambient, as otherwise at large distances the light would be darker inside than outside the spotlight due the ambient term in the else branch
+		diffuse  *= attenuation;
+		specular *= attenuation;
 
-	// --Result--
-	vec3 result = ambient + diffuse + specular;
-	FragColor = vec4(result, 1.0);
+		// --Result--
+		vec3 result = ambient + diffuse + specular;
+		FragColor = vec4(result, 1.0);
+	}
+	else {
+		FragColor = vec4(light.ambient * texture(material.diffuse, TexCoords).rgb, 1.0);
+	}
+
+
 
 }

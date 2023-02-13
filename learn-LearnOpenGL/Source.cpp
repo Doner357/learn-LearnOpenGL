@@ -1,3 +1,8 @@
+/********************************************************************************************************/
+/* EXERCISES-1:                                                                                         */
+/* --Try experimenting with all the different light types and their fragment shaders. Try inverting     */
+/*   some vectors and/or use < instead of >. Try to explain the different visual outcomes.              */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
