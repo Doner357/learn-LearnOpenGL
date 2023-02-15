@@ -47,6 +47,9 @@
     <ClInclude Include="learnopengl\shader_m.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="learnopengl\mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\fragment\colors.frag">
