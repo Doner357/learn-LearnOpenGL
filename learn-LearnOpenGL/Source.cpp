@@ -33,6 +33,19 @@ bool firstMouse = true;
 float deltaTime = 0.0f;   // Time between current frame and last frame
 float lastFrame = 0.0f;   // Time of last frame
 
+// Point lights' positions
+glm::vec3 pointLightPos[] = {
+	glm::vec3(1.0f, 2.0f, 3.0f),
+	glm::vec3(-2.0f, -3.0f, -3.0f),
+	glm::vec3(3.0f, 3.0f, -2.0f)
+};
+
+// Point lights' colors
+glm::vec3 pointLightColor[] = {
+	glm::vec3(1.0f, 0.0f, 0.0f),
+	glm::vec3(0.0f, 1.0f, 0.0f),
+	glm::vec3(0.0f, 0.0f, 1.0f)
+};
 
 
 int main(void) {
@@ -120,6 +133,7 @@ int main(void) {
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
 	Shader modelShader("shaders/vertex/model.vert", "shaders/fragment/model.frag");
+	Shader lightCubeShader("shaders/vertex/light_cube.vert", "shaders/fragment/light_cube.frag");
 
 
 
@@ -127,6 +141,110 @@ int main(void) {
 	* Set up vertex data (and buffer(s)) and configure vertex attributes
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
+
+	// Vertex attributes: positions, normal
+	float vertices[] = {
+		// Positions            // Normals             // Texture coords
+		-0.5f, -0.5f, -0.5f,    0.0f,  0.0f, -1.0f,    0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,    0.0f,  0.0f, -1.0f,    1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,    0.0f,  0.0f, -1.0f,    1.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,    0.0f,  0.0f, -1.0f,    1.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,    0.0f,  0.0f, -1.0f,    0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,    0.0f,  0.0f, -1.0f,    0.0f, 0.0f,
+
+		-0.5f, -0.5f,  0.5f,    0.0f,  0.0f, 1.0f,     0.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,    0.0f,  0.0f, 1.0f,     1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,    0.0f,  0.0f, 1.0f,     1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,    0.0f,  0.0f, 1.0f,     1.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,    0.0f,  0.0f, 1.0f,     0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,    0.0f,  0.0f, 1.0f,     0.0f, 0.0f,
+
+		-0.5f,  0.5f,  0.5f,   -1.0f,  0.0f,  0.0f,    1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,   -1.0f,  0.0f,  0.0f,    1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,   -1.0f,  0.0f,  0.0f,    0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,   -1.0f,  0.0f,  0.0f,    0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,   -1.0f,  0.0f,  0.0f,    0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,   -1.0f,  0.0f,  0.0f,    1.0f, 0.0f,
+
+		 0.5f,  0.5f,  0.5f,    1.0f,  0.0f,  0.0f,    1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,    1.0f,  0.0f,  0.0f,    1.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,    1.0f,  0.0f,  0.0f,    0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,    1.0f,  0.0f,  0.0f,    0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,    1.0f,  0.0f,  0.0f,    0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,    1.0f,  0.0f,  0.0f,    1.0f, 0.0f,
+
+		-0.5f, -0.5f, -0.5f,    0.0f, -1.0f,  0.0f,    0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,    0.0f, -1.0f,  0.0f,    1.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,    0.0f, -1.0f,  0.0f,    1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,    0.0f, -1.0f,  0.0f,    1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,    0.0f, -1.0f,  0.0f,    0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,    0.0f, -1.0f,  0.0f,    0.0f, 1.0f,
+
+		-0.5f,  0.5f, -0.5f,    0.0f,  1.0f,  0.0f,    0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,    0.0f,  1.0f,  0.0f,    1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,    0.0f,  1.0f,  0.0f,    1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,    0.0f,  1.0f,  0.0f,    1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,    0.0f,  1.0f,  0.0f,    0.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,    0.0f,  1.0f,  0.0f,    0.0f, 1.0f
+	};
+
+	// Ten different container's positions
+	glm::vec3 cubePositions[] = {
+	glm::vec3(0.0f,  0.0f,  0.0f),
+	glm::vec3(2.0f,  5.0f, -15.0f),
+	glm::vec3(-1.5f, -2.2f, -2.5f),
+	glm::vec3(-3.8f, -2.0f, -12.3f),
+	glm::vec3(2.4f, -0.4f, -3.5f),
+	glm::vec3(-1.7f,  3.0f, -7.5f),
+	glm::vec3(1.3f, -2.0f, -2.5f),
+	glm::vec3(1.5f,  2.0f, -2.5f),
+	glm::vec3(1.5f,  0.2f, -1.5f),
+	glm::vec3(-1.3f,  1.0f, -1.5f)
+	};
+
+	// Create vertex objects
+	unsigned int VBO, cubeVAO;
+	glGenVertexArrays(1, &cubeVAO);
+	glGenBuffers(1, &VBO);
+
+	// Bind VAO and VBO
+	glBindVertexArray(cubeVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	// Copy data to memory
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	// Set up attributes pointer
+	// --positions--
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
+	glEnableVertexAttribArray(0);
+	// --normal--
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	// --texture coordinats
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+	// Unbind VBO
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	// Unbind cubeVAO
+	glBindVertexArray(0);
+
+
+	// Create lighting cube VAO
+	unsigned int lightCubeVAO;
+	glGenVertexArrays(1, &lightCubeVAO);
+	// Bind lightVAO
+	glBindVertexArray(lightCubeVAO);
+	// We only need to bind to the VBO, the container's VBO's data already contains the data
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	// Set up attributes pointer
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
+	glEnableVertexAttribArray(0);
+	//Unbind VBO
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//Unbind VAO
+	glBindVertexArray(0);
+
+
+
 
 
 
@@ -184,7 +302,7 @@ int main(void) {
 		// Render command
 		//--------------------------------------------------
 		// Clear Buffer
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
@@ -206,21 +324,99 @@ int main(void) {
 		modelShader.use();
 
 
+		// Light setting
+		//------------------
+		modelShader.setVec3("ViewPos", camera.Position);
+
+		modelShader.setVec3("dirLight.direction", 1.0f, -1.0f, -1.0f);
+		modelShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+		modelShader.setVec3("dirLight.diffuse", 0.5f, 0.5f, 0.5f);
+		modelShader.setVec3("dirLight.specular", 0.8f, 0.8f, 0.8f);
+
+		modelShader.setVec3("pointLight[0].position", pointLightPos[0]);
+		modelShader.setVec3("pointLight[0].ambient", pointLightColor[0] * glm::vec3(0.05f));
+		modelShader.setVec3("pointLight[0].diffuse", pointLightColor[0] * glm::vec3(0.5f));
+		modelShader.setVec3("pointLight[0].specular", pointLightColor[0] * glm::vec3(0.8f));
+		modelShader.setFloat("pointLight[0].constant", 1.0f);
+		modelShader.setFloat("pointLight[0].linear", 0.09f);
+		modelShader.setFloat("pointLight[0].quadratic", 0.035f);
+
+		modelShader.setVec3("pointLight[1].position", pointLightPos[1]);
+		modelShader.setVec3("pointLight[1].ambient", pointLightColor[1] * glm::vec3(0.05f));
+		modelShader.setVec3("pointLight[1].diffuse", pointLightColor[1] * glm::vec3(0.5f));
+		modelShader.setVec3("pointLight[1].specular", pointLightColor[1] * glm::vec3(0.8f));
+		modelShader.setFloat("pointLight[1].constant", 1.0f);
+		modelShader.setFloat("pointLight[1].linear", 0.09f);
+		modelShader.setFloat("pointLight[1].quadratic", 0.035f);
+
+		modelShader.setVec3("pointLight[2].position", pointLightPos[2]);
+		modelShader.setVec3("pointLight[2].ambient", pointLightColor[2] * glm::vec3(0.05f));
+		modelShader.setVec3("pointLight[2].diffuse", pointLightColor[2] * glm::vec3(0.5f));
+		modelShader.setVec3("pointLight[2].specular", pointLightColor[2] * glm::vec3(0.8f));
+		modelShader.setFloat("pointLight[2].constant", 1.0f);
+		modelShader.setFloat("pointLight[2].linear", 0.09f);
+		modelShader.setFloat("pointLight[2].quadratic", 0.035f);
+
+		modelShader.setVec3("spotLight.direction", camera.SightFront);
+		modelShader.setVec3("spotLight.position", camera.Position);
+		modelShader.setVec3("spotLight.ambient", 0.05f, 0.05f, 0.05f);
+		modelShader.setVec3("spotLight.diffuse", 0.8f, 0.8f, 0.8f);
+		modelShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+		modelShader.setFloat("spotLight.constant", 1.0f);
+		modelShader.setFloat("spotLight.linear", 0.045f);
+		modelShader.setFloat("spotLight.quadratic", 0.0075f);
+		modelShader.setFloat("spotLight.innerCutOff", glm::cos(glm::radians(12.5f)));
+		modelShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+
+
+
 		// Transformation matrix setting
 		//------------------
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(1.0f));
 
+		// Calculate normal matrix
+		glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(model)));
+
 		// Send to the uniform
 		modelShader.setMat4("model", model);
 		modelShader.setMat4("view", view);
 		modelShader.setMat4("projection", projection);
+		modelShader.setMat3("normalMat", normalMat);
 		
 
 		// Render the model
 		//------------------
 		ourModel.Draw(modelShader);
+
+
+		// Render lamp cube
+		//-------------------------
+		// Activate the shader
+		lightCubeShader.use();
+
+
+		glBindVertexArray(lightCubeVAO);
+		for (int i = 0; i < sizeof(pointLightPos) / sizeof(pointLightPos[0]); i++) {
+
+			// Light setting
+			lightCubeShader.setVec3("lightColor", pointLightColor[i]);
+
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, pointLightPos[i]);
+			model = glm::scale(model, glm::vec3(0.2f));            // A smaller cube
+
+			// Send translation matrices to uniforms
+			lightCubeShader.setMat4("model", model);
+			lightCubeShader.setMat4("view", view);
+			lightCubeShader.setMat4("projection", projection);
+
+			// Render the cube
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+
+
 
 
 		// glfw: Swap buffers and poll IO events (keys pressed/released, mouse moved etc.)

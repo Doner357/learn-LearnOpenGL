@@ -36,11 +36,13 @@ public:
 	std::vector<Vertex>       vertices;
 	std::vector<unsigned int> indices;
 	std::vector<Texture>      textures;
+	float shininess;
 
-	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures) {
+	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures, float shininess) {
 		this->vertices = vertices;
 		this->indices  = indices;
 		this->textures = textures;
+		this->shininess = shininess;
 
 		setupMesh();
 	}
@@ -69,6 +71,8 @@ public:
 			glBindTexture(GL_TEXTURE_2D, textures[i].id);
 		}
 		glActiveTexture(GL_TEXTURE0);
+
+		shader.setFloat("material.shininess", this->shininess);
 
 		//Draw mesh
 		glBindVertexArray(VAO);
