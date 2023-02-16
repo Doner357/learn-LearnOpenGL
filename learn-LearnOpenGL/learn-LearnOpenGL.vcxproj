@@ -145,6 +145,7 @@
     <ClInclude Include="learnopengl\camera.h" />
     <ClInclude Include="learnopengl\camera_plus.h" />
     <ClInclude Include="learnopengl\mesh.h" />
+    <ClInclude Include="learnopengl\model.h" />
     <ClInclude Include="learnopengl\shader_m.h" />
   </ItemGroup>
   <ItemGroup>
@@ -153,8 +154,10 @@
   <ItemGroup>
     <None Include="shaders\fragment\light_cube.frag" />
     <None Include="shaders\fragment\colors.frag" />
+    <None Include="shaders\fragment\model.frag" />
     <None Include="shaders\vertex\colors.vert" />
     <None Include="shaders\vertex\light_cube.vert" />
+    <None Include="shaders\vertex\model.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\container2.png" />
