@@ -34,6 +34,10 @@ float deltaTime = 0.0f;   // Time between current frame and last frame
 float lastFrame = 0.0f;   // Time of last frame
 
 
+// Linear depth setting
+bool linear = true;
+
+
 
 int main(void) {
 
@@ -109,7 +113,9 @@ int main(void) {
 	*/
 
 	// Configure depth test function
+	/*
 	glDepthFunc(GL_ALWAYS);
+	*/
 
 
 
@@ -250,7 +256,6 @@ int main(void) {
 	shader.setInt("texture1", 0);
 
 
-
 	/*
 	 * Render type setting
 	 * --------------------------------------------------------------------------------------------------------------------
@@ -300,6 +305,10 @@ int main(void) {
 		// Render scene
 		//-------------------------
 		shader.use();
+
+
+		// Linear depth setting
+		shader.setBool("linear", linear);
 
 		// Since view and projection usually don't change, we send they to the uniform first
 		shader.setMat4("view", view);
@@ -393,10 +402,14 @@ void processInput(GLFWwindow *window) {
 		camera.ProcessKeyboard(CAMERA_UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-		glDepthFunc(GL_LESS);
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-		glDepthFunc(GL_ALWAYS);
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+		linear = false;
+		std::cout << "Linear depth: false" << std::endl;
+	}
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+		linear = true;
+		std::cout << "Linear depth: true" << std::endl;
+	}
 }
 
 // glfw: whenever the mouse moves, this callback is called
