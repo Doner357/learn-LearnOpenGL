@@ -152,6 +152,8 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\fragment\pure_texCube.frag" />
+    <None Include="shaders\vertex\pure_texCube.vert" />
     <None Include="shaders\fragment\light_cube.frag" />
     <None Include="shaders\fragment\colors.frag" />
     <None Include="shaders\fragment\model.frag" />
@@ -160,8 +162,8 @@
     <None Include="shaders\vertex\model.vert" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="textures\container2.png" />
-    <Image Include="textures\container2_specular.png" />
+    <Image Include="textures\marble.jpg" />
+    <Image Include="textures\metal.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

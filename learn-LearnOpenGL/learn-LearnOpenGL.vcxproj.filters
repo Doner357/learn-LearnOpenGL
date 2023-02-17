@@ -50,6 +50,9 @@
     <ClInclude Include="learnopengl\mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="learnopengl\model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\fragment\colors.frag">
@@ -64,6 +67,18 @@
     <None Include="shaders\fragment\light_cube.frag">
       <Filter>Resource Files\shaders\fragment</Filter>
     </None>
+    <None Include="shaders\fragment\model.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\vertex\model.vert">
+      <Filter>Resource Files\shaders\vertex</Filter>
+    </None>
+    <None Include="shaders\fragment\pure_texCube.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\vertex\pure_texCube.vert">
+      <Filter>Resource Files\shaders\vertex</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">
@@ -71,10 +86,10 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="textures\container2.png">
+    <Image Include="textures\marble.jpg">
       <Filter>Resource Files\textures</Filter>
     </Image>
-    <Image Include="textures\container2_specular.png">
+    <Image Include="textures\metal.png">
       <Filter>Resource Files\textures</Filter>
     </Image>
   </ItemGroup>
