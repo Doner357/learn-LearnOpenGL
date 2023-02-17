@@ -50,6 +50,9 @@
     <ClInclude Include="learnopengl\mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="learnopengl\model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\fragment\colors.frag">
@@ -63,6 +66,12 @@
     </None>
     <None Include="shaders\fragment\light_cube.frag">
       <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\fragment\model.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\vertex\model.vert">
+      <Filter>Resource Files\shaders\vertex</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
