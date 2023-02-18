@@ -100,6 +100,9 @@ int main(void) {
 	* OpenGL: Congifure OpenGL global state
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
+
+	// Depth Testing
+	//----------------------------------------
 	// Enable depth testing
 	glEnable(GL_DEPTH_TEST);
 	
@@ -109,10 +112,14 @@ int main(void) {
 	*/
 
 	// Configure depth test function
-	/*
-	glDepthFunc(GL_ALWAYS);
-	*/
+	glDepthFunc(GL_LESS);
 
+
+	// Stencil Testing
+	//----------------------------------------
+	glEnable(GL_STENCIL_TEST);
+	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+	glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
 
 
 
@@ -134,7 +141,8 @@ int main(void) {
 	* Build and compile shader program
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
-	Shader shader("shaders/vertex/pure_texCube.vert", "shaders/fragment/pure_texCube.frag");
+	Shader normalShader("shaders/vertex/pure_texCube.vert", "shaders/fragment/pure_texCube.frag");
+	Shader pureColorShader("shaders/vertex/pure_color.vert", "shaders/fragment/pure_color.frag");
 
 
 
@@ -249,8 +257,8 @@ int main(void) {
 	 * Uniform value setting
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	shader.use();
-	shader.setInt("texture1", 0);
+	normalShader.use();
+	normalShader.setInt("texture1", 0);
 
 
 
@@ -284,7 +292,7 @@ int main(void) {
 		//--------------------------------------------------
 		// Clear Buffer
 		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 
 		// Create transformations
@@ -297,32 +305,51 @@ int main(void) {
 		// --projection matrix--
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
-		
-
 
 		// Render scene
 		//-------------------------
-		shader.use();
+
+		// Activate normal shader
+		normalShader.use();
 
 		// Since view and projection usually don't change, we send they to the uniform first
-		shader.setMat4("view", view);
-		shader.setMat4("projection", projection);
+		normalShader.setMat4("view", view);
+		normalShader.setMat4("projection", projection);
 
+
+		// Render floor
+		//---------------
+		// Disable writen stencil buffer
+		glStencilMask(0x00);
+		// Bind texture
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, floorTexture);
+		// Transformation
+		normalShader.setMat4("model", glm::mat4(1.0f));
+
+		// Render
+		glBindVertexArray(planeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+		// Render cubes
+		//---------------
+		// The cubes will write the stencil buffer by value 1
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		// Enable stencil buffer writen
+		glStencilMask(0xFF);
 		
 		// Texture setting
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, cubeTexture);
 
-
-		// Render cubes
-		//---------------
 		glBindVertexArray(cubeVAO);
 		// --cube 1--
 		// Transformation setting
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(-1.0f, 0.001f, -1.0f));
 		// Send to uniform
-		shader.setMat4("model", model);
+		normalShader.setMat4("model", model);
 		// Render the cube
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
@@ -330,22 +357,60 @@ int main(void) {
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(2.0f, 0.001f, 0.0f));
 		// Send to uniform
-		shader.setMat4("model", model);
+		normalShader.setMat4("model", model);
 		// Render the cube
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
-		// Render floor
+		// Render cubes outline
+		//------------------
+		pureColorShader.use();
+
+
+		// Send trasformations which usually won't be change
+		pureColorShader.setMat4("view", view);
+		pureColorShader.setMat4("projection", projection);
+
+
+		// The fragment pass the stencil test when the stencil value is not equal to 1
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+		// Disable stencil buffer writen
+		glStencilMask(0x00);
+		// Disable depth test
+		glDisable(GL_DEPTH_TEST);
+
+
+		// Draw two cubes
 		//---------------
-		glBindVertexArray(planeVAO);
-		
-		// Bind texture
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, floorTexture);
-		shader.setMat4("model", glm::mat4(1.0f));
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glBindVertexArray(cubeVAO);
+		// --cube 1--
+		// Transformation setting
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.0f, 0.001f, -1.0f));
+		model = glm::scale(model, glm::vec3(1.05f));  // a little bigger cube
+		// Send to uniform
+		pureColorShader.setMat4("model", model);
+		// Render the cube
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// --cube 2--
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(2.0f, 0.001f, 0.0f));
+		model = glm::scale(model, glm::vec3(1.05f));  // a little bigger cube
+		// Send to uniform
+		pureColorShader.setMat4("model", model);
+		// Render the cube
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
+		// Set testing back
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glEnable(GL_DEPTH_TEST);
+
+
+
+		//---------------
 		// Unbind VAO
 		glBindVertexArray(0);
 
@@ -360,7 +425,8 @@ int main(void) {
 	// --------------------------------------------------------------------------------------------------------------------
 	glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteVertexArrays(1, &planeVAO);
-	shader.clear();
+	normalShader.clear();
+	pureColorShader.clear();
 
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.

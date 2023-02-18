@@ -79,6 +79,12 @@
     <None Include="shaders\vertex\pure_texCube.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
     </None>
+    <None Include="shaders\fragment\pure_color.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\vertex\pure_color.vert">
+      <Filter>Resource Files\shaders\vertex</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">
