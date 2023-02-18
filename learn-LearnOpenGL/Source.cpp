@@ -320,7 +320,7 @@ int main(void) {
 		// --cube 1--
 		// Transformation setting
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.0f, 0.0001f, -1.0f));
+		model = glm::translate(model, glm::vec3(-1.0f, 0.001f, -1.0f));
 		// Send to uniform
 		shader.setMat4("model", model);
 		// Render the cube
@@ -328,7 +328,7 @@ int main(void) {
 
 		// --cube 2--
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(2.0f, 0.0001f, 0.0f));
+		model = glm::translate(model, glm::vec3(2.0f, 0.001f, 0.0f));
 		// Send to uniform
 		shader.setMat4("model", model);
 		// Render the cube
@@ -396,10 +396,6 @@ void processInput(GLFWwindow *window) {
 		camera.ProcessKeyboard(CAMERA_UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-		glDepthFunc(GL_LESS);
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-		glDepthFunc(GL_ALWAYS);
 }
 
 // glfw: whenever the mouse moves, this callback is called
