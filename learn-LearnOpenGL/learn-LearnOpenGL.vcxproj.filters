@@ -73,10 +73,10 @@
     <None Include="shaders\vertex\model.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
     </None>
-    <None Include="shaders\fragment\pure_texCube.frag">
+    <None Include="shaders\fragment\pure_tex.frag">
       <Filter>Resource Files\shaders\fragment</Filter>
     </None>
-    <None Include="shaders\vertex\pure_texCube.vert">
+    <None Include="shaders\vertex\pure_tex.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
     </None>
   </ItemGroup>

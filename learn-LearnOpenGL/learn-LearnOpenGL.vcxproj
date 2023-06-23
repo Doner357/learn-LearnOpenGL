@@ -152,8 +152,8 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\fragment\pure_texCube.frag" />
-    <None Include="shaders\vertex\pure_texCube.vert" />
+    <None Include="shaders\fragment\pure_tex.frag" />
+    <None Include="shaders\vertex\pure_tex.vert" />
     <None Include="shaders\fragment\light_cube.frag" />
     <None Include="shaders\fragment\colors.frag" />
     <None Include="shaders\fragment\model.frag" />
