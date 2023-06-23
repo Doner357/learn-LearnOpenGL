@@ -468,9 +468,9 @@ void processInput(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-		glDepthFunc(GL_LESS);
+		glEnable(GL_BLEND);
 	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-		glDepthFunc(GL_ALWAYS);
+		glDisable(GL_BLEND);
 }
 
 // glfw: whenever the mouse moves, this callback is called
