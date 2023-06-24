@@ -160,6 +160,7 @@ int main(void) {
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
 	Shader shader("shaders/vertex/pure_tex.vert", "shaders/fragment/pure_tex.frag");
+	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
 
 
 
@@ -224,23 +225,16 @@ int main(void) {
 		-5.0f, -0.5f,  5.0f,  0.0f, 2.0f,
 		 5.0f, -0.5f,  5.0f,  2.0f, 2.0f
 	};
-	float transparentVertices[] = {
-		// postions			  // texture Coords
-		 0.0f,  0.5f,  0.0f,  0.0f,  1.0f,
-		 0.0f, -0.5f,  0.0f,  0.0f,  0.0f,
-		 1.0f, -0.5f,  0.0f,  1.0f,  0.0f,
+	// Quad vertex data
+	float quadVertices[] = {
+		// postions	   // texture Coords
+		 1.0f,  1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f,  0.0f,  1.0f,
+		-1.0f, -1.0f,  0.0f,  0.0f,
 
-		 0.0f,  0.5f,  0.0f,  0.0f,  1.0f,
-		 1.0f, -0.5f,  0.0f,  1.0f,  0.0f,
-		 1.0f,  0.5f,  0.0f,  1.0f,  1.0f
-	};
-	// grass positions
-	std::vector<glm::vec3> vegetation {
-		glm::vec3(-1.5f, 0.0f, -0.48f),
-		glm::vec3(1.5f, 0.0f, 0.51f),
-		glm::vec3(0.0f, 0.0f, 0.7f),
-		glm::vec3(-0.3f, 0.0f, -2.3f),
-		glm::vec3(0.5f, 0.0f, -0.6f)
+		 1.0f, -1.0f,  1.0f,  0.0f,
+		 1.0f,  1.0f,  1.0f,  1.0f,
+		-1.0f, -1.0f,  0.0f,  0.0f
 	};
 
 	// cube VAO
@@ -268,22 +262,24 @@ int main(void) {
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
 	glBindVertexArray(0);
 	// grass VAO
-	unsigned int transparentVAO, transparentVBO;
-	glGenVertexArrays(1, &transparentVAO);
-	glGenBuffers(1, &transparentVBO);
-	glBindVertexArray(transparentVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, transparentVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), &transparentVertices, GL_STATIC_DRAW);
+	unsigned int quadVAO, quadVBO;
+	glGenVertexArrays(1, &quadVAO);
+	glGenBuffers(1, &quadVBO);
+	glBindVertexArray(quadVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
 	glBindVertexArray(0);
 
 
 	glDeleteBuffers(1, &cubeVBO);
 	glDeleteBuffers(1, &planeVBO);
-	glDeleteBuffers(1, &transparentVBO);
+	glDeleteBuffers(1, &quadVBO);
+
+
 
 	/*
 	 * Texture loading
@@ -292,9 +288,8 @@ int main(void) {
 
 	/* Tell stb_image.h to flip loaded texture's on the y-axis. */
 	stbi_set_flip_vertically_on_load(true);
-	unsigned int cubeTexture = loadTexture("textures/marble.jpg");
+	unsigned int cubeTexture = loadTexture("textures/container.jpg");
 	unsigned int floorTexture = loadTexture("textures/metal.png");
-	unsigned int transparentTexture = loadTexture("textures/grass.png");
 
 
 
@@ -312,6 +307,12 @@ int main(void) {
 	shader.use();
 	shader.setInt("texture1", 0);
 
+	screenShader.use();
+	shader.setInt("screenTexture", 0);
+
+
+	glUseProgram(0);
+
 
 
 	/*
@@ -321,6 +322,55 @@ int main(void) {
 
 	 /*Enable this if you wnat to draw triangle in wireframe mode*/
 	 //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+
+
+	/*
+	* Frambuffers creating
+	* --------------------------------------------------------------------------------------------------------------------
+	*/
+	unsigned int framebuffer;
+	// Generate a framebuffer and get its ID
+	glGenFramebuffers(1, &framebuffer);
+	// Bind framebuffers
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+
+	// Attach texture to framebuffer
+	// Create a texture to store the scene's image
+	unsigned int textureColorbuffer;
+	glGenTextures(1, &textureColorbuffer);
+	glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// Attach the texture to currently bound framebuffer object
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+
+
+	// Attach Render Buffer (RBO) to framebuffer
+	unsigned int RBO;
+	// Generate renderbuffer and get its ID
+	glGenRenderbuffers(1, &RBO);
+	// Bind render buffer
+	glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+	// Creating a depth and stencil renderbuffer object
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
+	// Unbind renderbuffer to default
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	// Actually attach the renderbuffer to the framebuffer
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+
+
+	// Check whether the framebuffer is complete
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+
+	// Bind framebuffer to default
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 
 
 
@@ -340,11 +390,20 @@ int main(void) {
 		//--------------------------------------------------
 		processInput(window);
 
+
+		// **FIRST PASS**
+		//----------------------------------------------------------------------
+
+		// Bind framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+		
 		// Render command
 		//--------------------------------------------------
 		// Clear Buffer
 		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		// Enable depth test
+		glEnable(GL_DEPTH_TEST);
 
 
 		// Create transformations
@@ -357,7 +416,6 @@ int main(void) {
 		// --projection matrix--
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
-		
 
 
 		// Render scene
@@ -405,27 +463,35 @@ int main(void) {
 		shader.setMat4("model", glm::mat4(1.0f));
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
+		
+		// Unbind VAO
+		glBindVertexArray(0);
 
-		// Render grass
-		//---------------
-		// Disable face culling when rendering grass
-		glDisable(GL_CULL_FACE);
 
-		// Bind VAO
-		glBindVertexArray(transparentVAO);
+		// **SECOND PASS**
+		//----------------------------------------------------------------------
+		
+		// Bind framebuffer to default
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+		// Clear Buffer
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		// Disable depth testing
+		glDisable(GL_DEPTH_TEST);
+		
+		// Render scene
+		//-------------------------
+		screenShader.use();
+		glBindVertexArray(quadVAO);
+		
 		// Bind texture
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, transparentTexture);
-		for (unsigned int i = 0; i < vegetation.size(); i++) {
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, vegetation[i]);
-			shader.setMat4("model", model);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-		}
+		glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
 
-		// Don't forget to enable face culling after rendering grass
-		glEnable(GL_CULL_FACE);
+		// Draw quad
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
 
 		// Unbind VAO
 		glBindVertexArray(0);
@@ -441,8 +507,9 @@ int main(void) {
 	// --------------------------------------------------------------------------------------------------------------------
 	glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteVertexArrays(1, &planeVAO);
-	glDeleteVertexArrays(1, &transparentVAO);
+	glDeleteVertexArrays(1, &quadVAO);
 	shader.clear();
+	glDeleteFramebuffers(1, &framebuffer);
 
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
@@ -478,10 +545,6 @@ void processInput(GLFWwindow *window) {
 		camera.ProcessKeyboard(CAMERA_UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-		glCullFace(GL_BACK);
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-		glCullFace(GL_FRONT);
 }
 
 // glfw: whenever the mouse moves, this callback is called
