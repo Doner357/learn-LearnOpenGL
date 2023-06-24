@@ -509,6 +509,7 @@ int main(void) {
 	glDeleteVertexArrays(1, &planeVAO);
 	glDeleteVertexArrays(1, &quadVAO);
 	shader.clear();
+	screenShader.clear();
 	glDeleteFramebuffers(1, &framebuffer);
 
 
