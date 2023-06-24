@@ -152,8 +152,6 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="framebuffer_screen.frag" />
-    <None Include="framebuffer_screen.vert" />
     <None Include="shaders\fragment\framebuffer_screen.frag" />
     <None Include="shaders\fragment\pure_tex.frag" />
     <None Include="shaders\vertex\framebuffer_screen.vert" />
