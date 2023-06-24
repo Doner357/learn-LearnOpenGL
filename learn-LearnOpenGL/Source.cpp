@@ -16,7 +16,7 @@
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
-void processInput(GLFWwindow *window);
+void processInput(GLFWwindow *window, int &shaderInd);
 unsigned int loadTexture(char const *path);
 
 // Screen Width and Height setting
@@ -161,6 +161,8 @@ int main(void) {
 	*/
 	Shader shader("shaders/vertex/pure_tex.vert", "shaders/fragment/pure_tex.frag");
 	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
+	Shader inversionShader("shaders/vertex/inversion.vert", "shaders/fragment/inversion.frag");
+	Shader grayscaleShader("shaders/vertex/grayscale.vert", "shaders/fragment/grayscale.frag");
 
 
 
@@ -308,7 +310,13 @@ int main(void) {
 	shader.setInt("texture1", 0);
 
 	screenShader.use();
-	shader.setInt("screenTexture", 0);
+	screenShader.setInt("screenTexture", 0);
+
+	inversionShader.use();
+	inversionShader.setInt("screenTexture", 0);
+
+	grayscaleShader.use();
+	grayscaleShader.setInt("screenTexture", 0);
 
 
 	glUseProgram(0);
@@ -374,10 +382,12 @@ int main(void) {
 
 
 
-	 /*
-	  * Render loop
-	  * --------------------------------------------------------------------------------------------------------------------
-	  */
+	/*
+	 * Render loop
+	 * --------------------------------------------------------------------------------------------------------------------
+	 */
+	// Shader index
+	int shaderInd = 1;
 
 	while (!glfwWindowShouldClose(window)) {
 
@@ -388,7 +398,7 @@ int main(void) {
 
 		// Input
 		//--------------------------------------------------
-		processInput(window);
+		processInput(window, shaderInd);
 
 
 		// **FIRST PASS**
@@ -483,7 +493,13 @@ int main(void) {
 		
 		// Render scene
 		//-------------------------
-		screenShader.use();
+		if (shaderInd == 1)
+			screenShader.use();
+		else if (shaderInd == 2)
+			inversionShader.use();
+		else if (shaderInd == 3)
+			grayscaleShader.use();
+
 		glBindVertexArray(quadVAO);
 		
 		// Bind texture
@@ -510,6 +526,8 @@ int main(void) {
 	glDeleteVertexArrays(1, &quadVAO);
 	shader.clear();
 	screenShader.clear();
+	inversionShader.clear();
+	grayscaleShader.clear();
 	glDeleteFramebuffers(1, &framebuffer);
 
 
@@ -529,7 +547,7 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // --------------------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window) {
+void processInput(GLFWwindow *window, int &shaderInd) {
 
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)                     // Press the ESC
 		glfwSetWindowShouldClose(window, true);
@@ -546,6 +564,12 @@ void processInput(GLFWwindow *window) {
 		camera.ProcessKeyboard(CAMERA_UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+		shaderInd = 1;
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+		shaderInd = 2;
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+		shaderInd = 3;
 }
 
 // glfw: whenever the mouse moves, this callback is called
