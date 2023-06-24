@@ -155,10 +155,16 @@
     <None Include="shaders\fragment\framebuffer_screen.frag" />
     <None Include="shaders\fragment\grayscale.frag" />
     <None Include="shaders\fragment\inversion.frag" />
+    <None Include="shaders\fragment\kernel_blur.frag" />
+    <None Include="shaders\fragment\kernel_edge_detection.frag" />
+    <None Include="shaders\fragment\kernel_sharpen.frag" />
     <None Include="shaders\fragment\pure_tex.frag" />
     <None Include="shaders\vertex\framebuffer_screen.vert" />
     <None Include="shaders\vertex\grayscale.vert" />
     <None Include="shaders\vertex\inversion.vert" />
+    <None Include="shaders\vertex\kernel_blur.vert" />
+    <None Include="shaders\vertex\kernel_edge_detection.vert" />
+    <None Include="shaders\vertex\kernel_sharpen.vert" />
     <None Include="shaders\vertex\pure_tex.vert" />
     <None Include="shaders\fragment\light_cube.frag" />
     <None Include="shaders\fragment\colors.frag" />

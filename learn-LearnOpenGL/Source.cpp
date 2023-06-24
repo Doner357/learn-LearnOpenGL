@@ -161,8 +161,9 @@ int main(void) {
 	*/
 	Shader shader("shaders/vertex/pure_tex.vert", "shaders/fragment/pure_tex.frag");
 	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
-	Shader inversionShader("shaders/vertex/inversion.vert", "shaders/fragment/inversion.frag");
-	Shader grayscaleShader("shaders/vertex/grayscale.vert", "shaders/fragment/grayscale.frag");
+	Shader kern_sharpenShader("shaders/vertex/kernel_sharpen.vert", "shaders/fragment/kernel_sharpen.frag");
+	Shader kern_blurShader("shaders/vertex/kernel_blur.vert", "shaders/fragment/kernel_blur.frag");
+	Shader kern_edgeDetectionShader("shaders/vertex/kernel_edge_detection.vert", "shaders/fragment/kernel_edge_detection.frag");
 
 
 
@@ -312,11 +313,14 @@ int main(void) {
 	screenShader.use();
 	screenShader.setInt("screenTexture", 0);
 
-	inversionShader.use();
-	inversionShader.setInt("screenTexture", 0);
+	kern_sharpenShader.use();
+	kern_sharpenShader.setInt("screenTexture", 0);
 
-	grayscaleShader.use();
-	grayscaleShader.setInt("screenTexture", 0);
+	kern_blurShader.use();
+	kern_blurShader.setInt("screenTexture", 0);
+
+	kern_edgeDetectionShader.use();
+	kern_edgeDetectionShader.setInt("screenTexture", 0);
 
 
 	glUseProgram(0);
@@ -496,9 +500,11 @@ int main(void) {
 		if (shaderInd == 1)
 			screenShader.use();
 		else if (shaderInd == 2)
-			inversionShader.use();
+			kern_sharpenShader.use();
 		else if (shaderInd == 3)
-			grayscaleShader.use();
+			kern_blurShader.use();
+		else if (shaderInd == 4)
+			kern_edgeDetectionShader.use();
 
 		glBindVertexArray(quadVAO);
 		
@@ -526,8 +532,9 @@ int main(void) {
 	glDeleteVertexArrays(1, &quadVAO);
 	shader.clear();
 	screenShader.clear();
-	inversionShader.clear();
-	grayscaleShader.clear();
+	kern_sharpenShader.clear();
+	kern_blurShader.clear();
+	kern_edgeDetectionShader.clear();
 	glDeleteFramebuffers(1, &framebuffer);
 
 
@@ -570,6 +577,8 @@ void processInput(GLFWwindow *window, int &shaderInd) {
 		shaderInd = 2;
 	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
 		shaderInd = 3;
+	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
+		shaderInd = 4;
 }
 
 // glfw: whenever the mouse moves, this callback is called
