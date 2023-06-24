@@ -1,3 +1,8 @@
+/********************************************************************************************************/
+/* EXERCISES-1:                                                                                         */
+/* --Can you re-define the vertex data by specifying each triangle in clockwise order and then render   */
+/*   the scene with clockwise triangles set as the front faces?                                         */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
@@ -136,9 +141,7 @@ int main(void) {
 	glCullFace(GL_FRONT);
 	*/
 	// Change which winding order is the front face
-	/*
 	glFrontFace(GL_CW);  // The clockwise is the front face
-	*/
 
 
 	/*
@@ -168,60 +171,60 @@ int main(void) {
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
 
-	// Winding order vertex data
+	// Winding order vertex data (clockwise)
 	float cubeVertices[] = {
 		// positions          // texture Coords
 		// Back face
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
 		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-left
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
-		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom-right         
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom-right
 		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
 		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
 		// Front face
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
 		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
-		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
 		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
 		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // top-left
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
 		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
 		// Left face
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
 		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-left
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
 		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
 		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
 		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
 		// Right face
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
-		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right         
 		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
 		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
 		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left     
 		// Bottom face
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
 		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // top-left
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
 		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
 		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
 		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
 		// Top face
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right     
 		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
 		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
 		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // bottom-left
 	};
 	float planeVertices[] = {
 		// positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
-		 5.0f, -0.5f, -5.0f,  2.0f, 0.0f,
 		-5.0f, -0.5f, -5.0f,  0.0f, 0.0f,
+		 5.0f, -0.5f, -5.0f,  2.0f, 0.0f,
 		-5.0f, -0.5f,  5.0f,  0.0f, 2.0f,
 
-		 5.0f, -0.5f, -5.0f,  2.0f, 0.0f,
 		-5.0f, -0.5f,  5.0f,  0.0f, 2.0f,
+		 5.0f, -0.5f, -5.0f,  2.0f, 0.0f,
 		 5.0f, -0.5f,  5.0f,  2.0f, 2.0f
 	};
 	float transparentVertices[] = {
