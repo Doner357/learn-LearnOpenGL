@@ -152,6 +152,10 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\fragment\kernel_self.frag" />
+    <None Include="shaders\vertex\kernel_self.vert" />
+    <None Include="shaders\fragment\kernel_emboss.frag" />
+    <None Include="shaders\vertex\kernel_emboss.vert" />
     <None Include="shaders\fragment\framebuffer_screen.frag" />
     <None Include="shaders\fragment\grayscale.frag" />
     <None Include="shaders\fragment\inversion.frag" />

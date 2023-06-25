@@ -1,3 +1,8 @@
+/********************************************************************************************************/
+/* EXERCISES-2:                                                                                         */
+/* --Play around with the kernel values and create your own interesting post-processing effects. Try    */
+/*	 searching the internet as well for other interesting kernels.                                      */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
@@ -161,9 +166,8 @@ int main(void) {
 	*/
 	Shader shader("shaders/vertex/pure_tex.vert", "shaders/fragment/pure_tex.frag");
 	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
-	Shader kern_sharpenShader("shaders/vertex/kernel_sharpen.vert", "shaders/fragment/kernel_sharpen.frag");
-	Shader kern_blurShader("shaders/vertex/kernel_blur.vert", "shaders/fragment/kernel_blur.frag");
-	Shader kern_edgeDetectionShader("shaders/vertex/kernel_edge_detection.vert", "shaders/fragment/kernel_edge_detection.frag");
+	Shader kern_embossShader("shaders/vertex/kernel_emboss.vert", "shaders/fragment/kernel_emboss.frag");
+	Shader kern_selfShader("shaders/vertex/kernel_self.vert", "shaders/fragment/kernel_self.frag");
 
 
 
@@ -313,14 +317,11 @@ int main(void) {
 	screenShader.use();
 	screenShader.setInt("screenTexture", 0);
 
-	kern_sharpenShader.use();
-	kern_sharpenShader.setInt("screenTexture", 0);
+	kern_embossShader.use();
+	kern_embossShader.setInt("screenTexture", 0);
 
-	kern_blurShader.use();
-	kern_blurShader.setInt("screenTexture", 0);
-
-	kern_edgeDetectionShader.use();
-	kern_edgeDetectionShader.setInt("screenTexture", 0);
+	kern_selfShader.use();
+	kern_selfShader.setInt("screenTexture", 0);
 
 
 	glUseProgram(0);
@@ -500,11 +501,9 @@ int main(void) {
 		if (shaderInd == 1)
 			screenShader.use();
 		else if (shaderInd == 2)
-			kern_sharpenShader.use();
+			kern_embossShader.use();
 		else if (shaderInd == 3)
-			kern_blurShader.use();
-		else if (shaderInd == 4)
-			kern_edgeDetectionShader.use();
+			kern_selfShader.use();
 
 		glBindVertexArray(quadVAO);
 		
@@ -532,9 +531,8 @@ int main(void) {
 	glDeleteVertexArrays(1, &quadVAO);
 	shader.clear();
 	screenShader.clear();
-	kern_sharpenShader.clear();
-	kern_blurShader.clear();
-	kern_edgeDetectionShader.clear();
+	kern_embossShader.clear();
+	kern_selfShader.clear();
 	glDeleteFramebuffers(1, &framebuffer);
 
 
@@ -577,8 +575,6 @@ void processInput(GLFWwindow *window, int &shaderInd) {
 		shaderInd = 2;
 	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
 		shaderInd = 3;
-	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
-		shaderInd = 4;
 }
 
 // glfw: whenever the mouse moves, this callback is called

@@ -97,6 +97,36 @@
     <None Include="shaders\vertex\inversion.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
     </None>
+    <None Include="shaders\fragment\kernel_blur.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\fragment\kernel_edge_detection.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\vertex\kernel_blur.vert">
+      <Filter>Resource Files\shaders\vertex</Filter>
+    </None>
+    <None Include="shaders\vertex\kernel_edge_detection.vert">
+      <Filter>Resource Files\shaders\vertex</Filter>
+    </None>
+    <None Include="shaders\fragment\kernel_sharpen.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\vertex\kernel_sharpen.vert">
+      <Filter>Resource Files\shaders\vertex</Filter>
+    </None>
+    <None Include="shaders\fragment\kernel_emboss.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\vertex\kernel_emboss.vert">
+      <Filter>Resource Files\shaders\vertex</Filter>
+    </None>
+    <None Include="shaders\fragment\kernel_self.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\vertex\kernel_self.vert">
+      <Filter>Resource Files\shaders\vertex</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">
