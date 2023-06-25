@@ -1,3 +1,9 @@
+/********************************************************************************************************/
+/* EXERCISES-1:                                                                                         */
+/* --Can you use framebuffers to create a rear-view mirror? For this you'll have to draw your scene		*/
+/*   twice: one with the camera rotated 180 degrees and the other as normal.Try to create a small quad  */
+/*   at the top of your screen to apply the mirror texture on.                                          */
+/********************************************************************************************************/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
@@ -308,6 +314,7 @@ int main(void) {
 	shader.setInt("texture1", 0);
 
 	screenShader.use();
+	screenShader.setMat4("screen_position", glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(0.2f, 0.2f ,0.2f)), glm::vec3(0.0f, 4.0f, 0.0f)));   // Translate the mirror to the top of the screen
 	screenShader.setInt("screenTexture", 0);
 
 
@@ -391,7 +398,7 @@ int main(void) {
 		processInput(window);
 
 
-		// **FIRST PASS**
+		// **FIRST PASS** (rear-view mirror)
 		//----------------------------------------------------------------------
 
 		// Bind framebuffer
@@ -412,7 +419,8 @@ int main(void) {
 		// Since each cube has its own position, we declare the matrix variable here
 		glm::mat4 model;
 		// --view matrix--
-		glm::mat4 view = camera.GetViewMatrix();
+		//glm::mat4 view = camera.GetViewMatrix();
+		glm::mat4 view = glm::transpose(glm::rotate(glm::transpose(camera.GetViewMatrix()), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)));   // Rotate the camera 180 degrees
 		// --projection matrix--
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
@@ -474,15 +482,66 @@ int main(void) {
 		// Bind framebuffer to default
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+		// Render command
+		//--------------------------------------------------
 		// Clear Buffer
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Disable depth testing
-		glDisable(GL_DEPTH_TEST);
-		
+
+		// Set view matrix back to face front
+		view = camera.GetViewMatrix();
+
+
 		// Render scene
 		//-------------------------
+		shader.use();
+
+		shader.setMat4("view", view);
+		shader.setMat4("projection", projection);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, cubeTexture);
+
+
+		// Render cubes
+		//---------------
+		glBindVertexArray(cubeVAO);
+		// --cube 1--
+		// Transformation setting
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.0f, 0.005f, -1.0f));
+		// Send to uniform
+		shader.setMat4("model", model);
+		// Render the cube
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// --cube 2--
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(2.0f, 0.005f, 0.0f));
+		// Send to uniform
+		shader.setMat4("model", model);
+		// Render the cube
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
+		// Render floor
+		//---------------
+		glBindVertexArray(planeVAO);
+
+		// Bind texture
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, floorTexture);
+		shader.setMat4("model", glm::mat4(1.0f));
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+		
+		// Render mirror
+		//-------------------------
+		// Disable depth test
+		glDisable(GL_DEPTH_TEST);
+
 		screenShader.use();
 		glBindVertexArray(quadVAO);
 		
