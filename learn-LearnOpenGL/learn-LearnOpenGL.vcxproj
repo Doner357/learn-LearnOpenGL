@@ -152,6 +152,8 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\fragment\skybox.frag" />
+    <None Include="shaders\vertex\skybox.vert" />
     <None Include="shaders\fragment\kernel_self.frag" />
     <None Include="shaders\vertex\kernel_self.vert" />
     <None Include="shaders\fragment\kernel_emboss.frag" />

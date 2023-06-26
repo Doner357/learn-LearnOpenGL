@@ -127,6 +127,12 @@
     <None Include="shaders\vertex\kernel_self.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
     </None>
+    <None Include="shaders\vertex\skybox.vert">
+      <Filter>Resource Files\shaders\vertex</Filter>
+    </None>
+    <None Include="shaders\fragment\skybox.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">
