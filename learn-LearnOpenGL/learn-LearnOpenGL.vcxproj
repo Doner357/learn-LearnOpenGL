@@ -152,6 +152,10 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\fragment\refraction.frag" />
+    <None Include="shaders\vertex\refraction.vert" />
+    <None Include="shaders\fragment\reflection.frag" />
+    <None Include="shaders\vertex\reflection.vert" />
     <None Include="shaders\fragment\skybox.frag" />
     <None Include="shaders\vertex\skybox.vert" />
     <None Include="shaders\fragment\kernel_self.frag" />

@@ -133,6 +133,18 @@
     <None Include="shaders\fragment\skybox.frag">
       <Filter>Resource Files\shaders\fragment</Filter>
     </None>
+    <None Include="shaders\fragment\reflection.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\vertex\reflection.vert">
+      <Filter>Resource Files\shaders\vertex</Filter>
+    </None>
+    <None Include="shaders\fragment\refraction.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\vertex\refraction.vert">
+      <Filter>Resource Files\shaders\vertex</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">

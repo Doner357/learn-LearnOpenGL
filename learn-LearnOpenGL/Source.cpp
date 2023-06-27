@@ -160,8 +160,9 @@ int main(void) {
 	* Build and compile shader program
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
-	Shader shader("shaders/vertex/pure_tex.vert", "shaders/fragment/pure_tex.frag");
 	Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
+	Shader reflectShader("shaders/vertex/reflection.vert", "shaders/fragment/reflection.frag");
+	Shader refractShader("shaders/vertex/refraction.vert", "shaders/fragment/refraction.frag");
 	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
 
 
@@ -173,49 +174,49 @@ int main(void) {
 
 	// Winding order vertex data
 	float cubeVertices[] = {
-		// positions          // texture Coords
+		// positions          // normal vector
 		// Back face
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-left
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
-		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom-right         
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+		-0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f, // Bottom-left
+		 0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f, // top-right
+		 0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f, // bottom-right         
+		 0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f, // top-right
+		-0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f, // bottom-left
+		-0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f, // top-left
 		// Front face
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
-		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
-		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
-		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // top-left
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+		-0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f, // bottom-left
+		 0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f, // bottom-right
+		 0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f, // top-right
+		 0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f, // top-right
+		-0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f, // top-left
+		-0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f, // bottom-left
 		// Left face
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
-		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-left
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
+		-0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f, // top-right
+		-0.5f,  0.5f, -0.5f,  -1.0f,  0.0f,  0.0f, // top-left
+		-0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f, // bottom-left
+		-0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f, // bottom-left
+		-0.5f, -0.5f,  0.5f,  -1.0f,  0.0f,  0.0f, // bottom-right
+		-0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f, // top-right
 		// Right face
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
-		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right         
-		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
-		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left     
+		 0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f, // top-left
+		 0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f, // bottom-right
+		 0.5f,  0.5f, -0.5f,   1.0f,  0.0f,  0.0f, // top-right         
+		 0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f, // bottom-right
+		 0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f, // top-left
+		 0.5f, -0.5f,  0.5f,   1.0f,  0.0f,  0.0f, // bottom-left     
 		// Bottom face
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
-		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // top-left
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+		-0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f, // top-right
+		 0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f, // top-left
+		 0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f, // bottom-left
+		 0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f, // bottom-left
+		-0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f, // bottom-right
+		-0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f, // top-right
 		// Top face
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right     
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
-		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // bottom-left
+		-0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f, // top-left
+		 0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f, // bottom-right
+		 0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f, // top-right     
+		 0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f, // bottom-right
+		-0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f, // top-left
+		-0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f  // bottom-left
 	};
 	float skyboxVertices[] = {
 		// positions         
@@ -281,9 +282,9 @@ int main(void) {
 	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3 * sizeof(float)));
 	glBindVertexArray(0);
 
 	// cubemap VAO
@@ -325,15 +326,6 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	/* Tell stb_image.h to flip loaded texture's on the y-axis. */
-	stbi_set_flip_vertically_on_load(true);
-
-
-	unsigned int cubeTexture = loadTexture("textures/container.jpg");
-
-
-	stbi_set_flip_vertically_on_load(false);
-
 
 
 	/*
@@ -358,6 +350,7 @@ int main(void) {
 	 * Model loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
+	Model backpack("models/backpack/backpack.obj");
 
 
 
@@ -365,11 +358,15 @@ int main(void) {
 	 * Uniform value setting
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	shader.use();
-	shader.setInt("texture1", 0);
 
 	skyboxShader.use();
 	skyboxShader.setInt("cubemap", 0);
+
+	reflectShader.use();
+	reflectShader.setInt("cubemap", 0);
+
+	refractShader.use();
+	refractShader.setInt("cubemap", 0);
 
 	screenShader.use();
 	screenShader.setInt("screenTexture", 0);
@@ -485,6 +482,86 @@ int main(void) {
 		// Render scene
 		//-------------------------
 
+		// Render cubes
+		//---------------
+
+		// Activate the reflection shader
+		reflectShader.use();
+
+		// Since view and projection usually don't change, we send they to the uniform first
+		reflectShader.setMat4("view", view);
+		reflectShader.setMat4("projection", projection);
+		reflectShader.setVec3("viewPos", camera.Position);
+		
+		// Texture setting
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+
+		// Transformation setting
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.5f, -2.0f, 0.0f));
+		// Send to uniform
+		reflectShader.setMat4("model", model);
+		// Calculate normal matrix
+		glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(model)));
+		reflectShader.setMat3("normalMat", normalMat);
+		// Render the cube (reflection)
+		glBindVertexArray(cubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// Activate the refraction shader
+		refractShader.use();
+
+		// Since view and projection usually don't change, we send they to the uniform first
+		refractShader.setMat4("view", view);
+		refractShader.setMat4("projection", projection);
+		refractShader.setVec3("viewPos", camera.Position);
+		
+		// Texture setting
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+
+		// Transformation setting
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.5f, 2.0f, 0.0f));
+		// Send to uniform
+		refractShader.setMat4("model", model);
+		// Calculate normal matrix
+		normalMat = glm::mat3(glm::transpose(glm::inverse(model)));
+		refractShader.setMat3("normalMat", normalMat);
+		// Render the cube (reflection)
+		glBindVertexArray(cubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
+		// Render backpack
+		//---------------
+		// Reflection version
+		reflectShader.use();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(1.5f, -2.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+		reflectShader.setMat4("model", model);
+		// Normal matrix
+		normalMat = glm::mat3(glm::transpose(glm::inverse(model)));
+		reflectShader.setMat3("normalMat", normalMat);
+		backpack.Draw(reflectShader);
+
+		// Refraction version
+		refractShader.use();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(1.5f, 2.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+		refractShader.setMat4("model", model);
+		// Normal matrix
+		normalMat = glm::mat3(glm::transpose(glm::inverse(model)));
+		refractShader.setMat3("normalMat", normalMat);
+		backpack.Draw(refractShader);
+		
+		// Unbind VAO
+		glBindVertexArray(0);
+
+
 		// skybox
 		//---------------
 		// Since the default value in depth buffer is 1.0, so the fragment should pass the depth test when the depth of fragment is less or equal to
@@ -509,34 +586,6 @@ int main(void) {
 		// Set the depth function and culling face to default
 		glDepthFunc(GL_LESS);
 		glCullFace(GL_BACK);
-
-
-		// Render cubes
-		//---------------
-
-		// Activate the shader
-		shader.use();
-
-		// Since view and projection usually don't change, we send they to the uniform first
-		shader.setMat4("view", view);
-		shader.setMat4("projection", projection);
-		
-		// Texture setting
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, cubeTexture);
-
-		glBindVertexArray(cubeVAO);
-		// --cube 1--
-		// Transformation setting
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-		// Send to uniform
-		shader.setMat4("model", model);
-		// Render the cube
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		
-		// Unbind VAO
-		glBindVertexArray(0);
 
 
 		// **SECOND PASS**
@@ -580,8 +629,9 @@ int main(void) {
 	glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteVertexArrays(1, &quadVAO);
 	glDeleteVertexArrays(1, &cubemapVAO);
-	shader.clear();
 	skyboxShader.clear();
+	reflectShader.clear();
+	refractShader.clear();
 	screenShader.clear();
 	glDeleteFramebuffers(1, &framebuffer);
 
