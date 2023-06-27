@@ -485,31 +485,6 @@ int main(void) {
 		// Render scene
 		//-------------------------
 
-		// skybox
-		//---------------
-		// Since the default value in depth buffer is 1.0, so the fragment should pass the depth test when the depth of fragment is less or equal to
-		// the value store in the depth buffer. This can avoid the depth fighting.
-		glDepthFunc(GL_LEQUAL);
-		// Cull the front face
-		glCullFace(GL_FRONT);
-
-		// Activate the shader
-		skyboxShader.use();
-
-		// Bind cubemap
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
-
-		// Set up the view and projection matrix, remember to remove the translation part of the view matrix
-		skyboxShader.setMat4("view", glm::mat4(glm::mat3(view)));
-		skyboxShader.setMat4("projection", projection);
-
-		glBindVertexArray(cubemapVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		// Set the depth function and culling face to default
-		glDepthFunc(GL_LESS);
-		glCullFace(GL_BACK);
-
 
 		// Render cubes
 		//---------------
@@ -534,7 +509,34 @@ int main(void) {
 		shader.setMat4("model", model);
 		// Render the cube
 		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
+		// skybox
+		//---------------
+		// Since the default value in depth buffer is 1.0, so the fragment should pass the depth test when the depth of fragment is less or equal to
+		// the value store in the depth buffer. This can avoid the depth fighting.
+		glDepthFunc(GL_LEQUAL);
+		// Cull the front face
+		glCullFace(GL_FRONT);
+
+		// Activate the shader
+		skyboxShader.use();
+
+		// Bind cubemap
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+
+		// Set up the view and projection matrix, remember to remove the translation part of the view matrix
+		skyboxShader.setMat4("view", glm::mat4(glm::mat3(view)));
+		skyboxShader.setMat4("projection", projection);
+
+		glBindVertexArray(cubemapVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		// Set the depth function and culling face to default
+		glDepthFunc(GL_LESS);
+		glCullFace(GL_BACK);
 		
+
 		// Unbind VAO
 		glBindVertexArray(0);
 
