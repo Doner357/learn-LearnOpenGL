@@ -142,6 +142,11 @@ int main(void) {
 	*/
 
 
+	// Enable rendering point size changes via the vertex shader
+	glEnable(GL_PROGRAM_POINT_SIZE);
+
+
+
 	/*
 	* Extra function
 	* --------------------------------------------------------------------------------------------------------------------
@@ -161,9 +166,8 @@ int main(void) {
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
 	Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
-	Shader reflectShader("shaders/vertex/reflection.vert", "shaders/fragment/reflection.frag");
-	Shader refractShader("shaders/vertex/refraction.vert", "shaders/fragment/refraction.frag");
 	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
+	Shader pointShader("shaders/vertex/point_render.vert", "shaders/fragment/point_render.frag");
 
 
 
@@ -220,7 +224,7 @@ int main(void) {
 	};
 	float skyboxVertices[] = {
 		// positions         
-		-1.0f, -1.0f, -1.0f, 
+		-1.0f, -1.0f, -1.0f,
 		-1.0f,  1.0f, -1.0f,
 		 1.0f, -1.0f, -1.0f,
 		 1.0f,  1.0f, -1.0f,
@@ -350,7 +354,6 @@ int main(void) {
 	 * Model loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	Model backpack("models/backpack/backpack.obj");
 
 
 
@@ -361,12 +364,6 @@ int main(void) {
 
 	skyboxShader.use();
 	skyboxShader.setInt("cubemap", 0);
-
-	reflectShader.use();
-	reflectShader.setInt("cubemap", 0);
-
-	refractShader.use();
-	refractShader.setInt("cubemap", 0);
 
 	screenShader.use();
 	screenShader.setInt("screenTexture", 0);
@@ -484,82 +481,17 @@ int main(void) {
 
 		// Render cubes
 		//---------------
+		pointShader.use();
 
-		// Activate the reflection shader
-		reflectShader.use();
-
-		// Since view and projection usually don't change, we send they to the uniform first
-		reflectShader.setMat4("view", view);
-		reflectShader.setMat4("projection", projection);
-		reflectShader.setVec3("viewPos", camera.Position);
-		
-		// Texture setting
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
-
-		// Transformation setting
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.5f, -2.0f, 0.0f));
-		// Send to uniform
-		reflectShader.setMat4("model", model);
-		// Calculate normal matrix
-		glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(model)));
-		reflectShader.setMat3("normalMat", normalMat);
-		// Render the cube (reflection)
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+		pointShader.setMat4("model", model);
+		pointShader.setMat4("view", view);
+		pointShader.setMat4("projection", projection);
+		
 		glBindVertexArray(cubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDrawArrays(GL_POINTS, 0, 36);
 
-		// Activate the refraction shader
-		refractShader.use();
-
-		// Since view and projection usually don't change, we send they to the uniform first
-		refractShader.setMat4("view", view);
-		refractShader.setMat4("projection", projection);
-		refractShader.setVec3("viewPos", camera.Position);
-		
-		// Texture setting
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
-
-		// Transformation setting
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.5f, 2.0f, 0.0f));
-		// Send to uniform
-		refractShader.setMat4("model", model);
-		// Calculate normal matrix
-		normalMat = glm::mat3(glm::transpose(glm::inverse(model)));
-		refractShader.setMat3("normalMat", normalMat);
-		// Render the cube (reflection)
-		glBindVertexArray(cubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-
-		// Render backpack
-		//---------------
-		// Reflection version
-		reflectShader.use();
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(1.5f, -2.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
-		reflectShader.setMat4("model", model);
-		// Normal matrix
-		normalMat = glm::mat3(glm::transpose(glm::inverse(model)));
-		reflectShader.setMat3("normalMat", normalMat);
-		backpack.Draw(reflectShader);
-
-		// Refraction version
-		refractShader.use();
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(1.5f, 2.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
-		refractShader.setMat4("model", model);
-		// Normal matrix
-		normalMat = glm::mat3(glm::transpose(glm::inverse(model)));
-		refractShader.setMat3("normalMat", normalMat);
-		backpack.Draw(refractShader);
-		
-		// Unbind VAO
-		glBindVertexArray(0);
 
 
 		// skybox
@@ -591,14 +523,9 @@ int main(void) {
 		// **SECOND PASS**
 		//----------------------------------------------------------------------
 		
-		// Bind framebuffer to default
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		// Clear Buffer
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
-
-		// Disable depth testing
 		glDisable(GL_DEPTH_TEST);
 		
 		// Render scene
@@ -606,11 +533,8 @@ int main(void) {
 		screenShader.use();
 
 		glBindVertexArray(quadVAO);
-		
-		// Bind texture
 		glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
 
-		// Draw quad
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
@@ -630,9 +554,8 @@ int main(void) {
 	glDeleteVertexArrays(1, &quadVAO);
 	glDeleteVertexArrays(1, &cubemapVAO);
 	skyboxShader.clear();
-	reflectShader.clear();
-	refractShader.clear();
 	screenShader.clear();
+	pointShader.clear();
 	glDeleteFramebuffers(1, &framebuffer);
 
 

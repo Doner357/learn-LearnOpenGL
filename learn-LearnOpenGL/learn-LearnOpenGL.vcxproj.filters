@@ -145,6 +145,12 @@
     <None Include="shaders\vertex\refraction.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
     </None>
+    <None Include="shaders\vertex\point_render.vert">
+      <Filter>Resource Files\shaders\vertex</Filter>
+    </None>
+    <None Include="shaders\fragment\point_render.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">
