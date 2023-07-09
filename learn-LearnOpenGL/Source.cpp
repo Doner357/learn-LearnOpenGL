@@ -131,7 +131,9 @@ int main(void) {
 
 
 	// Enable face culling
+	/*
 	glEnable(GL_CULL_FACE);
+	*/
 	// Change the type of face we want to cull
 	/*
 	glCullFace(GL_FRONT);
@@ -170,7 +172,7 @@ int main(void) {
 	*/
 	Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
 	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
-	Shader fragCoordShader("shaders/vertex/gl_FragCoord.vert", "shaders/fragment/gl_FragCoord.frag");
+	Shader frontFacingShader("shaders/vertex/gl_FrontFacing.vert", "shaders/fragment/gl_FrontFacing.frag");
 
 
 
@@ -181,49 +183,49 @@ int main(void) {
 
 	// Winding order vertex data
 	float cubeVertices[] = {
-		// positions          // normal vector
+		// positions          // texture Coords
 		// Back face
-		-0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f, // Bottom-left
-		 0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f, // top-right
-		 0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f, // bottom-right         
-		 0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f, // top-right
-		-0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f, // bottom-left
-		-0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f, // top-left
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-left
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom-right         
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
 		// Front face
-		-0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f, // bottom-left
-		 0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f, // bottom-right
-		 0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f, // top-right
-		 0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f, // top-right
-		-0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f, // top-left
-		-0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f, // bottom-left
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
+		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // top-left
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
 		// Left face
-		-0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f, // top-right
-		-0.5f,  0.5f, -0.5f,  -1.0f,  0.0f,  0.0f, // top-left
-		-0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f, // bottom-left
-		-0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f, // bottom-left
-		-0.5f, -0.5f,  0.5f,  -1.0f,  0.0f,  0.0f, // bottom-right
-		-0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f, // top-right
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
+		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-left
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
 		// Right face
-		 0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f, // top-left
-		 0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f, // bottom-right
-		 0.5f,  0.5f, -0.5f,   1.0f,  0.0f,  0.0f, // top-right         
-		 0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f, // bottom-right
-		 0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f, // top-left
-		 0.5f, -0.5f,  0.5f,   1.0f,  0.0f,  0.0f, // bottom-left     
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right         
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left     
 		// Bottom face
-		-0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f, // top-right
-		 0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f, // top-left
-		 0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f, // bottom-left
-		 0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f, // bottom-left
-		-0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f, // bottom-right
-		-0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f, // top-right
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // top-left
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
 		// Top face
-		-0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f, // top-left
-		 0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f, // bottom-right
-		 0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f, // top-right     
-		 0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f, // bottom-right
-		-0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f, // top-left
-		-0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f  // bottom-left
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right     
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // bottom-left
 	};
 	float skyboxVertices[] = {
 		// positions         
@@ -289,9 +291,9 @@ int main(void) {
 	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
 	glBindVertexArray(0);
 
 	// cubemap VAO
@@ -357,6 +359,8 @@ int main(void) {
 	 * Model loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
+	unsigned int frontTexture = loadTexture("textures/marble.jpg");
+	unsigned int backTexture = loadTexture("textures/metal.png");
 
 
 
@@ -370,6 +374,10 @@ int main(void) {
 
 	screenShader.use();
 	screenShader.setInt("screenTexture", 0);
+
+	frontFacingShader.use();
+	frontFacingShader.setInt("frontTexture", 0);
+	frontFacingShader.setInt("backTexture", 1);
 
 
 	glUseProgram(0);
@@ -484,13 +492,18 @@ int main(void) {
 
 		// Render cubes
 		//---------------
-		fragCoordShader.use();
+		frontFacingShader.use();
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, frontTexture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, backTexture);
 
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-		fragCoordShader.setMat4("model", model);
-		fragCoordShader.setMat4("view", view);
-		fragCoordShader.setMat4("projection", projection);
+		frontFacingShader.setMat4("model", model);
+		frontFacingShader.setMat4("view", view);
+		frontFacingShader.setMat4("projection", projection);
 		
 		glBindVertexArray(cubeVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -558,7 +571,7 @@ int main(void) {
 	glDeleteVertexArrays(1, &cubemapVAO);
 	skyboxShader.clear();
 	screenShader.clear();
-	fragCoordShader.clear();
+	frontFacingShader.clear();
 	glDeleteFramebuffers(1, &framebuffer);
 
 
