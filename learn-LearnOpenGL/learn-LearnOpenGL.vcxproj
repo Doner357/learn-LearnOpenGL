@@ -152,8 +152,8 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\fragment\point_render.frag" />
-    <None Include="shaders\vertex\point_render.vert" />
+    <None Include="shaders\fragment\gl_FragCoord.frag" />
+    <None Include="shaders\vertex\gl_FragCoord.vert" />
     <None Include="shaders\fragment\refraction.frag" />
     <None Include="shaders\vertex\refraction.vert" />
     <None Include="shaders\fragment\reflection.frag" />

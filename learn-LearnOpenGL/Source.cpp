@@ -143,7 +143,10 @@ int main(void) {
 
 
 	// Enable rendering point size changes via the vertex shader
+	/*
 	glEnable(GL_PROGRAM_POINT_SIZE);
+	*/
+	
 
 
 
@@ -167,7 +170,7 @@ int main(void) {
 	*/
 	Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
 	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
-	Shader pointShader("shaders/vertex/point_render.vert", "shaders/fragment/point_render.frag");
+	Shader fragCoordShader("shaders/vertex/gl_FragCoord.vert", "shaders/fragment/gl_FragCoord.frag");
 
 
 
@@ -481,16 +484,16 @@ int main(void) {
 
 		// Render cubes
 		//---------------
-		pointShader.use();
+		fragCoordShader.use();
 
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-		pointShader.setMat4("model", model);
-		pointShader.setMat4("view", view);
-		pointShader.setMat4("projection", projection);
+		fragCoordShader.setMat4("model", model);
+		fragCoordShader.setMat4("view", view);
+		fragCoordShader.setMat4("projection", projection);
 		
 		glBindVertexArray(cubeVAO);
-		glDrawArrays(GL_POINTS, 0, 36);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
 
@@ -555,7 +558,7 @@ int main(void) {
 	glDeleteVertexArrays(1, &cubemapVAO);
 	skyboxShader.clear();
 	screenShader.clear();
-	pointShader.clear();
+	fragCoordShader.clear();
 	glDeleteFramebuffers(1, &framebuffer);
 
 
