@@ -172,7 +172,11 @@ int main(void) {
 	*/
 	Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
 	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
-	Shader frontFacingShader("shaders/vertex/gl_FrontFacing.vert", "shaders/fragment/gl_FrontFacing.frag");
+	
+	Shader shaderRed("shaders/vertex/UBO.vert", "shaders/fragment/UBO_red.frag");
+	Shader shaderGreen("shaders/vertex/UBO.vert", "shaders/fragment/UBO_green.frag");
+	Shader shaderBlue("shaders/vertex/UBO.vert", "shaders/fragment/UBO_blue.frag");
+	Shader shaderYellow("shaders/vertex/UBO.vert", "shaders/fragment/UBO_yellow.frag");
 
 
 
@@ -292,8 +296,10 @@ int main(void) {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
+	/*
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));	
+	*/
 	glBindVertexArray(0);
 
 	// cubemap VAO
@@ -359,8 +365,6 @@ int main(void) {
 	 * Model loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	unsigned int frontTexture = loadTexture("textures/marble.jpg");
-	unsigned int backTexture = loadTexture("textures/metal.png");
 
 
 
@@ -375,12 +379,36 @@ int main(void) {
 	screenShader.use();
 	screenShader.setInt("screenTexture", 0);
 
-	frontFacingShader.use();
-	frontFacingShader.setInt("frontTexture", 0);
-	frontFacingShader.setInt("backTexture", 1);
-
 
 	glUseProgram(0);
+
+
+
+	/*
+	 * Uniform Block Object setting
+	 * --------------------------------------------------------------------------------------------------------------------
+	 */
+	// Get Uniform Block Index for each shader program
+	unsigned int uniformBlockIndexRed	 = glGetUniformBlockIndex(shaderRed.ID, "Matrices");
+	unsigned int uniformBlockIndexGreen  = glGetUniformBlockIndex(shaderGreen.ID, "Matrices");
+	unsigned int uniformBlockIndexBlue	 = glGetUniformBlockIndex(shaderBlue.ID, "Matrices");
+	unsigned int uniformBlockIndexYellow = glGetUniformBlockIndex(shaderYellow.ID, "Matrices");
+
+	// Set the uniform block of the vertex shaders equal to binding point 0
+	glUniformBlockBinding(shaderRed.ID, uniformBlockIndexRed, 0);
+	glUniformBlockBinding(shaderGreen.ID, uniformBlockIndexGreen, 0);
+	glUniformBlockBinding(shaderBlue.ID, uniformBlockIndexBlue, 0);
+	glUniformBlockBinding(shaderYellow.ID, uniformBlockIndexYellow, 0);
+
+	// Create the actuall uniform buffer object
+	unsigned int uboMatrices;
+	glGenBuffers(1, &uboMatrices);
+
+	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+	glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_DYNAMIC_DRAW);	// I chose to tell OpenGL to allocate the buffer to better memory
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
 
 
 
@@ -486,26 +514,52 @@ int main(void) {
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
 
+		// Fill the uniform buffer
+		//-------------------------
+		// projection: Start at 0 end with 63 ((4 * 16)bytes - 1 = 16)
+		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+		// view: Start at 64 end with 127 (64 + (4 * 16)bytes - 1 = 127)
+		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 
 		// Render scene
 		//-------------------------
 
 		// Render cubes
 		//---------------
-		frontFacingShader.use();
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, frontTexture);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, backTexture);
-
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-		frontFacingShader.setMat4("model", model);
-		frontFacingShader.setMat4("view", view);
-		frontFacingShader.setMat4("projection", projection);
-		
 		glBindVertexArray(cubeVAO);
+
+		// Red Cube
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-0.75f, 0.75f, 0.0f));	// Move to top-left
+		shaderRed.use();
+		shaderRed.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// Green Cube
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.75f, 0.75f, 0.0f));	// Move to top-left
+		shaderGreen.use();
+		shaderGreen.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// Blue Cube
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-0.75f, -0.75f, 0.0f));	// Move to top-left
+		shaderBlue.use();
+		shaderBlue.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// Yellow Cube
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.75f, -0.75f, 0.0f));	// Move to top-left
+		shaderYellow.use();
+		shaderYellow.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
@@ -571,7 +625,10 @@ int main(void) {
 	glDeleteVertexArrays(1, &cubemapVAO);
 	skyboxShader.clear();
 	screenShader.clear();
-	frontFacingShader.clear();
+	shaderRed.clear();
+	shaderGreen.clear();
+	shaderBlue.clear();
+	shaderYellow.clear();
 	glDeleteFramebuffers(1, &framebuffer);
 
 

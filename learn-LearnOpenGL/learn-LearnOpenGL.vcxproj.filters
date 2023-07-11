@@ -145,10 +145,19 @@
     <None Include="shaders\vertex\refraction.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
     </None>
-    <None Include="shaders\vertex\gl_FrontFacing.vert">
+    <None Include="shaders\vertex\UBO.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
     </None>
-    <None Include="shaders\fragment\gl_FrontFacing.frag">
+    <None Include="shaders\fragment\UBO_red.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\fragment\UBO_green.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\fragment\UBO_blue.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\fragment\UBO_yellow.frag">
       <Filter>Resource Files\shaders\fragment</Filter>
     </None>
   </ItemGroup>

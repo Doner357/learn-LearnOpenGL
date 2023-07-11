@@ -152,8 +152,6 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\fragment\gl_FrontFacing.frag" />
-    <None Include="shaders\vertex\gl_FrontFacing.vert" />
     <None Include="shaders\fragment\refraction.frag" />
     <None Include="shaders\vertex\refraction.vert" />
     <None Include="shaders\fragment\reflection.frag" />
@@ -184,6 +182,11 @@
     <None Include="shaders\vertex\colors.vert" />
     <None Include="shaders\vertex\light_cube.vert" />
     <None Include="shaders\vertex\model.vert" />
+    <None Include="shaders\vertex\UBO.vert" />
+    <None Include="shaders\fragment\UBO_blue.frag" />
+    <None Include="shaders\fragment\UBO_green.frag" />
+    <None Include="shaders\fragment\UBO_red.frag" />
+    <None Include="shaders\fragment\UBO_yellow.frag" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\marble.jpg" />
