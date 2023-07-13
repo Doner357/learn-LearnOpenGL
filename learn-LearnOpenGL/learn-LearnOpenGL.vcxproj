@@ -152,6 +152,9 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\fragment\geo_points.frag" />
+    <None Include="shaders\geometry\geo_points.geom" />
+    <None Include="shaders\vertex\geo_points.vert" />
     <None Include="shaders\fragment\refraction.frag" />
     <None Include="shaders\vertex\refraction.vert" />
     <None Include="shaders\fragment\reflection.frag" />
@@ -182,11 +185,6 @@
     <None Include="shaders\vertex\colors.vert" />
     <None Include="shaders\vertex\light_cube.vert" />
     <None Include="shaders\vertex\model.vert" />
-    <None Include="shaders\vertex\UBO.vert" />
-    <None Include="shaders\fragment\UBO_blue.frag" />
-    <None Include="shaders\fragment\UBO_green.frag" />
-    <None Include="shaders\fragment\UBO_red.frag" />
-    <None Include="shaders\fragment\UBO_yellow.frag" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\marble.jpg" />

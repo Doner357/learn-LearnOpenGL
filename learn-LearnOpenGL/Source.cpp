@@ -170,14 +170,11 @@ int main(void) {
 	* Build and compile shader program
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
-	Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
+	//Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
 	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
-	
-	Shader shaderRed("shaders/vertex/UBO.vert", "shaders/fragment/UBO_red.frag");
-	Shader shaderGreen("shaders/vertex/UBO.vert", "shaders/fragment/UBO_green.frag");
-	Shader shaderBlue("shaders/vertex/UBO.vert", "shaders/fragment/UBO_blue.frag");
-	Shader shaderYellow("shaders/vertex/UBO.vert", "shaders/fragment/UBO_yellow.frag");
 
+	Shader geo_pointsShader("shaders/vertex/geo_points.vert", "shaders/fragment/geo_points.frag", "shaders/geometry/geo_points.geom");
+	
 
 
 	/*
@@ -286,6 +283,12 @@ int main(void) {
 		 1.0f,  1.0f,  1.0f,  1.0f,
 		-1.0f, -1.0f,  0.0f,  0.0f
 	};
+	float points[] = {
+		-0.5f,  0.5f, // top-left
+		 0.5f,  0.5f, // top-right
+		 0.5f, -0.5f, // bottom-right
+		-0.5f, -0.5f  // bottom-left
+	};
 
 	// cube VAO
 	unsigned int cubeVAO, cubeVBO;
@@ -296,10 +299,8 @@ int main(void) {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
-	/*
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));	
-	*/
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
 	glBindVertexArray(0);
 
 	// cubemap VAO
@@ -326,13 +327,22 @@ int main(void) {
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
 	glBindVertexArray(0);
 
+	// Points VAO
+	unsigned int pointVAO, pointVBO;
+	glGenVertexArrays(1, &pointVAO);
+	glGenBuffers(1, &pointVBO);
+	glBindVertexArray(pointVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(points), &points, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)0);
+	glBindVertexArray(0);
+
 
 	glDeleteBuffers(1, &cubeVBO);
 	glDeleteBuffers(1, &cubemapVBO);
 	glDeleteBuffers(1, &quadVBO);
-	/*
-	glDeleteBuffers(1, &planeVBO);	
-	*/
+	glDeleteBuffers(1, &pointVBO);
 
 
 
@@ -373,8 +383,11 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
+	/*
 	skyboxShader.use();
-	skyboxShader.setInt("cubemap", 0);
+	skyboxShader.setInt("cubemap", 0);	
+	*/
+
 
 	screenShader.use();
 	screenShader.setInt("screenTexture", 0);
@@ -388,27 +401,6 @@ int main(void) {
 	 * Uniform Block Object setting
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	// Get Uniform Block Index for each shader program
-	unsigned int uniformBlockIndexRed	 = glGetUniformBlockIndex(shaderRed.ID, "Matrices");
-	unsigned int uniformBlockIndexGreen  = glGetUniformBlockIndex(shaderGreen.ID, "Matrices");
-	unsigned int uniformBlockIndexBlue	 = glGetUniformBlockIndex(shaderBlue.ID, "Matrices");
-	unsigned int uniformBlockIndexYellow = glGetUniformBlockIndex(shaderYellow.ID, "Matrices");
-
-	// Set the uniform block of the vertex shaders equal to binding point 0
-	glUniformBlockBinding(shaderRed.ID, uniformBlockIndexRed, 0);
-	glUniformBlockBinding(shaderGreen.ID, uniformBlockIndexGreen, 0);
-	glUniformBlockBinding(shaderBlue.ID, uniformBlockIndexBlue, 0);
-	glUniformBlockBinding(shaderYellow.ID, uniformBlockIndexYellow, 0);
-
-	// Create the actuall uniform buffer object
-	unsigned int uboMatrices;
-	glGenBuffers(1, &uboMatrices);
-
-	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-	glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_DYNAMIC_DRAW);	// I chose to tell OpenGL to allocate the buffer to better memory
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
 
 
 
@@ -514,60 +506,22 @@ int main(void) {
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
 
-		// Fill the uniform buffer
-		//-------------------------
-		// projection: Start at 0 end with 63 ((4 * 16)bytes - 1 = 16)
-		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-		// view: Start at 64 end with 127 (64 + (4 * 16)bytes - 1 = 127)
-		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-
 		// Render scene
 		//-------------------------
 
-		// Render cubes
+		// Render points
 		//---------------
-		glBindVertexArray(cubeVAO);
+		geo_pointsShader.use();
 
-		// Red Cube
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-0.75f, 0.75f, 0.0f));	// Move to top-left
-		shaderRed.use();
-		shaderRed.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// Green Cube
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.75f, 0.75f, 0.0f));	// Move to top-left
-		shaderGreen.use();
-		shaderGreen.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// Blue Cube
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-0.75f, -0.75f, 0.0f));	// Move to top-left
-		shaderBlue.use();
-		shaderBlue.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// Yellow Cube
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.75f, -0.75f, 0.0f));	// Move to top-left
-		shaderYellow.use();
-		shaderYellow.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
+		glBindVertexArray(pointVAO);
+		glDrawArrays(GL_POINTS, 0, 4);
 
 
 		// skybox
 		//---------------
 		// Since the default value in depth buffer is 1.0, so the fragment should pass the depth test when the depth of fragment is less or equal to
 		// the value store in the depth buffer. This can avoid the depth fighting.
+		/*
 		glDepthFunc(GL_LEQUAL);
 		// Cull the front face
 		glCullFace(GL_FRONT);
@@ -587,7 +541,9 @@ int main(void) {
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		// Set the depth function and culling face to default
 		glDepthFunc(GL_LESS);
-		glCullFace(GL_BACK);
+		glCullFace(GL_BACK);		
+		*/
+
 
 
 		// **SECOND PASS**
@@ -623,12 +579,10 @@ int main(void) {
 	glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteVertexArrays(1, &quadVAO);
 	glDeleteVertexArrays(1, &cubemapVAO);
-	skyboxShader.clear();
+	glDeleteVertexArrays(1, &pointVAO);
+	//skyboxShader.clear();
 	screenShader.clear();
-	shaderRed.clear();
-	shaderGreen.clear();
-	shaderBlue.clear();
-	shaderYellow.clear();
+	geo_pointsShader.clear();
 	glDeleteFramebuffers(1, &framebuffer);
 
 

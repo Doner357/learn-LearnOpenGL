@@ -25,6 +25,9 @@
     <Filter Include="Resource Files\textures">
       <UniqueIdentifier>{21cd82aa-8780-461f-904a-cd3e1eacf17e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\shaders\geometry">
+      <UniqueIdentifier>{b9752052-0aa0-4305-ab61-cc040b6d71f6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -145,20 +148,14 @@
     <None Include="shaders\vertex\refraction.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
     </None>
-    <None Include="shaders\vertex\UBO.vert">
+    <None Include="shaders\fragment\geo_points.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\geometry\geo_points.geom">
+      <Filter>Resource Files\shaders\geometry</Filter>
+    </None>
+    <None Include="shaders\vertex\geo_points.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
-    </None>
-    <None Include="shaders\fragment\UBO_red.frag">
-      <Filter>Resource Files\shaders\fragment</Filter>
-    </None>
-    <None Include="shaders\fragment\UBO_green.frag">
-      <Filter>Resource Files\shaders\fragment</Filter>
-    </None>
-    <None Include="shaders\fragment\UBO_blue.frag">
-      <Filter>Resource Files\shaders\fragment</Filter>
-    </None>
-    <None Include="shaders\fragment\UBO_yellow.frag">
-      <Filter>Resource Files\shaders\fragment</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
