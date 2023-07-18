@@ -152,9 +152,9 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\fragment\geo_points.frag" />
-    <None Include="shaders\geometry\geo_points.geom" />
-    <None Include="shaders\vertex\geo_points.vert" />
+    <None Include="shaders\fragment\explode_model.frag" />
+    <None Include="shaders\vertex\explode_model.vert" />
+    <None Include="shaders\geometry\explode_model.geom" />
     <None Include="shaders\fragment\refraction.frag" />
     <None Include="shaders\vertex\refraction.vert" />
     <None Include="shaders\fragment\reflection.frag" />

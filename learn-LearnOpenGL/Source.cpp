@@ -19,6 +19,7 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 unsigned int loadTexture(char const *path);
 unsigned int loadCubemap(std::vector<std::string> faces);
+glm::mat3 CalculateNormalMat(const glm::mat4 &modelMat);
 
 // Screen Width and Height setting
 const unsigned int SCR_WIDTH = 800;
@@ -172,8 +173,8 @@ int main(void) {
 	*/
 	//Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
 	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
-
-	Shader geo_pointsShader("shaders/vertex/geo_points.vert", "shaders/fragment/geo_points.frag", "shaders/geometry/geo_points.geom");
+	Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
+	Shader modelExplodeShader("shaders/vertex/explode_model.vert", "shaders/fragment/explode_model.frag", "shaders/geometry/explode_model.geom");
 	
 
 
@@ -283,13 +284,6 @@ int main(void) {
 		 1.0f,  1.0f,  1.0f,  1.0f,
 		-1.0f, -1.0f,  0.0f,  0.0f
 	};
-	float points[] = {
-		// positions   // colors
-		-0.5f,  0.5f,  1.0f,  0.0f,  0.0f, // top-left
-		 0.5f,  0.5f,  0.0f,  1.0f,  0.0f, // top-right
-		 0.5f, -0.5f,  0.0f,  0.0f,  1.0f, // bottom-right
-		-0.5f, -0.5f,  1.0f,  1.0f,  0.0f  // bottom-left
-	};
 
 	// cube VAO
 	unsigned int cubeVAO, cubeVBO;
@@ -328,24 +322,10 @@ int main(void) {
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
 	glBindVertexArray(0);
 
-	// Points VAO
-	unsigned int pointVAO, pointVBO;
-	glGenVertexArrays(1, &pointVAO);
-	glGenBuffers(1, &pointVBO);
-	glBindVertexArray(pointVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(points), &points, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(2 * sizeof(float)));
-	glBindVertexArray(0);
-
 
 	glDeleteBuffers(1, &cubeVBO);
 	glDeleteBuffers(1, &cubemapVBO);
 	glDeleteBuffers(1, &quadVBO);
-	glDeleteBuffers(1, &pointVBO);
 
 
 
@@ -353,6 +333,9 @@ int main(void) {
 	 * Texture loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
+	stbi_set_flip_vertically_on_load(true);
+
+	stbi_set_flip_vertically_on_load(false);
 
 
 
@@ -360,7 +343,6 @@ int main(void) {
 	 * Cubemap loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	
 	const std::string folder_path = "cubemaps/skybox_1/";
 	std::vector<std::string> faces = {
 		folder_path + "right.jpg",
@@ -370,6 +352,11 @@ int main(void) {
 		folder_path + "front.jpg",
 		folder_path + "back.jpg"
 	};
+
+	stbi_set_flip_vertically_on_load(true);
+
+	stbi_set_flip_vertically_on_load(false);
+
 	unsigned int skyboxTexture = loadCubemap(faces);
 
 
@@ -378,6 +365,10 @@ int main(void) {
 	 * Model loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
+	stbi_set_flip_vertically_on_load(true);
+	Model backpack("models/backpack/backpack.obj");
+
+	stbi_set_flip_vertically_on_load(false);
 
 
 
@@ -386,10 +377,8 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	/*
 	skyboxShader.use();
-	skyboxShader.setInt("cubemap", 0);	
-	*/
+	skyboxShader.setInt("cubemap", 0);
 
 
 	screenShader.use();
@@ -404,6 +393,20 @@ int main(void) {
 	 * Uniform Block Object setting
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
+	unsigned int skyboxUniformBlockIndex  = glGetUniformBlockIndex(skyboxShader.ID, "Matrices");
+	unsigned int modelExplodeUniformBlock = glGetUniformBlockIndex(modelExplodeShader.ID, "Matrices");
+
+	glUniformBlockBinding(skyboxShader.ID, skyboxUniformBlockIndex, 0);
+	glUniformBlockBinding(modelExplodeShader.ID, modelExplodeUniformBlock, 0);
+
+	unsigned int cameraMatrices;
+	glGenBuffers(1, &cameraMatrices);
+
+	glBindBuffer(GL_UNIFORM_BUFFER, cameraMatrices);
+	glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	glBindBufferRange(GL_UNIFORM_BUFFER, 0, cameraMatrices, 0, 2 * sizeof(glm::mat4));
 
 
 
@@ -509,22 +512,53 @@ int main(void) {
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
 
+		// Fill the uniform buffer
+		//-------------------------
+		// View
+		glBindBuffer(GL_UNIFORM_BUFFER, cameraMatrices);
+		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(view));
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+		// Projection
+		glBindBuffer(GL_UNIFORM_BUFFER, cameraMatrices);
+		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(projection));
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+
 		// Render scene
 		//-------------------------
 
-		// Render house
+		// Render Objects
 		//---------------
-		geo_pointsShader.use();
+		modelExplodeShader.use();
+		
+		// Light setting
+		modelExplodeShader.setVec3("ViewPos", camera.Position);
+		modelExplodeShader.setVec3("dirLight.direction", 1.0f, -1.0f, 1.0f);
+		modelExplodeShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+		modelExplodeShader.setVec3("dirLight.diffuse", 1.5f, 1.5f, 1.5f);
+		modelExplodeShader.setVec3("dirLight.specular", 1.5f, 1.5f, 1.5f);
 
-		glBindVertexArray(pointVAO);
-		glDrawArrays(GL_POINTS, 0, 4);
+		// Time setting
+		modelExplodeShader.setFloat("time", static_cast<float>(glfwGetTime()));
+
+		// Translation setting
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, -3.0));
+		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::mat3 normalMat = CalculateNormalMat(model);
+
+		modelExplodeShader.setMat4("model", model);
+		modelExplodeShader.setMat3("normalMat", normalMat);
+		
+		// Draw model
+		backpack.Draw(modelExplodeShader);
 
 
 		// skybox
 		//---------------
 		// Since the default value in depth buffer is 1.0, so the fragment should pass the depth test when the depth of fragment is less or equal to
 		// the value store in the depth buffer. This can avoid the depth fighting.
-		/*
 		glDepthFunc(GL_LEQUAL);
 		// Cull the front face
 		glCullFace(GL_FRONT);
@@ -536,16 +570,11 @@ int main(void) {
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
 
-		// Set up the view and projection matrix, remember to remove the translation part of the view matrix
-		skyboxShader.setMat4("view", glm::mat4(glm::mat3(view)));
-		skyboxShader.setMat4("projection", projection);
-
 		glBindVertexArray(cubemapVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		// Set the depth function and culling face to default
 		glDepthFunc(GL_LESS);
-		glCullFace(GL_BACK);		
-		*/
+		glCullFace(GL_BACK);
 
 
 
@@ -582,10 +611,9 @@ int main(void) {
 	glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteVertexArrays(1, &quadVAO);
 	glDeleteVertexArrays(1, &cubemapVAO);
-	glDeleteVertexArrays(1, &pointVAO);
-	//skyboxShader.clear();
 	screenShader.clear();
-	geo_pointsShader.clear();
+	skyboxShader.clear();
+	modelExplodeShader.clear();
 	glDeleteFramebuffers(1, &framebuffer);
 
 
@@ -723,4 +751,9 @@ unsigned int loadCubemap(std::vector<std::string> faces) {
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	return textureID;
+}
+
+// Calculate the normal matrix
+glm::mat3 CalculateNormalMat(const glm::mat4 &modelMat) {
+	return glm::mat3(glm::transpose(glm::inverse(modelMat)));
 }
