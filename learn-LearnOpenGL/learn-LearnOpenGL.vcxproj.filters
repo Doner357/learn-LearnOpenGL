@@ -148,13 +148,13 @@
     <None Include="shaders\vertex\refraction.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
     </None>
-    <None Include="shaders\fragment\geo_points.frag">
+    <None Include="shaders\fragment\explode_model.frag">
       <Filter>Resource Files\shaders\fragment</Filter>
     </None>
-    <None Include="shaders\geometry\geo_points.geom">
+    <None Include="shaders\geometry\explode_model.geom">
       <Filter>Resource Files\shaders\geometry</Filter>
     </None>
-    <None Include="shaders\vertex\geo_points.vert">
+    <None Include="shaders\vertex\explode_model.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
     </None>
   </ItemGroup>
