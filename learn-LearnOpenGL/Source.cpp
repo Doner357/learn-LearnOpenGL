@@ -132,9 +132,7 @@ int main(void) {
 
 
 	// Enable face culling
-	/*
 	glEnable(GL_CULL_FACE);
-	*/
 	// Change the type of face we want to cull
 	/*
 	glCullFace(GL_FRONT);
@@ -171,10 +169,10 @@ int main(void) {
 	* Build and compile shader program
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
-	//Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
 	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
 	Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
-	Shader modelExplodeShader("shaders/vertex/explode_model.vert", "shaders/fragment/explode_model.frag", "shaders/geometry/explode_model.geom");
+	Shader modelShader("shaders/vertex/model.vert", "shaders/fragment/model.frag");
+	Shader normalDisplayShader("shaders/vertex/visual_normal_vectors.vert", "shaders/fragment/visual_normal_vectors.frag", "shaders/geometry/visual_normal_vectors.geom");
 	
 
 
@@ -394,10 +392,10 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 	unsigned int skyboxUniformBlockIndex  = glGetUniformBlockIndex(skyboxShader.ID, "Matrices");
-	unsigned int modelExplodeUniformBlock = glGetUniformBlockIndex(modelExplodeShader.ID, "Matrices");
+	unsigned int modelExplodeUniformBlock = glGetUniformBlockIndex(modelShader.ID, "Matrices");
 
 	glUniformBlockBinding(skyboxShader.ID, skyboxUniformBlockIndex, 0);
-	glUniformBlockBinding(modelExplodeShader.ID, modelExplodeUniformBlock, 0);
+	glUniformBlockBinding(modelShader.ID, modelExplodeUniformBlock, 0);
 
 	unsigned int cameraMatrices;
 	glGenBuffers(1, &cameraMatrices);
@@ -530,17 +528,14 @@ int main(void) {
 
 		// Render Objects
 		//---------------
-		modelExplodeShader.use();
+		modelShader.use();
 		
 		// Light setting
-		modelExplodeShader.setVec3("ViewPos", camera.Position);
-		modelExplodeShader.setVec3("dirLight.direction", 1.0f, -1.0f, 1.0f);
-		modelExplodeShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-		modelExplodeShader.setVec3("dirLight.diffuse", 1.5f, 1.5f, 1.5f);
-		modelExplodeShader.setVec3("dirLight.specular", 1.5f, 1.5f, 1.5f);
-
-		// Time setting
-		modelExplodeShader.setFloat("time", static_cast<float>(glfwGetTime()));
+		modelShader.setVec3("ViewPos", camera.Position);
+		modelShader.setVec3("dirLight.direction", 1.0f, -1.0f, 1.0f);
+		modelShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+		modelShader.setVec3("dirLight.diffuse", 1.5f, 1.5f, 1.5f);
+		modelShader.setVec3("dirLight.specular", 1.5f, 1.5f, 1.5f);
 
 		// Translation setting
 		model = glm::mat4(1.0f);
@@ -548,11 +543,25 @@ int main(void) {
 		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat3 normalMat = CalculateNormalMat(model);
 
-		modelExplodeShader.setMat4("model", model);
-		modelExplodeShader.setMat3("normalMat", normalMat);
+		modelShader.setMat4("model", model);
+		modelShader.setMat3("normalMat", normalMat);
 		
 		// Draw model
-		backpack.Draw(modelExplodeShader);
+		backpack.Draw(modelShader);
+
+
+		// Render Object's normal vector
+		//---------------
+		normalDisplayShader.use();
+
+		// Setting unifrom
+		normalDisplayShader.setMat4("model", model);
+		normalDisplayShader.setMat4("view", view);
+		normalDisplayShader.setMat4("projection", projection);
+
+		// Draw vector
+		backpack.Draw(normalDisplayShader);
+
 
 
 		// skybox
@@ -613,7 +622,7 @@ int main(void) {
 	glDeleteVertexArrays(1, &cubemapVAO);
 	screenShader.clear();
 	skyboxShader.clear();
-	modelExplodeShader.clear();
+	modelShader.clear();
 	glDeleteFramebuffers(1, &framebuffer);
 
 

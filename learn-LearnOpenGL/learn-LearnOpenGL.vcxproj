@@ -185,6 +185,9 @@
     <None Include="shaders\vertex\colors.vert" />
     <None Include="shaders\vertex\light_cube.vert" />
     <None Include="shaders\vertex\model.vert" />
+    <None Include="shaders\fragment\visual_normal_vectors.frag" />
+    <None Include="shaders\geometry\visual_normal_vectors.geom" />
+    <None Include="shaders\vertex\visual_normal_vectors.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\marble.jpg" />

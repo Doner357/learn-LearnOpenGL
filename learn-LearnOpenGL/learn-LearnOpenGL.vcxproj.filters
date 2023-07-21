@@ -157,6 +157,15 @@
     <None Include="shaders\vertex\explode_model.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
     </None>
+    <None Include="shaders\vertex\visual_normal_vectors.vert">
+      <Filter>Resource Files\shaders\vertex</Filter>
+    </None>
+    <None Include="shaders\geometry\visual_normal_vectors.geom">
+      <Filter>Resource Files\shaders\geometry</Filter>
+    </None>
+    <None Include="shaders\fragment\visual_normal_vectors.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">
