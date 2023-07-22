@@ -152,8 +152,7 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\fragment\color_quad.frag" />
-    <None Include="shaders\vertex\color_quad.vert" />
+    <None Include="shaders\vertex\model_instanced.vert" />
     <None Include="shaders\fragment\explode_model.frag" />
     <None Include="shaders\vertex\explode_model.vert" />
     <None Include="shaders\geometry\explode_model.geom" />

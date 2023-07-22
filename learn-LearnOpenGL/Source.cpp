@@ -22,8 +22,8 @@ unsigned int loadCubemap(std::vector<std::string> faces);
 glm::mat3 CalculateNormalMat(const glm::mat4 &modelMat);
 
 // Screen Width and Height setting
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1920;
+const unsigned int SCR_HEIGHT = 1080;
 
 // Camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -171,7 +171,8 @@ int main(void) {
 	*/
 	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
 	Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
-	Shader colorQuadShader("shaders/vertex/color_quad.vert", "shaders/fragment/color_quad.frag");
+	Shader modelShader("shaders/vertex/model.vert", "shaders/fragment/model.frag");
+	Shader modelInstancedShader("shaders/vertex/model_instanced.vert", "shaders/fragment/model.frag");
 	
 
 
@@ -330,48 +331,10 @@ int main(void) {
 	glBindVertexArray(0);
 
 
-	// ColorQuad
-	unsigned int colorquadVAO, colorQuadVBO;
-	glGenVertexArrays(1, &colorquadVAO);
-	glGenBuffers(1, &colorQuadVBO);
-	glBindVertexArray(colorquadVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, colorQuadVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(coloredQuadVertices), &coloredQuadVertices[0], GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
-	// Set up instanced array
-	// Create translation instanced array
-	glm::vec2 translations[100];
-	int index = 0;
-	float offset = 0.1f;
-	for (int y = -10; y < 10; y += 2) {
-		for (int x = -10; x < 10; x += 2) {
-			glm::vec2 translation;
-			translation.x = (float)x / 10.0f + offset;
-			translation.y = (float)y / 10.0f + offset;
-			translations[index++] = translation;
-		}
-	}
-	unsigned int instanceVBO;
-	glGenBuffers(1, &instanceVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(translations), &translations[0], GL_STATIC_DRAW);
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	// Tell OpenGL update the content of the vertex attribute at location 2 when we start to render a new instance
-	glVertexAttribDivisor(2, 1);
-	glBindVertexArray(0);
-
-
 	// Delete VBO
 	glDeleteBuffers(1, &cubeVBO);
 	glDeleteBuffers(1, &cubemapVBO);
 	glDeleteBuffers(1, &quadVBO);
-	glDeleteBuffers(1, &colorQuadVBO);
-	glDeleteBuffers(1, &instanceVBO);
 
 
 
@@ -389,14 +352,14 @@ int main(void) {
 	 * Cubemap loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	const std::string folder_path = "cubemaps/skybox_1/";
+	const std::string folder_path = "cubemaps/space_1/";
 	std::vector<std::string> faces = {
-		folder_path + "right.jpg",
-		folder_path + "left.jpg",
-		folder_path + "top.jpg",
-		folder_path + "bottom.jpg",
-		folder_path + "front.jpg",
-		folder_path + "back.jpg"
+		folder_path + "right.png",
+		folder_path + "left.png",
+		folder_path + "top.png",
+		folder_path + "bottom.png",
+		folder_path + "front.png",
+		folder_path + "back.png"
 	};
 
 	stbi_set_flip_vertically_on_load(true);
@@ -411,6 +374,9 @@ int main(void) {
 	 * Model loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
+
+	Model planet("models/planet/planet.obj");
+	Model asteroid("models/rock/rock.obj");
 	stbi_set_flip_vertically_on_load(true);
 
 	stbi_set_flip_vertically_on_load(false);
@@ -430,6 +396,25 @@ int main(void) {
 	screenShader.setInt("screenTexture", 0);
 
 
+	// Since light data is static, set them before render loop
+
+	modelShader.use();
+	// Light setting
+	modelShader.setVec3("dirLight.direction", -1.0f, 0.0f, 0.0f);
+	modelShader.setVec3("dirLight.ambient", 0.04f, 0.04f, 0.04f);
+	modelShader.setVec3("dirLight.diffuse", 1.0f, 1.0f, 1.0f);
+	modelShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
+
+
+	modelInstancedShader.use();
+	// Light setting
+	modelInstancedShader.setVec3("dirLight.direction", -1.0f, 0.0f, 0.0f);
+	modelInstancedShader.setVec3("dirLight.ambient", 0.04f, 0.04f, 0.04f);
+	modelInstancedShader.setVec3("dirLight.diffuse", 1.0f, 1.0f, 1.0f);
+	modelInstancedShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
+	modelInstancedShader.setInt("material.texture_diffuse1", 0);
+
+
 	glUseProgram(0);
 
 
@@ -439,8 +424,12 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 	unsigned int skyboxUniformBlockIndex  = glGetUniformBlockIndex(skyboxShader.ID, "Matrices");
+	unsigned int modelUniformBlockIndex = glGetUniformBlockIndex(modelShader.ID, "Matrices");
+	unsigned int modelInstanceddUniformBlockIndex = glGetUniformBlockIndex(modelInstancedShader.ID, "Matrices");
 
 	glUniformBlockBinding(skyboxShader.ID, skyboxUniformBlockIndex, 0);
+	glUniformBlockBinding(modelShader.ID, modelUniformBlockIndex, 0);
+	glUniformBlockBinding(modelInstancedShader.ID, modelInstanceddUniformBlockIndex, 0);
 
 	unsigned int cameraMatrices;
 	glGenBuffers(1, &cameraMatrices);
@@ -454,12 +443,69 @@ int main(void) {
 
 
 	/*
-	 * Render type setting
+	 * Instance data calculation
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	 /*Enable this if you wnat to draw triangle in wireframe mode*/
-	 //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	 // Caculate asteriod 
+	unsigned int amount = 50000;
+	glm::mat4* modelMatrices;
+	modelMatrices = new glm::mat4[amount];
+	srand(glfwGetTime());
+	float radius = 80.0f;
+	float offset = 25.0f;
+	for (unsigned int i = 0; i < amount; i++) {
+		glm::mat4 model = glm::mat4(1.0f);
+		// 1. translation: displace along circle with 'radius' in range [-offset, offset]
+		float angle = static_cast<float>(i) / static_cast<float>(amount) * 360;
+		float displacement = (rand() % static_cast<int>(2 * offset * 100)) / 100.0f - offset;
+		float x = sin(angle) * radius + displacement;
+		displacement = (rand() % static_cast<int>(2 * offset * 100)) / 100.0f - offset;
+		float y = displacement * 0.2f; // keep height of field smaller compared to width of x and z
+		displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+		float z = cos(angle) * radius + displacement;
+		model = glm::translate(model, glm::vec3(x, y, z));
+
+		// 2. scale: scale between 0.05f and 0.25f
+		float scale = (rand() % 20) / 100.0f + 0.05f;
+		model = glm::scale(model, glm::vec3(scale));
+
+		// 3. rotation: add random rotation around a (semi)randomly picked rotation axis vector
+		float rotAngle = (rand() % 360);
+		model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
+
+		// 4. now add to list of matrices
+		modelMatrices[i] = model;
+	}
+	unsigned int modelMatricesVBO;
+	glGenBuffers(1, &modelMatricesVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, modelMatricesVBO);
+	glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+
+	for (unsigned int i = 0; i < asteroid.meshes.size(); i++) {
+		unsigned int VAO = asteroid.meshes[i].GetVAO();
+		glBindVertexArray(VAO);
+		// Vertex attributes
+		std::size_t vec4Size = sizeof(glm::vec4);
+		glEnableVertexAttribArray(3);
+		glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
+		glEnableVertexAttribArray(4);
+		glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(1 * vec4Size));
+		glEnableVertexAttribArray(5);
+		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(2 * vec4Size));
+		glEnableVertexAttribArray(6);
+		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(3 * vec4Size));
+
+		glVertexAttribDivisor(3, 1);
+		glVertexAttribDivisor(4, 1);
+		glVertexAttribDivisor(5, 1);
+		glVertexAttribDivisor(6, 1);
+
+		glBindVertexArray(0);
+	}
+
+
+	glDeleteBuffers(1, &modelMatricesVBO);
 
 
 
@@ -511,6 +557,22 @@ int main(void) {
 
 
 
+	/*
+	 * Others data calculation
+	 * --------------------------------------------------------------------------------------------------------------------
+	 */
+
+
+
+	/*
+	 * Render type setting
+	 * --------------------------------------------------------------------------------------------------------------------
+	 */
+
+	 /*Enable this if you wnat to draw triangle in wireframe mode*/
+	 //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+
 
 	/*
 	 * Render loop
@@ -552,7 +614,10 @@ int main(void) {
 		// --view matrix--
 		glm::mat4 view = camera.GetViewMatrix();
 		// --projection matrix--
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 200.0f);
+
+		// --normal matrix--
+		glm::mat3 normalMat;
 
 
 		// Fill the uniform buffer
@@ -573,18 +638,51 @@ int main(void) {
 
 		// Render Objects
 		//---------------
-		
-		colorQuadShader.use();
-		glBindVertexArray(colorquadVAO);
-		// Draw 100 instance
-		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 100);
+
+		// Planet
+		modelShader.use();
+
+		// Light setting
+		modelShader.setVec3("ViewPos", camera.Position);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-40.0f, 0.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(4.0f));
+		normalMat = CalculateNormalMat(model);
+		modelShader.setMat4("model", model);
+		modelShader.setMat3("normalMat", normalMat);
+		planet.Draw(modelInstancedShader);
+
+
+		// Asteriod
+		modelInstancedShader.use();
+
+		// Light setting
+		modelInstancedShader.setVec3("ViewPos", camera.Position);
+		// Because there is no Instanced draw call in model, we have to set the uniform by ourself
+		// Material setting
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, asteroid.textures_loaded[0].id);
+
+		// Translation setting
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-40.0f, 0.0f, 0.0f));
+		modelInstancedShader.setMat4("model", model);
+
+		for (unsigned int i = 0; i < asteroid.meshes.size(); i++) {
+			///////////////////////////////////////////////////////////////////////////////////////////
+			// This one is very important. If you don't set it, it will cause very serious light error.
+			modelInstancedShader.setFloat("material.shininess", asteroid.meshes[i].shininess);
+			///////////////////////////////////////////////////////////////////////////////////////////
+			glBindVertexArray(asteroid.meshes[i].GetVAO());
+			glDrawElementsInstanced(GL_TRIANGLES, static_cast<unsigned int>(asteroid.meshes[i].indices.size()), GL_UNSIGNED_INT, 0, amount);
+		}
+
 
 
 		// skybox
 		//---------------
 		// Since the default value in depth buffer is 1.0, so the fragment should pass the depth test when the depth of fragment is less or equal to
 		// the value store in the depth buffer. This can avoid the depth fighting.
-		/*
 		glDepthFunc(GL_LEQUAL);
 		// Cull the front face
 		glCullFace(GL_FRONT);
@@ -601,7 +699,6 @@ int main(void) {
 		// Set the depth function and culling face to default
 		glDepthFunc(GL_LESS);
 		glCullFace(GL_BACK);
-		*/
 
 
 
@@ -641,8 +738,10 @@ int main(void) {
 	glDeleteVertexArrays(1, &cubemapVAO);
 	screenShader.clear();
 	skyboxShader.clear();
-	colorQuadShader.clear();
+
+	modelInstancedShader.clear();
 	glDeleteFramebuffers(1, &framebuffer);
+	delete[] modelMatrices;
 
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
@@ -764,7 +863,15 @@ unsigned int loadCubemap(std::vector<std::string> faces) {
 	for (unsigned int i = 0; i < faces.size(); i++) {
 		unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
 		if (data) {
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			GLenum format;
+			if (nrChannels == 1)
+				format = GL_RED;
+			else if (nrChannels == 3)
+				format = GL_RGB;
+			else if (nrChannels == 4)
+				format = GL_RGBA;
+
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 			stbi_image_free(data);
 		}
 		else {

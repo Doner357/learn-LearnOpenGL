@@ -79,6 +79,10 @@ public:
 		glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(indices.size()), GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 	}
+
+	unsigned int GetVAO() {
+		return this->VAO;
+	}
 private:
 	// Render data
 	unsigned int VAO, VBO, EBO;

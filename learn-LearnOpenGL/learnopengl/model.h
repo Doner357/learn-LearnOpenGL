@@ -148,7 +148,7 @@ private:
 		//aiGetMaterialFloat(scene->mMaterials[mesh->mMaterialIndex], AI_MATKEY_SHININESS, &shininess
 		float shininess;
 		if (AI_SUCCESS != scene->mMaterials[mesh->mMaterialIndex]->Get(AI_MATKEY_SHININESS, shininess))
-			shininess = 32.0f;
+			shininess = 16.0f;
 
 		return Mesh(verticies, indices, textures, shininess);
 	}

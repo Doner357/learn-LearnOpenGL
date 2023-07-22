@@ -166,11 +166,8 @@
     <None Include="shaders\fragment\visual_normal_vectors.frag">
       <Filter>Resource Files\shaders\fragment</Filter>
     </None>
-    <None Include="shaders\vertex\color_quad.vert">
+    <None Include="shaders\vertex\model_instanced.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
-    </None>
-    <None Include="shaders\fragment\color_quad.frag">
-      <Filter>Resource Files\shaders\fragment</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
