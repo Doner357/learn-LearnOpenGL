@@ -298,7 +298,7 @@ int main(void) {
 	glGenBuffers(1, &cubeVBO);
 	glBindVertexArray(cubeVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(1);
@@ -311,7 +311,7 @@ int main(void) {
 	glGenBuffers(1, &cubemapVBO);
 	glBindVertexArray(cubemapVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, cubemapVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
 	glBindVertexArray(0);
@@ -322,7 +322,7 @@ int main(void) {
 	glGenBuffers(1, &quadVBO);
 	glBindVertexArray(quadVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(1);
@@ -336,17 +336,42 @@ int main(void) {
 	glGenBuffers(1, &colorQuadVBO);
 	glBindVertexArray(colorquadVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, colorQuadVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(coloredQuadVertices), &coloredQuadVertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(coloredQuadVertices), &coloredQuadVertices[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+	// Set up instanced array
+	// Create translation instanced array
+	glm::vec2 translations[100];
+	int index = 0;
+	float offset = 0.1f;
+	for (int y = -10; y < 10; y += 2) {
+		for (int x = -10; x < 10; x += 2) {
+			glm::vec2 translation;
+			translation.x = (float)x / 10.0f + offset;
+			translation.y = (float)y / 10.0f + offset;
+			translations[index++] = translation;
+		}
+	}
+	unsigned int instanceVBO;
+	glGenBuffers(1, &instanceVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(translations), &translations[0], GL_STATIC_DRAW);
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	// Tell OpenGL update the content of the vertex attribute at location 2 when we start to render a new instance
+	glVertexAttribDivisor(2, 1);
 	glBindVertexArray(0);
 
 
+	// Delete VBO
 	glDeleteBuffers(1, &cubeVBO);
 	glDeleteBuffers(1, &cubemapVBO);
 	glDeleteBuffers(1, &quadVBO);
+	glDeleteBuffers(1, &colorQuadVBO);
+	glDeleteBuffers(1, &instanceVBO);
 
 
 
@@ -403,23 +428,6 @@ int main(void) {
 
 	screenShader.use();
 	screenShader.setInt("screenTexture", 0);
-
-
-	glm::vec2 translations[100];
-	int index = 0;
-	float offset = 0.1f;
-	for (int y = -10; y < 10; y += 2) {
-		for (int x = -10; x < 10; x += 2) {
-			glm::vec2 translation;
-			translation.x = (float)x / 10.0f + offset;
-			translation.y = (float)y / 10.0f + offset;
-			translations[index++] = translation;
-		}
-	}
-	colorQuadShader.use();
-	for (unsigned int i = 0; i < 100; i++) {
-		colorQuadShader.setVec2(("offsets[" + std::to_string(i) + "]"), translations[i]);
-	}
 
 
 	glUseProgram(0);
@@ -591,7 +599,7 @@ int main(void) {
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		// Set the depth function and culling face to default
 		glDepthFunc(GL_LESS);
-		glCullFace(GL_BACK);		
+		glCullFace(GL_BACK);
 		*/
 
 
