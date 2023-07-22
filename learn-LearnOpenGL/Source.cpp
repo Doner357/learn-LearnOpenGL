@@ -568,6 +568,7 @@ int main(void) {
 		
 		colorQuadShader.use();
 		glBindVertexArray(colorquadVAO);
+		// Draw 100 instance
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 100);
 
 
