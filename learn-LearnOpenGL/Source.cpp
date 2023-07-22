@@ -171,8 +171,7 @@ int main(void) {
 	*/
 	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
 	Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
-	Shader modelShader("shaders/vertex/model.vert", "shaders/fragment/model.frag");
-	Shader normalDisplayShader("shaders/vertex/visual_normal_vectors.vert", "shaders/fragment/visual_normal_vectors.frag", "shaders/geometry/visual_normal_vectors.geom");
+	Shader colorQuadShader("shaders/vertex/color_quad.vert", "shaders/fragment/color_quad.frag");
 	
 
 
@@ -282,6 +281,16 @@ int main(void) {
 		 1.0f,  1.0f,  1.0f,  1.0f,
 		-1.0f, -1.0f,  0.0f,  0.0f
 	};
+	float coloredQuadVertices[] = {
+		// positions     // colors
+		 0.05f, -0.05f,  0.0f, 1.0f, 0.0f,
+		-0.05f,  0.05f,  1.0f, 0.0f, 0.0f,
+		-0.05f, -0.05f,  0.0f, 0.0f, 1.0f,
+
+		-0.05f,  0.05f,  1.0f, 0.0f, 0.0f,
+		 0.05f, -0.05f,  0.0f, 1.0f, 0.0f,
+		 0.05f,  0.05f,  0.0f, 1.0f, 1.0f
+	};
 
 	// cube VAO
 	unsigned int cubeVAO, cubeVBO;
@@ -305,7 +314,7 @@ int main(void) {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
-	glBindVertexArray(0);	
+	glBindVertexArray(0);
 
 	// Quad VAO
 	unsigned int quadVAO, quadVBO;
@@ -318,6 +327,20 @@ int main(void) {
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
+	glBindVertexArray(0);
+
+
+	// ColorQuad
+	unsigned int colorquadVAO, colorQuadVBO;
+	glGenVertexArrays(1, &colorquadVAO);
+	glGenBuffers(1, &colorQuadVBO);
+	glBindVertexArray(colorquadVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, colorQuadVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(coloredQuadVertices), &coloredQuadVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
 	glBindVertexArray(0);
 
 
@@ -364,7 +387,6 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 	stbi_set_flip_vertically_on_load(true);
-	Model backpack("models/backpack/backpack.obj");
 
 	stbi_set_flip_vertically_on_load(false);
 
@@ -383,6 +405,23 @@ int main(void) {
 	screenShader.setInt("screenTexture", 0);
 
 
+	glm::vec2 translations[100];
+	int index = 0;
+	float offset = 0.1f;
+	for (int y = -10; y < 10; y += 2) {
+		for (int x = -10; x < 10; x += 2) {
+			glm::vec2 translation;
+			translation.x = (float)x / 10.0f + offset;
+			translation.y = (float)y / 10.0f + offset;
+			translations[index++] = translation;
+		}
+	}
+	colorQuadShader.use();
+	for (unsigned int i = 0; i < 100; i++) {
+		colorQuadShader.setVec2(("offsets[" + std::to_string(i) + "]"), translations[i]);
+	}
+
+
 	glUseProgram(0);
 
 
@@ -392,10 +431,8 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 	unsigned int skyboxUniformBlockIndex  = glGetUniformBlockIndex(skyboxShader.ID, "Matrices");
-	unsigned int modelExplodeUniformBlock = glGetUniformBlockIndex(modelShader.ID, "Matrices");
 
 	glUniformBlockBinding(skyboxShader.ID, skyboxUniformBlockIndex, 0);
-	glUniformBlockBinding(modelShader.ID, modelExplodeUniformBlock, 0);
 
 	unsigned int cameraMatrices;
 	glGenBuffers(1, &cameraMatrices);
@@ -528,46 +565,17 @@ int main(void) {
 
 		// Render Objects
 		//---------------
-		modelShader.use();
 		
-		// Light setting
-		modelShader.setVec3("ViewPos", camera.Position);
-		modelShader.setVec3("dirLight.direction", 1.0f, -1.0f, 1.0f);
-		modelShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-		modelShader.setVec3("dirLight.diffuse", 1.5f, 1.5f, 1.5f);
-		modelShader.setVec3("dirLight.specular", 1.5f, 1.5f, 1.5f);
-
-		// Translation setting
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, -3.0));
-		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		glm::mat3 normalMat = CalculateNormalMat(model);
-
-		modelShader.setMat4("model", model);
-		modelShader.setMat3("normalMat", normalMat);
-		
-		// Draw model
-		backpack.Draw(modelShader);
-
-
-		// Render Object's normal vector
-		//---------------
-		normalDisplayShader.use();
-
-		// Setting unifrom
-		normalDisplayShader.setMat4("model", model);
-		normalDisplayShader.setMat4("view", view);
-		normalDisplayShader.setMat4("projection", projection);
-
-		// Draw vector
-		backpack.Draw(normalDisplayShader);
-
+		colorQuadShader.use();
+		glBindVertexArray(colorquadVAO);
+		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 100);
 
 
 		// skybox
 		//---------------
 		// Since the default value in depth buffer is 1.0, so the fragment should pass the depth test when the depth of fragment is less or equal to
 		// the value store in the depth buffer. This can avoid the depth fighting.
+		/*
 		glDepthFunc(GL_LEQUAL);
 		// Cull the front face
 		glCullFace(GL_FRONT);
@@ -583,7 +591,9 @@ int main(void) {
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		// Set the depth function and culling face to default
 		glDepthFunc(GL_LESS);
-		glCullFace(GL_BACK);
+		glCullFace(GL_BACK);		
+		*/
+
 
 
 
@@ -622,7 +632,7 @@ int main(void) {
 	glDeleteVertexArrays(1, &cubemapVAO);
 	screenShader.clear();
 	skyboxShader.clear();
-	modelShader.clear();
+	colorQuadShader.clear();
 	glDeleteFramebuffers(1, &framebuffer);
 
 
