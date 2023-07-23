@@ -22,8 +22,8 @@ unsigned int loadCubemap(std::vector<std::string> faces);
 glm::mat3 CalculateNormalMat(const glm::mat4 &modelMat);
 
 // Screen Width and Height setting
-const unsigned int SCR_WIDTH = 1920;
-const unsigned int SCR_HEIGHT = 1080;
+const unsigned int SCR_WIDTH = 800;
+const unsigned int SCR_HEIGHT = 600;
 
 // Camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
