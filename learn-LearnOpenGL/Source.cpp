@@ -20,6 +20,7 @@ void processInput(GLFWwindow *window);
 unsigned int loadTexture(char const *path);
 unsigned int loadCubemap(std::vector<std::string> faces);
 glm::mat3 CalculateNormalMat(const glm::mat4 &modelMat);
+unsigned int CreateFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample = false, const unsigned int samples = 0);
 
 // Screen Width and Height setting
 const unsigned int SCR_WIDTH = 800;
@@ -54,7 +55,11 @@ int main(void) {
 	// Tell glfw what kind of profile we want to use, this time is core profile
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	// Tell glfw to create multisample buffer with 4 subsamples
-	glfwWindowHint(GLFW_SAMPLES, 4);
+	/*
+	const unsigned int multiSamples = 4;
+	glfwWindowHint(GLFW_SAMPLES, multiSamples);	
+	*/
+
 
 	/* If you are a Mac OS X user, you have to add this code: */
 #ifdef __APPLE__
@@ -106,7 +111,10 @@ int main(void) {
 	*/
 
 	// Enable multisampling
+	/*
 	glEnable(GL_MULTISAMPLE);
+	*/
+
 
 
 	// Enable depth testing
@@ -468,47 +476,11 @@ int main(void) {
 	* Frambuffers creating
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
-	unsigned int framebuffer;
-	// Generate a framebuffer and get its ID
-	glGenFramebuffers(1, &framebuffer);
-	// Bind framebuffers
-	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
-
-	// Attach texture to framebuffer
-	// Create a texture to store the scene's image
-	unsigned int textureColorbuffer;
-	glGenTextures(1, &textureColorbuffer);
-	glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	// Attach the texture to currently bound framebuffer object
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
-
-
-	// Attach Render Buffer (RBO) to framebuffer
-	unsigned int RBO;
-	// Generate renderbuffer and get its ID
-	glGenRenderbuffers(1, &RBO);
-	// Bind render buffer
-	glBindRenderbuffer(GL_RENDERBUFFER, RBO);
-	// Creating a depth and stencil renderbuffer object
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
-	// Unbind renderbuffer to default
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
-	// Actually attach the renderbuffer to the framebuffer
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
-
-
-	// Check whether the framebuffer is complete
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-
-	// Bind framebuffer to default
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	unsigned int ms_Frametexture;
+	unsigned int screentexuture;
+	unsigned int ms_Framebuffer = CreateFramebuffer(ms_Frametexture, SCR_WIDTH, SCR_HEIGHT, true, 4);
+	unsigned int screenFramebuffer = CreateFramebuffer(screentexuture, SCR_WIDTH, SCR_HEIGHT);
 
 
 
@@ -550,9 +522,7 @@ int main(void) {
 		//----------------------------------------------------------------------
 
 		// Bind framebuffer
-		/*
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);		
-		*/
+		glBindFramebuffer(GL_FRAMEBUFFER, ms_Framebuffer);
 
 		
 		// Render command
@@ -634,7 +604,10 @@ int main(void) {
 
 		// **SECOND PASS**
 		//----------------------------------------------------------------------
-		/*
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, ms_Framebuffer);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, screenFramebuffer);
+		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -646,10 +619,9 @@ int main(void) {
 
 		glBindVertexArray(quadVAO);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+		glBindTexture(GL_TEXTURE_2D, screentexuture);
 
-		glDrawArrays(GL_TRIANGLES, 0, 6);		
-		*/
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
 
@@ -672,7 +644,8 @@ int main(void) {
 	screenShader.clear();
 	skyboxShader.clear();
 	lightCubeShader.clear();
-	glDeleteFramebuffers(1, &framebuffer);
+	glDeleteFramebuffers(1, &ms_Framebuffer);
+	glDeleteFramebuffers(1, &screenFramebuffer);
 
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
@@ -822,4 +795,65 @@ unsigned int loadCubemap(std::vector<std::string> faces) {
 // Calculate the normal matrix
 glm::mat3 CalculateNormalMat(const glm::mat4 &modelMat) {
 	return glm::mat3(glm::transpose(glm::inverse(modelMat)));
+}
+
+// Generate a framebuffer attach the given texture as the color attachment.
+unsigned int CreateFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample, const unsigned int samples) {
+
+	unsigned int framebuffer;
+	// Generate a framebuffer and get its ID
+	glGenFramebuffers(1, &framebuffer);
+	// Bind framebuffers
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+
+	// Attach texture to framebuffer
+	// Create a texture to store the scene's image
+	glGenTextures(1, &frameColortexture);
+
+	// Determine whether use the multisampling texture
+	GLenum texformat = GL_TEXTURE_2D;
+	if (multisample)
+		texformat = GL_TEXTURE_2D_MULTISAMPLE;
+	glBindTexture(texformat, frameColortexture);
+
+	if (multisample)
+		glTexImage2DMultisample(texformat, samples, GL_RGB, width, height, GL_TRUE);
+	else
+		glTexImage2D(texformat, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(texformat, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(texformat, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(texformat, 0);
+
+	// Attach the texture to currently bound framebuffer object
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texformat, frameColortexture, 0);
+
+
+	// Attach Render Buffer (RBO) to framebuffer
+	unsigned int RBO;
+	// Generate renderbuffer and get its ID
+	glGenRenderbuffers(1, &RBO);
+	// Bind render buffer
+	glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+	// Creating a depth and stencil renderbuffer object
+	// Determine whether use the multisampling render buffer
+	if (multisample)
+		glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH24_STENCIL8, width, height);
+	else
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
+	// Unbind renderbuffer to default
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	// Actually attach the renderbuffer to the framebuffer
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+
+
+	// Check whether the framebuffer is complete
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+
+	// Bind framebuffer to default
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+	return framebuffer;
 }
