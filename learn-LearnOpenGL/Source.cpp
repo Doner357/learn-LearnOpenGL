@@ -53,6 +53,8 @@ int main(void) {
 
 	// Tell glfw what kind of profile we want to use, this time is core profile
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	// Tell glfw to create multisample buffer with 4 subsamples
+	glfwWindowHint(GLFW_SAMPLES, 4);
 
 	/* If you are a Mac OS X user, you have to add this code: */
 #ifdef __APPLE__
@@ -103,6 +105,10 @@ int main(void) {
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
 
+	// Enable multisampling
+	glEnable(GL_MULTISAMPLE);
+
+
 	// Enable depth testing
 	glEnable(GL_DEPTH_TEST);
 	// Disable writing to the depth buffer
@@ -113,13 +119,32 @@ int main(void) {
 	glDepthFunc(GL_LESS);
 
 
+	// Enable stencil testing
+	/*
+	glEnable(GL_STENCIL_TEST);	
+	*/
+	// Set up stencil writting mask
+	/*
+	glStencilMask(0xFF); // each bit is written to the stencil buffer as is
+	glStencilMask(0x00); // each bit ends up as 0 in the stencil buffer (disabling writes)
+	*/
+	// Determines whether a fragment passes or is discarded.
+	/*
+	glStencilFunc(GL_EQUAL, 1, 0xFF);
+	*/
+	// Set how we can actually update the buffer.
+	/*
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	*/
+
+
 	// Enable blending
 	glEnable(GL_BLEND);
 	// Set up blending factors
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	// Set up blending constant color
 	/*
-	glBlendColor()
+	glBlendColor();
 	*/
 	// Set up RGBA blending factors separately
 	/*
@@ -171,8 +196,7 @@ int main(void) {
 	*/
 	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
 	Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
-	Shader modelShader("shaders/vertex/model.vert", "shaders/fragment/model.frag");
-	Shader modelInstancedShader("shaders/vertex/model_instanced.vert", "shaders/fragment/model.frag");
+	Shader lightCubeShader("shaders/vertex/light_cube.vert", "shaders/fragment/light_cube.frag");
 	
 
 
@@ -305,7 +329,7 @@ int main(void) {
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
 	glBindVertexArray(0);
-
+	
 	// cubemap VAO
 	unsigned int cubemapVAO, cubemapVBO;
 	glGenVertexArrays(1, &cubemapVAO);
@@ -329,6 +353,17 @@ int main(void) {
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
 	glBindVertexArray(0);
+
+	// Pure color cube VAO
+	unsigned int lightCubeVAO;
+	glGenVertexArrays(1, &lightCubeVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+	glBindVertexArray(lightCubeVAO);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
 
 
 	// Delete VBO
@@ -374,9 +409,6 @@ int main(void) {
 	 * Model loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-
-	Model planet("models/planet/planet.obj");
-	Model asteroid("models/rock/rock.obj");
 	stbi_set_flip_vertically_on_load(true);
 
 	stbi_set_flip_vertically_on_load(false);
@@ -395,24 +427,9 @@ int main(void) {
 	screenShader.use();
 	screenShader.setInt("screenTexture", 0);
 
-
-	// Since light data is static, set them before render loop
-
-	modelShader.use();
-	// Light setting
-	modelShader.setVec3("dirLight.direction", -1.0f, 0.0f, 0.0f);
-	modelShader.setVec3("dirLight.ambient", 0.04f, 0.04f, 0.04f);
-	modelShader.setVec3("dirLight.diffuse", 1.0f, 1.0f, 1.0f);
-	modelShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
-
-
-	modelInstancedShader.use();
-	// Light setting
-	modelInstancedShader.setVec3("dirLight.direction", -1.0f, 0.0f, 0.0f);
-	modelInstancedShader.setVec3("dirLight.ambient", 0.04f, 0.04f, 0.04f);
-	modelInstancedShader.setVec3("dirLight.diffuse", 1.0f, 1.0f, 1.0f);
-	modelInstancedShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
-	modelInstancedShader.setInt("material.texture_diffuse1", 0);
+	
+	lightCubeShader.use();
+	lightCubeShader.setVec3("lightColor", 0.0f, 1.0f, 0.0f);
 
 
 	glUseProgram(0);
@@ -424,12 +441,10 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 	unsigned int skyboxUniformBlockIndex  = glGetUniformBlockIndex(skyboxShader.ID, "Matrices");
-	unsigned int modelUniformBlockIndex = glGetUniformBlockIndex(modelShader.ID, "Matrices");
-	unsigned int modelInstanceddUniformBlockIndex = glGetUniformBlockIndex(modelInstancedShader.ID, "Matrices");
+	unsigned int lightCubeUniformBlockIndex = glGetUniformBlockIndex(lightCubeShader.ID, "Matrices");
 
 	glUniformBlockBinding(skyboxShader.ID, skyboxUniformBlockIndex, 0);
-	glUniformBlockBinding(modelShader.ID, modelUniformBlockIndex, 0);
-	glUniformBlockBinding(modelInstancedShader.ID, modelInstanceddUniformBlockIndex, 0);
+	glUniformBlockBinding(lightCubeShader.ID, lightCubeUniformBlockIndex, 0);
 
 	unsigned int cameraMatrices;
 	glGenBuffers(1, &cameraMatrices);
@@ -446,66 +461,6 @@ int main(void) {
 	 * Instance data calculation
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-
-	 // Caculate asteriod 
-	unsigned int amount = 50000;
-	glm::mat4* modelMatrices;
-	modelMatrices = new glm::mat4[amount];
-	srand(glfwGetTime());
-	float radius = 80.0f;
-	float offset = 25.0f;
-	for (unsigned int i = 0; i < amount; i++) {
-		glm::mat4 model = glm::mat4(1.0f);
-		// 1. translation: displace along circle with 'radius' in range [-offset, offset]
-		float angle = static_cast<float>(i) / static_cast<float>(amount) * 360;
-		float displacement = (rand() % static_cast<int>(2 * offset * 100)) / 100.0f - offset;
-		float x = sin(angle) * radius + displacement;
-		displacement = (rand() % static_cast<int>(2 * offset * 100)) / 100.0f - offset;
-		float y = displacement * 0.2f; // keep height of field smaller compared to width of x and z
-		displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
-		float z = cos(angle) * radius + displacement;
-		model = glm::translate(model, glm::vec3(x, y, z));
-
-		// 2. scale: scale between 0.05f and 0.25f
-		float scale = (rand() % 20) / 100.0f + 0.05f;
-		model = glm::scale(model, glm::vec3(scale));
-
-		// 3. rotation: add random rotation around a (semi)randomly picked rotation axis vector
-		float rotAngle = (rand() % 360);
-		model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
-
-		// 4. now add to list of matrices
-		modelMatrices[i] = model;
-	}
-	unsigned int modelMatricesVBO;
-	glGenBuffers(1, &modelMatricesVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, modelMatricesVBO);
-	glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
-
-	for (unsigned int i = 0; i < asteroid.meshes.size(); i++) {
-		unsigned int VAO = asteroid.meshes[i].GetVAO();
-		glBindVertexArray(VAO);
-		// Vertex attributes
-		std::size_t vec4Size = sizeof(glm::vec4);
-		glEnableVertexAttribArray(3);
-		glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
-		glEnableVertexAttribArray(4);
-		glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(1 * vec4Size));
-		glEnableVertexAttribArray(5);
-		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(2 * vec4Size));
-		glEnableVertexAttribArray(6);
-		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(3 * vec4Size));
-
-		glVertexAttribDivisor(3, 1);
-		glVertexAttribDivisor(4, 1);
-		glVertexAttribDivisor(5, 1);
-		glVertexAttribDivisor(6, 1);
-
-		glBindVertexArray(0);
-	}
-
-
-	glDeleteBuffers(1, &modelMatricesVBO);
 
 
 
@@ -595,7 +550,10 @@ int main(void) {
 		//----------------------------------------------------------------------
 
 		// Bind framebuffer
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+		/*
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);		
+		*/
+
 		
 		// Render command
 		//--------------------------------------------------
@@ -639,43 +597,14 @@ int main(void) {
 		// Render Objects
 		//---------------
 
-		// Planet
-		modelShader.use();
+		lightCubeShader.use();
 
-		// Light setting
-		modelShader.setVec3("ViewPos", camera.Position);
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-40.0f, 0.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(4.0f));
-		normalMat = CalculateNormalMat(model);
-		modelShader.setMat4("model", model);
-		modelShader.setMat3("normalMat", normalMat);
-		planet.Draw(modelInstancedShader);
+		model = glm::translate(model, glm::vec3(-1.0f, 0.0f, 0.0f));
+		lightCubeShader.setMat4("model", model);
 
-
-		// Asteriod
-		modelInstancedShader.use();
-
-		// Light setting
-		modelInstancedShader.setVec3("ViewPos", camera.Position);
-		// Because there is no Instanced draw call in model, we have to set the uniform by ourself
-		// Material setting
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, asteroid.textures_loaded[0].id);
-
-		// Translation setting
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-40.0f, 0.0f, 0.0f));
-		modelInstancedShader.setMat4("model", model);
-
-		for (unsigned int i = 0; i < asteroid.meshes.size(); i++) {
-			///////////////////////////////////////////////////////////////////////////////////////////
-			// This one is very important. If you don't set it, it will cause very serious light error.
-			modelInstancedShader.setFloat("material.shininess", asteroid.meshes[i].shininess);
-			///////////////////////////////////////////////////////////////////////////////////////////
-			glBindVertexArray(asteroid.meshes[i].GetVAO());
-			glDrawElementsInstanced(GL_TRIANGLES, static_cast<unsigned int>(asteroid.meshes[i].indices.size()), GL_UNSIGNED_INT, 0, amount);
-		}
+		glBindVertexArray(lightCubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
 
@@ -705,7 +634,7 @@ int main(void) {
 
 		// **SECOND PASS**
 		//----------------------------------------------------------------------
-		
+		/*
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -716,9 +645,12 @@ int main(void) {
 		screenShader.use();
 
 		glBindVertexArray(quadVAO);
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
 
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glDrawArrays(GL_TRIANGLES, 0, 6);		
+		*/
+
 
 
 		// Unbind VAO
@@ -736,12 +668,11 @@ int main(void) {
 	glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteVertexArrays(1, &quadVAO);
 	glDeleteVertexArrays(1, &cubemapVAO);
+	glDeleteVertexArrays(1, &lightCubeVAO);
 	screenShader.clear();
 	skyboxShader.clear();
-
-	modelInstancedShader.clear();
+	lightCubeShader.clear();
 	glDeleteFramebuffers(1, &framebuffer);
-	delete[] modelMatrices;
 
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
