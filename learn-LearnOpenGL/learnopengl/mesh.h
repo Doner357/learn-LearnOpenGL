@@ -83,6 +83,11 @@ public:
 	unsigned int GetVAO() {
 		return this->VAO;
 	}
+
+	unsigned int* GetVAO_ptr() {
+		return &(this->VAO);
+	}
+
 private:
 	// Render data
 	unsigned int VAO, VBO, EBO;

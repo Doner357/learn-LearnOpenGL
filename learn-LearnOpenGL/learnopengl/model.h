@@ -31,8 +31,13 @@ public:
 	std::string directory;
 	bool gammaCorrection;
 	// Constructor, expects a filepath to a 3D model.
-	Model(std::string const &path, bool gamma = false) : gammaCorrection(gamma) {
-		loadModel(path);
+	Model(std::string const &path, bool flipUVs = false, bool gamma = false) : gammaCorrection(gamma) {
+		loadModel(path, flipUVs);
+	}
+
+	~Model() {
+		for (unsigned int i = 0; i < this->meshes.size(); i++)
+			glDeleteVertexArrays(1, this->meshes[i].GetVAO_ptr());
 	}
 
 	// Draws the model, and thus all its meshes
@@ -43,10 +48,13 @@ public:
 
 private:
 
-	void loadModel(std::string path) {
+	void loadModel(std::string path, bool flipUVs) {
+		unsigned int flipUVmask = 0;
+		if (flipUVs)
+			flipUVmask = aiPostProcessSteps::aiProcess_FlipUVs;
 		// Load model into the assimp scene
 		Assimp::Importer importer;
-		const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+		const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | (aiProcess_FlipUVs & flipUVmask));
 		
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
 			std::cout << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;

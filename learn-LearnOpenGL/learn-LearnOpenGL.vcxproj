@@ -142,6 +142,8 @@
     <ClCompile Include="stb_image_define.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="learnopengl\common_vao_creator.h" />
+    <ClInclude Include="learnopengl\custom_helper.h" />
     <ClInclude Include="learnopengl\camera.h" />
     <ClInclude Include="learnopengl\camera_plus.h" />
     <ClInclude Include="learnopengl\mesh.h" />
@@ -149,10 +151,15 @@
     <ClInclude Include="learnopengl\shader_m.h" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="shaders\layout_location_rules.txt" />
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\vertex\model_instanced.vert" />
+    <None Include="shaders\fragment\lighting_color_cube.frag" />
+    <None Include="shaders\vertex\lighting_color_cube.vert" />
+    <None Include="shaders\fragment\model.frag" />
+    <None Include="shaders\vertex\model.vert" />
+    <None Include="shaders\vertex\lighting_model_instanced.vert" />
     <None Include="shaders\fragment\explode_model.frag" />
     <None Include="shaders\vertex\explode_model.vert" />
     <None Include="shaders\geometry\explode_model.geom" />
@@ -172,20 +179,20 @@
     <None Include="shaders\fragment\kernel_blur.frag" />
     <None Include="shaders\fragment\kernel_edge_detection.frag" />
     <None Include="shaders\fragment\kernel_sharpen.frag" />
-    <None Include="shaders\fragment\pure_tex.frag" />
+    <None Include="shaders\fragment\pure_texture.frag" />
     <None Include="shaders\vertex\framebuffer_screen.vert" />
     <None Include="shaders\vertex\grayscale.vert" />
     <None Include="shaders\vertex\inversion.vert" />
     <None Include="shaders\vertex\kernel_blur.vert" />
     <None Include="shaders\vertex\kernel_edge_detection.vert" />
     <None Include="shaders\vertex\kernel_sharpen.vert" />
-    <None Include="shaders\vertex\pure_tex.vert" />
+    <None Include="shaders\vertex\pure_texture.vert" />
     <None Include="shaders\fragment\light_cube.frag" />
-    <None Include="shaders\fragment\colors.frag" />
-    <None Include="shaders\fragment\model.frag" />
-    <None Include="shaders\vertex\colors.vert" />
+    <None Include="shaders\fragment\lighting_texture_cube.frag" />
+    <None Include="shaders\fragment\lighting_model.frag" />
+    <None Include="shaders\vertex\lighting_texture_cube.vert" />
     <None Include="shaders\vertex\light_cube.vert" />
-    <None Include="shaders\vertex\model.vert" />
+    <None Include="shaders\vertex\lighting_model.vert" />
     <None Include="shaders\fragment\visual_normal_vectors.frag" />
     <None Include="shaders\geometry\visual_normal_vectors.geom" />
     <None Include="shaders\vertex\visual_normal_vectors.vert" />

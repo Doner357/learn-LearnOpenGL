@@ -55,6 +55,8 @@ struct SpotLight {
 	vec3 specular;       // specular light's color & intensity
 };
 
+#define NO_LIGHT vec3(0.0)
+
 
 // Lighting calculation function
 //------------------------------
@@ -67,7 +69,7 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);   
 //------------------------------
 uniform Material material;                         // Material attributes
 uniform DirLight dirLight;                         // Directional light
-uniform PointLight pointLights[NR_POINT_LIGHTS];    // Point light
+uniform PointLight pointLights[NR_POINT_LIGHTS];   // Point light
 uniform SpotLight spotLight;                       // Spot light
 uniform vec3 viewPos;                              // Viewer position
 
@@ -75,15 +77,18 @@ void main() {
 	// Properties
 	vec3 norm = normalize(Normal);
 	vec3 viewerDir = normalize(viewPos - FragPos);
+	vec3 result = vec3(0.0);
 
 	// Phase 1: Directional lighting
-	vec3 result = CalcDirLight(dirLight, norm, viewerDir);
+	result += dirLight.direction == NO_LIGHT ? vec3(0.0) : CalcDirLight(dirLight, norm, viewerDir);
 	// Phase 2: Point lights
 	for(int i = 0; i < NR_POINT_LIGHTS; i++) {
+		if (pointLights[i].constant == 0)
+			break;
 		result += CalcPointLight(pointLights[i], norm, FragPos, viewerDir);
 	}
 	// Phase 3: Spot light
-	result += CalcSpotLight(spotLight, norm, FragPos, viewerDir);
+	result += spotLight.direction == NO_LIGHT ? vec3(0.0) : CalcSpotLight(spotLight, norm, FragPos, viewerDir);
 
 	FragColor = vec4(result, 1.0);
 }
