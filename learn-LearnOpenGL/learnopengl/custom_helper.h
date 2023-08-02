@@ -5,6 +5,10 @@
 
 #include <glm/glm.hpp>
 
+#include "shader_m.h"
+
+#include <cstdint>
+#include <string>
 #include <vector>
 #include <map>
 
@@ -12,6 +16,23 @@ enum VAOType {
 	VAO_CUBE,
 	VAO_QUAD,
 	VAO_SKYBOX,
+};
+
+enum UBOBindingPoints {
+	UBO_CAMERA_MATRICES = 0,
+	UBO_BLINPHONG_LIGHTING = 1
+};
+
+enum LightType {
+	DIRECTIONAL_LIGHT,
+	POINT_LIGHT,
+	SPOT_LIGHT
+};
+
+enum LightProperties {
+	MAX_NUM_DIRECTIONALLIGHT = 4,
+	MAX_NUM_POINTLIGHT = 32,
+	MAX_NUM_SPOTLIGHT = 8
 };
 
 namespace CustomHelper {
@@ -221,6 +242,392 @@ namespace CustomHelper {
 				return target;
 			}
 	};
+
+
+
+	struct BlinnPhongLight_direct {
+		glm::vec3 direction;
+
+		glm::vec3 ambient;
+		glm::vec3 diffuse;
+		glm::vec3 specular;
+	};
+
+	struct BlinnPhongLight_point {
+		glm::vec3 position;
+
+		float constant;
+		float linear;
+		float quadratic;
+
+		glm::vec3 ambient;
+		glm::vec3 diffuse;
+		glm::vec3 specular;
+	};
+
+	struct BlinnPhongLight_spot {
+		glm::vec3 direction;
+		glm::vec3 position;
+
+		float innerCutOff;
+		float outerCutOff;
+
+		float constant;
+		float linear;
+		float quadratic;
+
+		glm::vec3 ambient;
+		glm::vec3 diffuse;
+		glm::vec3 specular;
+	};
+	
+	class GlobalBlinnPongLightManager {
+		public:
+			GlobalBlinnPongLightManager(std::string uniform_block_name) {
+				// Set up unifrom block name
+				this->uniform_block_name = uniform_block_name;
+				dirLights = new BlinnPhongLight_direct[max_of_dirLight];
+				pointLights = new BlinnPhongLight_point[max_of_pointLight];
+				spotLights = new BlinnPhongLight_spot[max_of_spotLight];
+				// Initialize the unifrom block buffer
+				bindUniformBlockBuffer();
+			}
+
+			// Delete all the sources which use dynamic memory and VRAM
+			~GlobalBlinnPongLightManager() {
+				glDeleteBuffers(1, &unifrom_buffer);
+				delete[] dirLights;
+				delete[] pointLights;
+				delete[] spotLights;
+			}
+
+			// Bind the given shader onto the light uniform block points
+			void bindShaderOnUniformBlock(Shader& shader) {
+				unsigned int unifrom_block_index = glGetUniformBlockIndex(shader.ID, uniform_block_name.c_str());
+				glUniformBlockBinding(shader.ID, unifrom_block_index, UBO_BLINPHONG_LIGHTING);
+			}
+
+			// edit three type of lights : directional light
+			bool editLight(BlinnPhongLight_direct &light_data, const size_t index) {
+				bool success = false;
+				if (index < max_of_dirLight) {
+					if (updateDirLight(light_data, index)) {
+						dirLights[index] = light_data;
+						success = true;
+					}
+				}
+				else {
+					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::excess the max number of dirLight\n";
+				}
+
+				return success;
+			}
+
+			// edit three type of lights : point light
+			bool editLight(BlinnPhongLight_point &light_data, const size_t index) {
+				bool success = false;
+				if (index < max_of_pointLight) {
+					if (updatePointLight(light_data, index)) {
+						pointLights[index] = light_data;
+						success = true;
+					}
+				}
+				else {
+					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::excess the max number of pointLight\n";
+				}
+
+				return success;
+			}
+
+			// edit three type of lights : spot light
+			bool editLight(BlinnPhongLight_spot &light_data, const size_t index) {
+				bool success = false;
+				if (index < max_of_spotLight) {
+					if (updateSpotLight(light_data, index)) {
+							spotLights[index] = light_data;
+							success = true;
+					}
+				}
+				else {
+					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::excess the max number of spotLight\n";
+				}
+
+				return success;
+			}
+
+
+			BlinnPhongLight_direct getDirLight(const size_t index) const {
+				BlinnPhongLight_direct return_light = {};
+				if (index < max_of_dirLight)
+					return_light = dirLights[index];
+				return return_light;
+			}
+			BlinnPhongLight_point getpointLight(const size_t index) const {
+				BlinnPhongLight_point return_light = {};
+				if (index < max_of_pointLight)
+					return_light = pointLights[index];
+				return return_light;
+			}
+			BlinnPhongLight_spot getspotLight(const size_t index) const {
+				BlinnPhongLight_spot return_light = {};
+				if (index < max_of_spotLight)
+					return_light = spotLights[index];
+				return return_light;
+			}
+
+			void Debug() {
+				debuger();
+			}
+
+		private:
+			// Buffer Index
+			unsigned int unifrom_buffer;
+			// Uniform Block Name
+			std::string uniform_block_name;
+			// lights data records
+			BlinnPhongLight_direct *dirLights;
+			BlinnPhongLight_point *pointLights;
+			BlinnPhongLight_spot *spotLights;
+
+			const size_t max_of_dirLight = 4;
+			const size_t max_of_pointLight = 32;
+			const size_t max_of_spotLight = 8;
+
+			// DirLight datas
+			const GLsizeiptr dir_direction_pos = 0;
+			const GLsizeiptr dir_direction_size = 3 * sizeof(float);
+			const GLsizeiptr dir_ambient_pos = dir_direction_size + 4;
+			const GLsizeiptr dir_ambient_size = 3 * sizeof(float);
+			const GLsizeiptr dir_diffuse_pos = dir_ambient_pos + dir_ambient_size + 4;
+			const GLsizeiptr dir_diffuse_size = 3 * sizeof(float);
+			const GLsizeiptr dir_specular_pos = dir_diffuse_pos + dir_diffuse_size + 4;
+			const GLsizeiptr dir_specular_size = 3 * sizeof(float);
+			const GLsizeiptr dir_size = 64;
+			const GLsizeiptr dir_total_size = dir_size * max_of_dirLight;
+			const GLsizeiptr dir_arr_start_pos = 0;
+			const GLsizeiptr dir_next_arr_bias = 0;
+
+			// PointLight datas
+			const GLsizeiptr point_position_pos = 0;
+			const GLsizeiptr point_position_size = 3 * sizeof(float);
+			const GLsizeiptr point_constant_pos = point_position_pos + point_position_size;
+			const GLsizeiptr point_constant_size = sizeof(float);
+			const GLsizeiptr point_linear_pos = point_constant_pos + point_constant_size;
+			const GLsizeiptr point_linear_size = sizeof(float);
+			const GLsizeiptr point_quadratic_pos = point_linear_pos + point_linear_size;
+			const GLsizeiptr point_quadratic_size = sizeof(float);
+			const GLsizeiptr point_ambient_pos = point_quadratic_pos + point_quadratic_size + 8;
+			const GLsizeiptr point_ambient_size = 3 * sizeof(float);
+			const GLsizeiptr point_diffuse_pos = point_ambient_pos + point_ambient_size + 4;
+			const GLsizeiptr point_diffuse_size = 3 * sizeof(float);
+			const GLsizeiptr point_specular_pos = point_diffuse_pos + point_diffuse_size + 4;
+			const GLsizeiptr point_specular_size = 3 * sizeof(float);
+			const GLsizeiptr point_size = 80;
+			const GLsizeiptr point_total_size = point_size * max_of_pointLight;
+			const GLsizeiptr point_arr_start_pos = dir_arr_start_pos + dir_total_size + dir_next_arr_bias;
+			const GLsizeiptr point_next_arr_bias = 0;
+
+			// SpotLight datas
+			const GLsizeiptr spot_position_pos = 0;
+			const GLsizeiptr spot_position_size = 3 * sizeof(float);
+			const GLsizeiptr spot_direction_pos = spot_position_pos + spot_position_size + 4;
+			const GLsizeiptr spot_direction_size = 3 * sizeof(float);
+			const GLsizeiptr spot_innerCutOff_pos = spot_direction_pos + spot_direction_size;
+			const GLsizeiptr spot_innerCutOff_size = sizeof(float);
+			const GLsizeiptr spot_outerCutOff_pos = spot_innerCutOff_pos + spot_innerCutOff_size;
+			const GLsizeiptr spot_outerCutOff_size = sizeof(float);
+			const GLsizeiptr spot_constant_pos = spot_outerCutOff_pos + spot_outerCutOff_size;
+			const GLsizeiptr spot_constant_size = sizeof(float);
+			const GLsizeiptr spot_linear_pos = spot_constant_pos + spot_constant_size;
+			const GLsizeiptr spot_linear_size = sizeof(float);
+			const GLsizeiptr spot_quadratic_pos = spot_linear_pos + spot_linear_size;
+			const GLsizeiptr spot_quadratic_size = sizeof(float);
+			const GLsizeiptr spot_ambient_pos = spot_quadratic_pos + spot_quadratic_size;
+			const GLsizeiptr spot_ambient_size = 3 * sizeof(float);
+			const GLsizeiptr spot_diffuse_pos = spot_ambient_pos + spot_ambient_size + 4;
+			const GLsizeiptr spot_diffuse_size = 3 * sizeof(float);
+			const GLsizeiptr spot_specular_pos = spot_diffuse_pos + spot_diffuse_size + 4;
+			const GLsizeiptr spot_specular_size = 3 * sizeof(float);
+			const GLsizeiptr spot_arr_start_pos = point_arr_start_pos + point_total_size + point_next_arr_bias;
+			const GLsizeiptr spot_size = 96;
+			const GLsizeiptr spot_total_size = spot_size * max_of_spotLight;
+			const GLsizeiptr spot_next_arr_bias = 0;
+
+			// Unifrom block size constant
+			// uniform total size
+			const GLsizeiptr size_of_total_light = dir_total_size + dir_next_arr_bias
+				+ point_total_size + point_next_arr_bias
+				+ spot_total_size + spot_next_arr_bias;
+
+
+			void bindUniformBlockBuffer() {
+				glGenBuffers(1, &(this->unifrom_buffer));
+				glBindBuffer(GL_UNIFORM_BUFFER, (this->unifrom_buffer));
+				glBufferData(GL_UNIFORM_BUFFER, size_of_total_light, NULL, GL_DYNAMIC_DRAW);
+				glBindBufferBase(GL_UNIFORM_BUFFER, UBO_BLINPHONG_LIGHTING, (this->unifrom_buffer));
+				glBindBuffer(GL_UNIFORM_BUFFER, 0);
+			}
+			
+			bool updateDirLight(BlinnPhongLight_direct &light_data, const size_t index) {
+				bool success = false;
+
+				glBindBuffer(GL_UNIFORM_BUFFER, unifrom_buffer);
+				GLubyte *buf_ptr = static_cast<GLubyte*>(glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY));
+				GLubyte *const startPos = buf_ptr + dir_arr_start_pos + (index * dir_size);
+
+				if (buf_ptr) {
+					memcpy(startPos + dir_direction_pos, glm::value_ptr(light_data.direction), sizeof(light_data.direction));
+					memcpy(startPos + dir_ambient_pos, glm::value_ptr(light_data.ambient), sizeof(light_data.ambient));
+					memcpy(startPos + dir_diffuse_pos, glm::value_ptr(light_data.diffuse), sizeof(light_data.diffuse));
+					memcpy(startPos + dir_specular_pos, glm::value_ptr(light_data.specular), sizeof(light_data.specular));
+				}
+				else {
+					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::DIRLIGHT::fail to map the light uniform buffer\n";
+				}
+
+				GLenum map_success = glUnmapBuffer(GL_UNIFORM_BUFFER);
+				glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+				if (map_success == GL_TRUE)
+					success = true;
+				else
+					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::DIRLIGHT::map unsuccessful\n";
+
+				return success;
+			}
+
+			bool updatePointLight(BlinnPhongLight_point &light_data, const size_t index) {
+				bool success = false;
+
+				glBindBuffer(GL_UNIFORM_BUFFER, unifrom_buffer);
+				GLubyte *buf_ptr = static_cast<GLubyte *>(glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY));
+				GLubyte *const startPos = buf_ptr + point_arr_start_pos + (index * point_size);
+
+				if (buf_ptr) {
+					memcpy(startPos + point_position_pos, glm::value_ptr(light_data.position), sizeof(light_data.position));
+					memcpy(startPos + point_constant_pos, &light_data.constant, sizeof(light_data.constant));
+					memcpy(startPos + point_linear_pos, &light_data.linear, sizeof(light_data.linear));
+					memcpy(startPos + point_quadratic_pos, &light_data.quadratic, sizeof(light_data.quadratic));
+					memcpy(startPos + point_ambient_pos, &light_data.ambient, sizeof(light_data.ambient));
+					memcpy(startPos + point_diffuse_pos, &light_data.diffuse, sizeof(light_data.diffuse));
+					memcpy(startPos + point_specular_pos, &light_data.specular, sizeof(light_data.specular));
+				}
+				else {
+					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::POINTLIGHT::fail to map the light uniform buffer\n";
+				}
+
+				GLenum map_success = glUnmapBuffer(GL_UNIFORM_BUFFER);
+				glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+				if (map_success == GL_TRUE)
+					success = true;
+				else
+					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::POINTLIGHT::map unsuccessful\n";
+
+				return success;
+			}
+
+			bool updateSpotLight(BlinnPhongLight_spot &light_data, const size_t index) {
+				bool success = false;
+
+				glBindBuffer(GL_UNIFORM_BUFFER, unifrom_buffer);
+				GLubyte *buf_ptr = static_cast<GLubyte *>(glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY));
+				GLubyte *const startPos = buf_ptr + spot_arr_start_pos + (index * spot_size);
+
+				if (buf_ptr) {
+					memcpy(startPos + spot_direction_pos, glm::value_ptr(light_data.direction), sizeof(light_data.direction));
+					memcpy(startPos + spot_position_pos, glm::value_ptr(light_data.position), sizeof(light_data.position));
+					memcpy(startPos + spot_innerCutOff_pos, &light_data.innerCutOff, sizeof(light_data.innerCutOff));
+					memcpy(startPos + spot_outerCutOff_pos, &light_data.outerCutOff, sizeof(light_data.outerCutOff));
+					memcpy(startPos + spot_constant_pos, &light_data.constant, sizeof(light_data.constant));
+					memcpy(startPos + spot_linear_pos, &light_data.linear, sizeof(light_data.linear));
+					memcpy(startPos + spot_quadratic_pos, &light_data.quadratic, sizeof(light_data.quadratic));
+					memcpy(startPos + spot_ambient_pos, &light_data.ambient, sizeof(light_data.ambient));
+					memcpy(startPos + spot_diffuse_pos, &light_data.diffuse, sizeof(light_data.diffuse));
+					memcpy(startPos + spot_specular_pos, &light_data.specular, sizeof(light_data.specular));
+				}
+				else {
+					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::SPOTLIGHT::fail to map the light uniform buffer\n";
+				}
+
+				GLenum map_success = glUnmapBuffer(GL_UNIFORM_BUFFER);
+				glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+				if (map_success == GL_TRUE)
+					success = true;
+				else
+					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::SPOTLIGHT::map unsuccessful\n";
+
+				return success;
+			}
+
+			void debuger() {
+				std::cout << "total size: " << size_of_total_light << std::endl;
+
+				std::cout << "\n";
+				std::cout << "dir_direction_pos : " << dir_direction_pos << std::endl;
+				std::cout << "dir_direction_size : " << dir_direction_size << std::endl;
+				std::cout << "dir_ambient_pos : " << dir_ambient_pos << std::endl;
+				std::cout << "dir_ambient_size : " << dir_ambient_size << std::endl;
+				std::cout << "dir_diffuse_pos : " << dir_diffuse_pos << std::endl;
+				std::cout << "dir_diffuse_size : " << dir_diffuse_size << std::endl;
+				std::cout << "dir_specular_pos : " << dir_specular_pos << std::endl;
+				std::cout << "dir_specular_size : " << dir_specular_size << std::endl;
+				std::cout << "dir_size : " << dir_size << std::endl;
+				std::cout << "dir_total_size : " << dir_total_size << std::endl;
+				std::cout << "dir_arr_start_pos : " << dir_arr_start_pos << std::endl;
+				std::cout << "dir_next_arr_bias : " << dir_next_arr_bias << std::endl;
+
+				std::cout << "\n";
+				// PointLight datas
+				std::cout << "point_position_pos : " << point_position_pos << std::endl;
+				std::cout << "point_position_size : " << point_position_size << std::endl;
+				std::cout << "point_constant_pos : " << point_constant_pos << std::endl;
+				std::cout << "point_constant_size : " << point_constant_size << std::endl;
+				std::cout << "point_linear_pos : " << point_linear_pos << std::endl;
+				std::cout << "point_linear_size : " << point_linear_size << std::endl;
+				std::cout << "point_quadratic_pos : " << point_quadratic_pos << std::endl;
+				std::cout << "point_quadratic_size : " << point_quadratic_size << std::endl;
+				std::cout << "point_ambient_pos : " << point_ambient_pos << std::endl;
+				std::cout << "point_ambient_size : " << point_ambient_size << std::endl;
+				std::cout << "point_diffuse_pos : " << point_diffuse_pos << std::endl;
+				std::cout << "point_diffuse_size : " << point_diffuse_size << std::endl;
+				std::cout << "point_specular_pos : " << point_specular_pos << std::endl;
+				std::cout << "point_specular_size : " << point_specular_size << std::endl;
+				std::cout << "point_size : " << point_size << std::endl;
+				std::cout << "point_total_size : " << point_total_size << std::endl;
+				std::cout << "point_arr_start_pos : " << point_arr_start_pos << std::endl;
+				std::cout << "point_next_arr_bias : " << point_next_arr_bias << std::endl;
+
+				std::cout << "\n";
+				// SpotLight datas
+				std::cout << "spot_position_pos : " << spot_position_pos << std::endl;
+				std::cout << "spot_position_size : " << spot_position_size << std::endl;
+				std::cout << "spot_direction_pos : " << spot_direction_pos << std::endl;
+				std::cout << "spot_direction_size : " << spot_direction_size << std::endl;
+				std::cout << "spot_innerCutOff_pos : " << spot_innerCutOff_pos << std::endl;
+				std::cout << "spot_innerCutOff_size : " << spot_innerCutOff_size << std::endl;
+				std::cout << "spot_outerCutOff_pos : " << spot_outerCutOff_pos << std::endl;
+				std::cout << "spot_outerCutOff_size : " << spot_outerCutOff_size << std::endl;
+				std::cout << "spot_constant_pos : " << spot_constant_pos << std::endl;
+				std::cout << "spot_constant_size : " << spot_constant_size << std::endl;
+				std::cout << "spot_linear_pos : " << spot_linear_pos << std::endl;
+				std::cout << "spot_linear_size : " << spot_linear_size << std::endl;
+				std::cout << "spot_quadratic_pos : " << spot_quadratic_pos << std::endl;
+				std::cout << "spot_quadratic_size : " << spot_quadratic_size << std::endl;
+				std::cout << "spot_ambient_pos : " << spot_ambient_pos << std::endl;
+				std::cout << "spot_ambient_size : " << spot_ambient_size << std::endl;
+				std::cout << "spot_diffuse_pos : " << spot_diffuse_pos << std::endl;
+				std::cout << "spot_diffuse_size : " << spot_diffuse_size << std::endl;
+				std::cout << "spot_specular_pos : " << spot_specular_pos << std::endl;
+				std::cout << "spot_specular_size : " << spot_specular_size << std::endl;
+				std::cout << "spot_pos : " << spot_arr_start_pos << std::endl;
+				std::cout << "spot_size : " << spot_size << std::endl;
+				std::cout << "spot_total_size : " << spot_total_size << std::endl;
+				std::cout << "spot_next_arr_bias : " << spot_next_arr_bias << std::endl;
+			}
+	};	
+
 }
 
 #endif

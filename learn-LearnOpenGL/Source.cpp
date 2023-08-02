@@ -258,7 +258,8 @@ int main(void) {
 	*/
 	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
 	Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
-	Shader cubeShader("shaders/vertex/lighting_color_cube.vert", "shaders/fragment/lighting_color_cube.frag");
+	Shader cubeShader("shaders/vertex/global_lighting_color_cube.vert", "shaders/fragment/global_lighting_color_cube.frag");
+	Shader lightCubeShader("shaders/vertex/light_cube.vert", "shaders/fragment/light_cube.frag");
 
 
 
@@ -280,15 +281,18 @@ int main(void) {
 	cubeShader.setVec3("material.diffuse", glm::vec3(0.50754f, 0.50754f, 0.50754f));
 	cubeShader.setVec3("material.specular", glm::vec3(0.508273f));
 	cubeShader.setFloat("material.shininess", 512.0f);
+	/*
 	cubeShader.setVec3("dirLight.direction", glm::vec3(-1.0f, -1.0f, 0.0f));
 	cubeShader.setVec3("dirLight.ambient", glm::vec3(1.0f));
 	cubeShader.setVec3("dirLight.diffuse", glm::vec3(1.0f));
-	cubeShader.setVec3("dirLight.specular", glm::vec3(1.0f));
+	cubeShader.setVec3("dirLight.specular", glm::vec3(1.0f));	
+	*/
+
 
 
 	glUseProgram(0);
 
-
+	
 
 	/*
 	 * Uniform Block Object setting
@@ -308,6 +312,88 @@ int main(void) {
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	glBindBufferRange(GL_UNIFORM_BUFFER, 0, cameraMatrices, 0, 2 * sizeof(glm::mat4));
+
+	CustomHelper::GlobalBlinnPongLightManager lightmanager("GlobalLights");
+	lightmanager.bindShaderOnUniformBlock(cubeShader);
+	CustomHelper::BlinnPhongLight_direct dirlight = {
+		glm::vec3(-1.0f, -1.0f, 0.0f),
+		glm::vec3(0.2f),
+		glm::vec3(0.2f),
+		glm::vec3(0.5f)
+	};
+	lightmanager.editLight(dirlight, 0);
+	dirlight = {
+		glm::vec3(0.0f, -1.0f, 0.0f),
+		glm::vec3(0.2f),
+		glm::vec3(0.4f),
+		glm::vec3(0.5f)
+	};
+	lightmanager.editLight(dirlight, 1);
+	dirlight = {
+		glm::vec3(-0.5f, -1.0f, -0.0f),
+		glm::vec3(0.1f, 0.05f, 0.0f),
+		glm::vec3(0.4f, 0.2f, 0.0f),
+		glm::vec3(0.5f, 0.2f, 0.0f)
+	};
+	lightmanager.editLight(dirlight, 2);
+	dirlight = {
+		glm::vec3(0.5f, -1.0f, 0.0f),
+		glm::vec3(0.0f, 0.2f, 0.0f),
+		glm::vec3(0.1f, 0.4f, 0.0f),
+		glm::vec3(0.2f, 0.8f, 0.0f)
+	};
+	lightmanager.editLight(dirlight, 3);
+
+	CustomHelper::BlinnPhongLight_point pointLight;
+	pointLight = {
+		glm::vec3(6.0f,  3.0f, 0.0f),
+		1.0f,
+		0.09f,
+		0.032f,
+		glm::vec3(0.1f),
+		glm::vec3(0.8f),
+		glm::vec3(0.8f)
+	};
+	lightmanager.editLight(pointLight, 0);
+	pointLight = {
+		glm::vec3(3.0f,  3.0f, 0.0f),
+		1.0f,
+		0.09f,
+		0.032f,
+		glm::vec3(0.1f),
+		glm::vec3(0.8f),
+		glm::vec3(0.8f)
+	};
+	lightmanager.editLight(pointLight, 1);
+	pointLight = {
+		glm::vec3(0.0f,  3.0f, 0.0f),
+		1.0f,
+		0.09f,
+		0.032f,
+		glm::vec3(0.1f),
+		glm::vec3(0.8f),
+		glm::vec3(0.8f)
+	};
+	lightmanager.editLight(pointLight, 2);
+	//lightmanager.Debug();
+
+	CustomHelper::BlinnPhongLight_spot spotLight;
+	spotLight = {
+		glm::vec3(0.0f,  -1.0f, 0.0f),
+		glm::vec3(10.0f,  10.0f, 0.0f),
+		glm::cos(glm::radians(12.5f)),
+		glm::cos(glm::radians(15.0f)),
+		1.0f,
+		0.09f,
+		0.032f,
+		glm::vec3(0.0f),
+		glm::vec3(1.0f),
+		glm::vec3(1.0f)
+	};
+	lightmanager.editLight(spotLight, 0);
+
+	lightCubeShader.use();
+	lightCubeShader.setVec3("lightColor", glm::vec3(1.0f));
 
 
 
@@ -408,7 +494,6 @@ int main(void) {
 		cubeShader.use();
 
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, -4.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(40.0f));
 		model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		normalMat = CalculateNormalMat(model);
@@ -417,6 +502,17 @@ int main(void) {
 		cubeShader.setVec3("viewPos", camera.Position);
 
 		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+		lightCubeShader.use();
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, pointLight.position);
+		model = glm::scale(model, glm::vec3(0.5f));
+		lightCubeShader.setMat4("model", model);
+
+		glBindVertexArray(cubeVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 

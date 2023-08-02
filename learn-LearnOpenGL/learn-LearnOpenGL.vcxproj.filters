@@ -187,6 +187,12 @@
     <None Include="shaders\fragment\lighting_color_cube.frag">
       <Filter>Resource Files\shaders\fragment</Filter>
     </None>
+    <None Include="shaders\vertex\global_lighting_color_cube.vert">
+      <Filter>Resource Files\shaders\vertex</Filter>
+    </None>
+    <None Include="shaders\fragment\global_lighting_color_cube.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">

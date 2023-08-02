@@ -155,6 +155,8 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\fragment\global_lighting_color_cube.frag" />
+    <None Include="shaders\vertex\global_lighting_color_cube.vert" />
     <None Include="shaders\fragment\lighting_color_cube.frag" />
     <None Include="shaders\vertex\lighting_color_cube.vert" />
     <None Include="shaders\fragment\model.frag" />
