@@ -4,10 +4,13 @@
 #include <glad/glad.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "shader_m.h"
 
 #include <cstdint>
+#include <cmath>
 #include <string>
 #include <vector>
 #include <map>
@@ -19,8 +22,8 @@ enum VAOType {
 };
 
 enum UBOBindingPoints {
-	UBO_CAMERA_MATRICES = 0,
-	UBO_BLINPHONG_LIGHTING = 1
+	UBOPOINT_CAMERA_MATRICES = 0,
+	UBOPOINT_BLINPHONG_LIGHTING = 1
 };
 
 enum LightType {
@@ -286,9 +289,9 @@ namespace CustomHelper {
 			GlobalBlinnPongLightManager(std::string uniform_block_name) {
 				// Set up unifrom block name
 				this->uniform_block_name = uniform_block_name;
-				dirLights = new BlinnPhongLight_direct[max_of_dirLight];
-				pointLights = new BlinnPhongLight_point[max_of_pointLight];
-				spotLights = new BlinnPhongLight_spot[max_of_spotLight];
+				dirLights = new BlinnPhongLight_direct[max_of_dirLight]();
+				pointLights = new BlinnPhongLight_point[max_of_pointLight]();
+				spotLights = new BlinnPhongLight_spot[max_of_spotLight]();
 				// Initialize the unifrom block buffer
 				bindUniformBlockBuffer();
 			}
@@ -304,7 +307,7 @@ namespace CustomHelper {
 			// Bind the given shader onto the light uniform block points
 			void bindShaderOnUniformBlock(Shader& shader) {
 				unsigned int unifrom_block_index = glGetUniformBlockIndex(shader.ID, uniform_block_name.c_str());
-				glUniformBlockBinding(shader.ID, unifrom_block_index, UBO_BLINPHONG_LIGHTING);
+				glUniformBlockBinding(shader.ID, unifrom_block_index, UBOPOINT_BLINPHONG_LIGHTING);
 			}
 
 			// edit three type of lights : directional light
@@ -317,7 +320,7 @@ namespace CustomHelper {
 					}
 				}
 				else {
-					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::excess the max number of dirLight\n";
+					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::excess the max number of dirLight. (Index: " << index << ")\n";
 				}
 
 				return success;
@@ -333,7 +336,7 @@ namespace CustomHelper {
 					}
 				}
 				else {
-					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::excess the max number of pointLight\n";
+					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::excess the max number of pointLight. (Index: " << index << ")\n";
 				}
 
 				return success;
@@ -349,13 +352,13 @@ namespace CustomHelper {
 					}
 				}
 				else {
-					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::excess the max number of spotLight\n";
+					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::excess the max number of spotLight. (Index: " << index << ")\n";
 				}
 
 				return success;
 			}
 
-
+			// Return the index light data
 			BlinnPhongLight_direct getDirLight(const size_t index) const {
 				BlinnPhongLight_direct return_light = {};
 				if (index < max_of_dirLight)
@@ -375,7 +378,8 @@ namespace CustomHelper {
 				return return_light;
 			}
 
-			void Debug() {
+			// Print the debug message
+			void debug() {
 				debuger();
 			}
 
@@ -389,9 +393,10 @@ namespace CustomHelper {
 			BlinnPhongLight_point *pointLights;
 			BlinnPhongLight_spot *spotLights;
 
-			const size_t max_of_dirLight = 4;
-			const size_t max_of_pointLight = 32;
-			const size_t max_of_spotLight = 8;
+			// Record the maximum number of each light
+			const size_t max_of_dirLight = MAX_NUM_DIRECTIONALLIGHT;
+			const size_t max_of_pointLight = MAX_NUM_POINTLIGHT;
+			const size_t max_of_spotLight = MAX_NUM_SPOTLIGHT;
 
 			// DirLight datas
 			const GLsizeiptr dir_direction_pos = 0;
@@ -404,7 +409,7 @@ namespace CustomHelper {
 			const GLsizeiptr dir_specular_size = 3 * sizeof(float);
 			const GLsizeiptr dir_size = 64;
 			const GLsizeiptr dir_total_size = dir_size * max_of_dirLight;
-			const GLsizeiptr dir_arr_start_pos = 0;
+			const GLsizeiptr dir_arr_bottom_pos = 0;
 			const GLsizeiptr dir_next_arr_bias = 0;
 
 			// PointLight datas
@@ -424,7 +429,7 @@ namespace CustomHelper {
 			const GLsizeiptr point_specular_size = 3 * sizeof(float);
 			const GLsizeiptr point_size = 80;
 			const GLsizeiptr point_total_size = point_size * max_of_pointLight;
-			const GLsizeiptr point_arr_start_pos = dir_arr_start_pos + dir_total_size + dir_next_arr_bias;
+			const GLsizeiptr point_arr_bottom_pos = dir_arr_bottom_pos + dir_total_size + dir_next_arr_bias;
 			const GLsizeiptr point_next_arr_bias = 0;
 
 			// SpotLight datas
@@ -448,7 +453,7 @@ namespace CustomHelper {
 			const GLsizeiptr spot_diffuse_size = 3 * sizeof(float);
 			const GLsizeiptr spot_specular_pos = spot_diffuse_pos + spot_diffuse_size + 4;
 			const GLsizeiptr spot_specular_size = 3 * sizeof(float);
-			const GLsizeiptr spot_arr_start_pos = point_arr_start_pos + point_total_size + point_next_arr_bias;
+			const GLsizeiptr spot_arr_bottom_pos = point_arr_bottom_pos + point_total_size + point_next_arr_bias;
 			const GLsizeiptr spot_size = 96;
 			const GLsizeiptr spot_total_size = spot_size * max_of_spotLight;
 			const GLsizeiptr spot_next_arr_bias = 0;
@@ -459,27 +464,28 @@ namespace CustomHelper {
 				+ point_total_size + point_next_arr_bias
 				+ spot_total_size + spot_next_arr_bias;
 
-
+			// Create a buffer to sotred lights data
 			void bindUniformBlockBuffer() {
 				glGenBuffers(1, &(this->unifrom_buffer));
 				glBindBuffer(GL_UNIFORM_BUFFER, (this->unifrom_buffer));
 				glBufferData(GL_UNIFORM_BUFFER, size_of_total_light, NULL, GL_DYNAMIC_DRAW);
-				glBindBufferBase(GL_UNIFORM_BUFFER, UBO_BLINPHONG_LIGHTING, (this->unifrom_buffer));
+				glBindBufferBase(GL_UNIFORM_BUFFER, UBOPOINT_BLINPHONG_LIGHTING, (this->unifrom_buffer));
 				glBindBuffer(GL_UNIFORM_BUFFER, 0);
 			}
 			
+			// Update the directional light data
 			bool updateDirLight(BlinnPhongLight_direct &light_data, const size_t index) {
 				bool success = false;
 
+				// Map the uniform buffer and get its address
 				glBindBuffer(GL_UNIFORM_BUFFER, unifrom_buffer);
-				GLubyte *buf_ptr = static_cast<GLubyte*>(glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY));
-				GLubyte *const startPos = buf_ptr + dir_arr_start_pos + (index * dir_size);
+				GLubyte * const bottomPos = static_cast<GLubyte *>(glMapBufferRange(GL_UNIFORM_BUFFER, dir_arr_bottom_pos + (index * dir_size), dir_size, GL_MAP_WRITE_BIT));
 
-				if (buf_ptr) {
-					memcpy(startPos + dir_direction_pos, glm::value_ptr(light_data.direction), sizeof(light_data.direction));
-					memcpy(startPos + dir_ambient_pos, glm::value_ptr(light_data.ambient), sizeof(light_data.ambient));
-					memcpy(startPos + dir_diffuse_pos, glm::value_ptr(light_data.diffuse), sizeof(light_data.diffuse));
-					memcpy(startPos + dir_specular_pos, glm::value_ptr(light_data.specular), sizeof(light_data.specular));
+				if (bottomPos) {
+					memcpy(bottomPos + dir_direction_pos, glm::value_ptr(light_data.direction), sizeof(light_data.direction));
+					memcpy(bottomPos + dir_ambient_pos, glm::value_ptr(light_data.ambient), sizeof(light_data.ambient));
+					memcpy(bottomPos + dir_diffuse_pos, glm::value_ptr(light_data.diffuse), sizeof(light_data.diffuse));
+					memcpy(bottomPos + dir_specular_pos, glm::value_ptr(light_data.specular), sizeof(light_data.specular));
 				}
 				else {
 					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::DIRLIGHT::fail to map the light uniform buffer\n";
@@ -496,21 +502,22 @@ namespace CustomHelper {
 				return success;
 			}
 
+			// Update the point light data
 			bool updatePointLight(BlinnPhongLight_point &light_data, const size_t index) {
 				bool success = false;
 
+				// Map the uniform buffer and get its address
 				glBindBuffer(GL_UNIFORM_BUFFER, unifrom_buffer);
-				GLubyte *buf_ptr = static_cast<GLubyte *>(glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY));
-				GLubyte *const startPos = buf_ptr + point_arr_start_pos + (index * point_size);
+				GLubyte *const bottomPos = static_cast<GLubyte *>(glMapBufferRange(GL_UNIFORM_BUFFER, point_arr_bottom_pos + (index * point_size), point_size, GL_MAP_WRITE_BIT));
 
-				if (buf_ptr) {
-					memcpy(startPos + point_position_pos, glm::value_ptr(light_data.position), sizeof(light_data.position));
-					memcpy(startPos + point_constant_pos, &light_data.constant, sizeof(light_data.constant));
-					memcpy(startPos + point_linear_pos, &light_data.linear, sizeof(light_data.linear));
-					memcpy(startPos + point_quadratic_pos, &light_data.quadratic, sizeof(light_data.quadratic));
-					memcpy(startPos + point_ambient_pos, &light_data.ambient, sizeof(light_data.ambient));
-					memcpy(startPos + point_diffuse_pos, &light_data.diffuse, sizeof(light_data.diffuse));
-					memcpy(startPos + point_specular_pos, &light_data.specular, sizeof(light_data.specular));
+				if (bottomPos) {
+					memcpy(bottomPos + point_position_pos, glm::value_ptr(light_data.position), sizeof(light_data.position));
+					memcpy(bottomPos + point_constant_pos, &light_data.constant, sizeof(light_data.constant));
+					memcpy(bottomPos + point_linear_pos, &light_data.linear, sizeof(light_data.linear));
+					memcpy(bottomPos + point_quadratic_pos, &light_data.quadratic, sizeof(light_data.quadratic));
+					memcpy(bottomPos + point_ambient_pos, &light_data.ambient, sizeof(light_data.ambient));
+					memcpy(bottomPos + point_diffuse_pos, &light_data.diffuse, sizeof(light_data.diffuse));
+					memcpy(bottomPos + point_specular_pos, &light_data.specular, sizeof(light_data.specular));
 				}
 				else {
 					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::POINTLIGHT::fail to map the light uniform buffer\n";
@@ -527,24 +534,25 @@ namespace CustomHelper {
 				return success;
 			}
 
+			// Update the spot light data
 			bool updateSpotLight(BlinnPhongLight_spot &light_data, const size_t index) {
 				bool success = false;
 
+				// Map the uniform buffer and get its address
 				glBindBuffer(GL_UNIFORM_BUFFER, unifrom_buffer);
-				GLubyte *buf_ptr = static_cast<GLubyte *>(glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY));
-				GLubyte *const startPos = buf_ptr + spot_arr_start_pos + (index * spot_size);
+				GLubyte *const bottomPos = static_cast<GLubyte *>(glMapBufferRange(GL_UNIFORM_BUFFER, spot_arr_bottom_pos + (index * spot_size), spot_size, GL_MAP_WRITE_BIT));
 
-				if (buf_ptr) {
-					memcpy(startPos + spot_direction_pos, glm::value_ptr(light_data.direction), sizeof(light_data.direction));
-					memcpy(startPos + spot_position_pos, glm::value_ptr(light_data.position), sizeof(light_data.position));
-					memcpy(startPos + spot_innerCutOff_pos, &light_data.innerCutOff, sizeof(light_data.innerCutOff));
-					memcpy(startPos + spot_outerCutOff_pos, &light_data.outerCutOff, sizeof(light_data.outerCutOff));
-					memcpy(startPos + spot_constant_pos, &light_data.constant, sizeof(light_data.constant));
-					memcpy(startPos + spot_linear_pos, &light_data.linear, sizeof(light_data.linear));
-					memcpy(startPos + spot_quadratic_pos, &light_data.quadratic, sizeof(light_data.quadratic));
-					memcpy(startPos + spot_ambient_pos, &light_data.ambient, sizeof(light_data.ambient));
-					memcpy(startPos + spot_diffuse_pos, &light_data.diffuse, sizeof(light_data.diffuse));
-					memcpy(startPos + spot_specular_pos, &light_data.specular, sizeof(light_data.specular));
+				if (bottomPos) {
+					memcpy(bottomPos + spot_direction_pos, glm::value_ptr(light_data.direction), sizeof(light_data.direction));
+					memcpy(bottomPos + spot_position_pos, glm::value_ptr(light_data.position), sizeof(light_data.position));
+					memcpy(bottomPos + spot_innerCutOff_pos, &light_data.innerCutOff, sizeof(light_data.innerCutOff));
+					memcpy(bottomPos + spot_outerCutOff_pos, &light_data.outerCutOff, sizeof(light_data.outerCutOff));
+					memcpy(bottomPos + spot_constant_pos, &light_data.constant, sizeof(light_data.constant));
+					memcpy(bottomPos + spot_linear_pos, &light_data.linear, sizeof(light_data.linear));
+					memcpy(bottomPos + spot_quadratic_pos, &light_data.quadratic, sizeof(light_data.quadratic));
+					memcpy(bottomPos + spot_ambient_pos, &light_data.ambient, sizeof(light_data.ambient));
+					memcpy(bottomPos + spot_diffuse_pos, &light_data.diffuse, sizeof(light_data.diffuse));
+					memcpy(bottomPos + spot_specular_pos, &light_data.specular, sizeof(light_data.specular));
 				}
 				else {
 					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::SPOTLIGHT::fail to map the light uniform buffer\n";
@@ -575,7 +583,7 @@ namespace CustomHelper {
 				std::cout << "dir_specular_size : " << dir_specular_size << std::endl;
 				std::cout << "dir_size : " << dir_size << std::endl;
 				std::cout << "dir_total_size : " << dir_total_size << std::endl;
-				std::cout << "dir_arr_start_pos : " << dir_arr_start_pos << std::endl;
+				std::cout << "dir_arr_bottom_pos : " << dir_arr_bottom_pos << std::endl;
 				std::cout << "dir_next_arr_bias : " << dir_next_arr_bias << std::endl;
 
 				std::cout << "\n";
@@ -596,7 +604,7 @@ namespace CustomHelper {
 				std::cout << "point_specular_size : " << point_specular_size << std::endl;
 				std::cout << "point_size : " << point_size << std::endl;
 				std::cout << "point_total_size : " << point_total_size << std::endl;
-				std::cout << "point_arr_start_pos : " << point_arr_start_pos << std::endl;
+				std::cout << "point_arr_bottom_pos : " << point_arr_bottom_pos << std::endl;
 				std::cout << "point_next_arr_bias : " << point_next_arr_bias << std::endl;
 
 				std::cout << "\n";
@@ -621,13 +629,133 @@ namespace CustomHelper {
 				std::cout << "spot_diffuse_size : " << spot_diffuse_size << std::endl;
 				std::cout << "spot_specular_pos : " << spot_specular_pos << std::endl;
 				std::cout << "spot_specular_size : " << spot_specular_size << std::endl;
-				std::cout << "spot_pos : " << spot_arr_start_pos << std::endl;
+				std::cout << "spot_arr_bottom_pos : " << spot_arr_bottom_pos << std::endl;
 				std::cout << "spot_size : " << spot_size << std::endl;
 				std::cout << "spot_total_size : " << spot_total_size << std::endl;
 				std::cout << "spot_next_arr_bias : " << spot_next_arr_bias << std::endl;
 			}
-	};	
+	};
 
+
+	// Calculate the normal matrix
+	glm::mat3 CalculateNormalMat(const glm::mat4 &modelMat) {
+		return glm::mat3(glm::transpose(glm::inverse(modelMat)));
+	}
+
+	// Random color generator
+	glm::vec3 GenerateRandomColor(glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
+		glm::vec3 color(0.0f);
+		srand(glfwGetTime() * 100000);
+		glm::vec3 range = (glm::abs(max_col - min_col) * glm::vec3(255.0f, 255.0f, 255.0f)) + glm::vec3(1.0f);
+		color.r = (rand() % static_cast<int>(range.r)) / 255.0f + fminf(min_col.r, max_col.r);
+		color.g = (rand() % static_cast<int>(range.g)) / 255.0f + fminf(min_col.g, max_col.g);
+		color.b = (rand() % static_cast<int>(range.b)) / 255.0f + fminf(min_col.b, max_col.b);
+
+		return color;
+	}
+
+	// Random vec3 generator
+	glm::vec3 GenerateRandomVec3(const glm::vec3 min_vec3, const glm::vec3 max_vec3, glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
+		// Set up random seed and range
+		srand(glfwGetTime() * 100000);
+		glm::vec3 range = (glm::abs(max_vec3 - min_vec3) * glm::vec3(100.0f, 100.0f, 100.0f)) + glm::vec3(1.0f);
+		glm::vec3 ran_vec;
+
+		// Generate random color
+		glm::vec3 color = GenerateRandomColor(min_col, max_col);
+		// Generate random vector
+		ran_vec.x = (rand() % static_cast<int>(range.x)) / 100.0f + fminf(min_vec3.x, max_vec3.x);
+		ran_vec.y = (rand() % static_cast<int>(range.y)) / 100.0f + fminf(min_vec3.y, max_vec3.y);
+		ran_vec.z = (rand() % static_cast<int>(range.z)) / 100.0f + fminf(min_vec3.z, max_vec3.z);
+
+		return ran_vec;
+	}
+
+	BlinnPhongLight_direct GenerateRandomGlobalBlinnPhongLight_dirLight(const glm::vec3 min_dir, const glm::vec3 max_dir, glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
+		BlinnPhongLight_direct light{};
+
+		// Generate random color
+		glm::vec3 color = GenerateRandomColor(min_col, max_col);
+		// Generate random direction
+		glm::vec3 direction = GenerateRandomVec3(min_dir, max_dir);
+
+		light.direction = direction;
+		light.ambient = color * 0.2f;
+		light.diffuse = color * 0.5f;
+		light.specular = color * 0.8f;
+
+		return light;
+	}
+
+	BlinnPhongLight_point GenerateRandomGlobalBlinnPhongLight_pointLight(const glm::vec3 min_pos, const glm::vec3 max_pos, glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
+		BlinnPhongLight_point light{};
+
+		// Generate random color
+		glm::vec3 color = GenerateRandomColor(min_col, max_col);
+		// Generate random position
+		glm::vec3 position = GenerateRandomVec3(min_pos, max_pos);
+
+		light.position = position;
+		light.constant = 1.0f;
+		light.linear = 0.09f;
+		light.quadratic = 0.032f;
+		light.ambient = color * 0.2f;
+		light.diffuse = color * 0.8f;
+		light.specular = color;
+
+		return light;
+	}
+
+	BlinnPhongLight_spot GenerateRandomGlobalBlinnPhongLight_spotLight(const glm::vec3 min_dir, const glm::vec3 max_dir, const glm::vec3 min_pos, const glm::vec3 max_pos, glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
+		BlinnPhongLight_spot light{};
+
+		// Set up random seed
+		srand(glfwGetTime());
+
+		// Generate color
+		glm::vec3 color = GenerateRandomColor(min_col, max_col);
+		// Generate random direction
+		glm::vec3 direction = GenerateRandomVec3(min_dir, max_dir);
+		// Generate random position
+		glm::vec3 position = GenerateRandomVec3(min_pos, max_pos);
+		// Generate random inner cutoff and outer cutoff. The inner cutoff is between 10 and 90 degree, and the outer cutoff is always 3 degrees larger than inner cutoff.
+		float angle = static_cast<float>((rand() % 81) + 10);
+		float innerCutoff = glm::cos(glm::radians(angle));
+		float outerCutoff = glm::cos(glm::radians(angle + 3.0f));
+
+		light.direction = direction;
+		light.position = position;
+		light.innerCutOff = innerCutoff;
+		light.outerCutOff = outerCutoff;
+		light.constant = 1.0f;
+		light.linear = 0.09f;
+		light.quadratic = 0.025f;
+		light.ambient = color * 0.2f;
+		light.diffuse = color * 0.8f;
+		light.specular = color;
+		
+		return light;
+	}
+
+
+	void DrawGlobalPointLightCube(GlobalBlinnPongLightManager &manager, Shader &shader, const unsigned int VAO, const unsigned int number = MAX_NUM_POINTLIGHT) {
+		shader.use();
+		glBindVertexArray(VAO);
+		BlinnPhongLight_point light = {};
+		for (unsigned int i = 0; i < number; i++) {
+			light = manager.getpointLight(i);
+			if (light.position == glm::vec3(0.0f))
+				continue;
+			glm::mat4 model(1.0f);
+			model = glm::translate(model, manager.getpointLight(i).position);
+			model = glm::scale(model, glm::vec3(0.25f));
+			shader.setMat4("model", model);
+			shader.setVec3("lightColor", manager.getpointLight(i).specular);
+
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+		glUseProgram(0);
+	}
 }
 
 #endif

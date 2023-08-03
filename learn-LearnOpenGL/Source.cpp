@@ -23,7 +23,6 @@ void processInput(GLFWwindow *window);
 // Custom function
 unsigned int loadTexture(char const* path, bool flip_vertically = true);
 unsigned int loadCubemap(std::vector<std::string> faces, bool flip_vertically = false);
-glm::mat3 CalculateNormalMat(const glm::mat4 &modelMat);
 unsigned int CreateFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample = false, const unsigned int samples = 1);
 
 // Screen Width and Height setting
@@ -281,12 +280,6 @@ int main(void) {
 	cubeShader.setVec3("material.diffuse", glm::vec3(0.50754f, 0.50754f, 0.50754f));
 	cubeShader.setVec3("material.specular", glm::vec3(0.508273f));
 	cubeShader.setFloat("material.shininess", 512.0f);
-	/*
-	cubeShader.setVec3("dirLight.direction", glm::vec3(-1.0f, -1.0f, 0.0f));
-	cubeShader.setVec3("dirLight.ambient", glm::vec3(1.0f));
-	cubeShader.setVec3("dirLight.diffuse", glm::vec3(1.0f));
-	cubeShader.setVec3("dirLight.specular", glm::vec3(1.0f));	
-	*/
 
 
 
@@ -313,88 +306,24 @@ int main(void) {
 
 	glBindBufferRange(GL_UNIFORM_BUFFER, 0, cameraMatrices, 0, 2 * sizeof(glm::mat4));
 
+
 	CustomHelper::GlobalBlinnPongLightManager lightmanager("GlobalLights");
-	lightmanager.bindShaderOnUniformBlock(cubeShader);
-	CustomHelper::BlinnPhongLight_direct dirlight = {
-		glm::vec3(-1.0f, -1.0f, 0.0f),
-		glm::vec3(0.2f),
-		glm::vec3(0.2f),
-		glm::vec3(0.5f)
-	};
-	lightmanager.editLight(dirlight, 0);
-	dirlight = {
-		glm::vec3(0.0f, -1.0f, 0.0f),
-		glm::vec3(0.2f),
-		glm::vec3(0.4f),
-		glm::vec3(0.5f)
-	};
-	lightmanager.editLight(dirlight, 1);
-	dirlight = {
-		glm::vec3(-0.5f, -1.0f, -0.0f),
-		glm::vec3(0.1f, 0.05f, 0.0f),
-		glm::vec3(0.4f, 0.2f, 0.0f),
-		glm::vec3(0.5f, 0.2f, 0.0f)
-	};
-	lightmanager.editLight(dirlight, 2);
-	dirlight = {
-		glm::vec3(0.5f, -1.0f, 0.0f),
-		glm::vec3(0.0f, 0.2f, 0.0f),
-		glm::vec3(0.1f, 0.4f, 0.0f),
-		glm::vec3(0.2f, 0.8f, 0.0f)
-	};
-	lightmanager.editLight(dirlight, 3);
-
 	CustomHelper::BlinnPhongLight_point pointLight;
-	pointLight = {
-		glm::vec3(6.0f,  3.0f, 0.0f),
-		1.0f,
-		0.09f,
-		0.032f,
-		glm::vec3(0.1f),
-		glm::vec3(0.8f),
-		glm::vec3(0.8f)
-	};
-	lightmanager.editLight(pointLight, 0);
-	pointLight = {
-		glm::vec3(3.0f,  3.0f, 0.0f),
-		1.0f,
-		0.09f,
-		0.032f,
-		glm::vec3(0.1f),
-		glm::vec3(0.8f),
-		glm::vec3(0.8f)
-	};
-	lightmanager.editLight(pointLight, 1);
-	pointLight = {
-		glm::vec3(0.0f,  3.0f, 0.0f),
-		1.0f,
-		0.09f,
-		0.032f,
-		glm::vec3(0.1f),
-		glm::vec3(0.8f),
-		glm::vec3(0.8f)
-	};
-	lightmanager.editLight(pointLight, 2);
-	//lightmanager.Debug();
-
+	CustomHelper::BlinnPhongLight_direct dirLight;
 	CustomHelper::BlinnPhongLight_spot spotLight;
-	spotLight = {
-		glm::vec3(0.0f,  -1.0f, 0.0f),
-		glm::vec3(10.0f,  10.0f, 0.0f),
-		glm::cos(glm::radians(12.5f)),
-		glm::cos(glm::radians(15.0f)),
-		1.0f,
-		0.09f,
-		0.032f,
-		glm::vec3(0.0f),
-		glm::vec3(1.0f),
-		glm::vec3(1.0f)
-	};
-	lightmanager.editLight(spotLight, 0);
-
-	lightCubeShader.use();
-	lightCubeShader.setVec3("lightColor", glm::vec3(1.0f));
-
+	lightmanager.bindShaderOnUniformBlock(cubeShader);
+	for (int i = 0; i < 1; i++) {
+		dirLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_dirLight(glm::vec3(1.0f, -1.0, 0.0f), glm::vec3(-1.0f, -1.0, 0.0f), glm::vec3(1.0f), glm::vec3(1.0f));
+		lightmanager.editLight(dirLight, i);
+	}
+	for (int i = 0; i < 32; i++) {
+		pointLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_pointLight(glm::vec3(-40.0f, 1.0f, -40.0f), glm::vec3(40.0f, 3.0f, 40.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.5f, 0.5f));
+		lightmanager.editLight(pointLight, i);
+	}
+	for (int i = 0; i < 8; i++) {
+		spotLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_spotLight(glm::vec3(-0.25f, -1.0f, -0.25f), glm::vec3(0.25f, -1.0f, 0.25f), glm::vec3(-20.0f, 5.0f, -20.0f), glm::vec3(20.0f, 10.0f, 20.0f));
+		lightmanager.editLight(spotLight, i);
+	}
 
 
 	/*
@@ -494,9 +423,9 @@ int main(void) {
 		cubeShader.use();
 
 		model = glm::mat4(1.0f);
-		model = glm::scale(model, glm::vec3(40.0f));
+		model = glm::scale(model, glm::vec3(50.0f));
 		model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		normalMat = CalculateNormalMat(model);
+		normalMat = CustomHelper::CalculateNormalMat(model);
 		cubeShader.setMat4("model", model);
 		cubeShader.setMat3("normalMat", normalMat);
 		cubeShader.setVec3("viewPos", camera.Position);
@@ -506,14 +435,10 @@ int main(void) {
 
 
 		lightCubeShader.use();
+		
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, pointLight.position);
-		model = glm::scale(model, glm::vec3(0.5f));
-		lightCubeShader.setMat4("model", model);
+		CustomHelper::DrawGlobalPointLightCube(lightmanager, lightCubeShader, cubeVAO);
 
-		glBindVertexArray(cubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
 		// skybox
@@ -732,11 +657,6 @@ unsigned int loadCubemap(std::vector<std::string> faces, bool flip_vertically) {
 	stbi_set_flip_vertically_on_load(false);
 
 	return textureID;
-}
-
-// Calculate the normal matrix
-glm::mat3 CalculateNormalMat(const glm::mat4 &modelMat) {
-	return glm::mat3(glm::transpose(glm::inverse(modelMat)));
 }
 
 // Generate a framebuffer attach the given texture as the color attachment.
