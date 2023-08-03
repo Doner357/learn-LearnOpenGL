@@ -279,7 +279,8 @@ int main(void) {
 	cubeShader.setVec3("material.ambient", glm::vec3(0.19225f, 0.19225f, 0.19225f));
 	cubeShader.setVec3("material.diffuse", glm::vec3(0.50754f, 0.50754f, 0.50754f));
 	cubeShader.setVec3("material.specular", glm::vec3(0.508273f));
-	cubeShader.setFloat("material.shininess", 512.0f);
+	cubeShader.setFloat("material.shininess", 51.2f);
+
 
 
 
@@ -291,38 +292,27 @@ int main(void) {
 	 * Uniform Block Object setting
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	unsigned int skyboxUniformBlockIndex  = glGetUniformBlockIndex(skyboxShader.ID, "Matrices");
-	unsigned int cubeUniformBlockIndex = glGetUniformBlockIndex(cubeShader.ID, "Matrices");
-
-	glUniformBlockBinding(skyboxShader.ID, skyboxUniformBlockIndex, 0);
-	glUniformBlockBinding(cubeShader.ID, cubeUniformBlockIndex, 0);
-
-	unsigned int cameraMatrices;
-	glGenBuffers(1, &cameraMatrices);
-
-	glBindBuffer(GL_UNIFORM_BUFFER, cameraMatrices);
-	glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	glBindBufferRange(GL_UNIFORM_BUFFER, 0, cameraMatrices, 0, 2 * sizeof(glm::mat4));
+	CustomHelper::CameraMatricesManager cameraManager("Matrices");
+	cameraManager.registerShader(skyboxShader);
+	cameraManager.registerShader(cubeShader);
 
 
 	CustomHelper::GlobalBlinnPongLightManager lightmanager("GlobalLights");
 	CustomHelper::BlinnPhongLight_point pointLight;
 	CustomHelper::BlinnPhongLight_direct dirLight;
 	CustomHelper::BlinnPhongLight_spot spotLight;
-	lightmanager.bindShaderOnUniformBlock(cubeShader);
+	lightmanager.registerShader(cubeShader);
 	for (int i = 0; i < 1; i++) {
-		dirLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_dirLight(glm::vec3(1.0f, -1.0, 0.0f), glm::vec3(-1.0f, -1.0, 0.0f), glm::vec3(1.0f), glm::vec3(1.0f));
-		lightmanager.editLight(dirLight, i);
+		dirLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_dirLight(glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(0.5f), glm::vec3(0.5f));
+		lightmanager.editDirLight(dirLight, i);
 	}
 	for (int i = 0; i < 32; i++) {
-		pointLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_pointLight(glm::vec3(-40.0f, 1.0f, -40.0f), glm::vec3(40.0f, 3.0f, 40.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.5f, 0.5f));
-		lightmanager.editLight(pointLight, i);
+		pointLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_pointLight(glm::vec3(-40.0f, 1.0f, -40.0f), glm::vec3(40.0f, 3.0f, 40.0f), glm::vec3(0.3f));
+		lightmanager.editPointLight(pointLight, i);
 	}
 	for (int i = 0; i < 8; i++) {
-		spotLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_spotLight(glm::vec3(-0.25f, -1.0f, -0.25f), glm::vec3(0.25f, -1.0f, 0.25f), glm::vec3(-20.0f, 5.0f, -20.0f), glm::vec3(20.0f, 10.0f, 20.0f));
-		lightmanager.editLight(spotLight, i);
+		spotLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_spotLight(glm::vec3(-0.25f, -1.0f, -0.25f), glm::vec3(0.25f, -1.0f, 0.25f), glm::vec3(-40.0f, 5.0f, -40.0f), glm::vec3(40.0f, 8.0f, 40.0f));
+		lightmanager.editSpotLight(spotLight, i);
 	}
 
 
@@ -396,7 +386,7 @@ int main(void) {
 		// --view matrix--
 		glm::mat4 view = camera.GetViewMatrix();
 		// --projection matrix--
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 200.0f);
+		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
 		// --normal matrix--
 		glm::mat3 normalMat(1.0f);
@@ -405,14 +395,10 @@ int main(void) {
 		// Fill the uniform buffer
 		//-------------------------
 		// View
-		glBindBuffer(GL_UNIFORM_BUFFER, cameraMatrices);
-		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(view));
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+		cameraManager.updateView(view);
 
 		// Projection
-		glBindBuffer(GL_UNIFORM_BUFFER, cameraMatrices);
-		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(projection));
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+		cameraManager.updateProjection(projection);
 
 
 		// Render scene

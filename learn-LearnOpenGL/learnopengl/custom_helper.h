@@ -8,6 +8,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "shader_m.h"
+#include "camera_plus.h"
 
 #include <cstdint>
 #include <cmath>
@@ -248,6 +249,56 @@ namespace CustomHelper {
 
 
 
+	class CameraMatricesManager {
+		public:
+			CameraMatricesManager(std::string name) {
+				this->uniform_block_name = name;
+				bindUniformBlockBuffer();
+			}
+
+			~CameraMatricesManager() {
+				glDeleteBuffers(1, &(this->uniform_buffer));
+			}
+
+			void registerShader(Shader &shader) {
+				unsigned int unifrom_block_index = glGetUniformBlockIndex(shader.ID, this->uniform_block_name.c_str());
+				glUniformBlockBinding(shader.ID, unifrom_block_index, UBOPOINT_CAMERA_MATRICES);
+			}
+
+			void updateView(glm::mat4 &viewMat) {
+				glBindBuffer(GL_UNIFORM_BUFFER, (this->uniform_buffer));
+				glBufferSubData(GL_UNIFORM_BUFFER, view_start_pos, view_size, glm::value_ptr(viewMat));
+				glBindBuffer(GL_UNIFORM_BUFFER, 0);
+			}
+
+			void updateProjection(glm::mat4 &projectMat) {
+				glBindBuffer(GL_UNIFORM_BUFFER, (this->uniform_buffer));
+				glBufferSubData(GL_UNIFORM_BUFFER, projection_start_pos, projection_size, glm::value_ptr(projectMat));
+				glBindBuffer(GL_UNIFORM_BUFFER, 0);
+			}
+		private:
+			std::string uniform_block_name;
+			unsigned int uniform_buffer;
+
+			const GLsizeiptr view_start_pos = 0;
+			const GLsizeiptr view_size = sizeof(glm::mat4);
+			const GLsizeiptr view_next_bias = 0;
+			const GLsizeiptr projection_start_pos = view_start_pos + view_size + view_next_bias;
+			const GLsizeiptr projection_size = sizeof(glm::mat4);
+			const GLsizeiptr projection_next_bias = 0;
+
+			const GLsizeiptr size_of_total_block = view_size + view_next_bias + projection_size + projection_next_bias;
+
+			void bindUniformBlockBuffer() {
+				glGenBuffers(1, &(this->uniform_buffer));
+				glBindBuffer(GL_UNIFORM_BUFFER, this->uniform_buffer);
+				glBufferData(GL_UNIFORM_BUFFER, size_of_total_block, NULL, GL_DYNAMIC_DRAW);
+				glBindBufferBase(GL_UNIFORM_BUFFER, UBOPOINT_CAMERA_MATRICES, (this->uniform_buffer));
+				glBindBuffer(GL_UNIFORM_BUFFER, 0);
+			}
+	};
+
+
 	struct BlinnPhongLight_direct {
 		glm::vec3 direction;
 
@@ -305,13 +356,13 @@ namespace CustomHelper {
 			}
 
 			// Bind the given shader onto the light uniform block points
-			void bindShaderOnUniformBlock(Shader& shader) {
+			void registerShader(Shader& shader) {
 				unsigned int unifrom_block_index = glGetUniformBlockIndex(shader.ID, uniform_block_name.c_str());
 				glUniformBlockBinding(shader.ID, unifrom_block_index, UBOPOINT_BLINPHONG_LIGHTING);
 			}
 
 			// edit three type of lights : directional light
-			bool editLight(BlinnPhongLight_direct &light_data, const size_t index) {
+			bool editDirLight(BlinnPhongLight_direct &light_data, const size_t index) {
 				bool success = false;
 				if (index < max_of_dirLight) {
 					if (updateDirLight(light_data, index)) {
@@ -327,7 +378,7 @@ namespace CustomHelper {
 			}
 
 			// edit three type of lights : point light
-			bool editLight(BlinnPhongLight_point &light_data, const size_t index) {
+			bool editPointLight(BlinnPhongLight_point &light_data, const size_t index) {
 				bool success = false;
 				if (index < max_of_pointLight) {
 					if (updatePointLight(light_data, index)) {
@@ -343,7 +394,7 @@ namespace CustomHelper {
 			}
 
 			// edit three type of lights : spot light
-			bool editLight(BlinnPhongLight_spot &light_data, const size_t index) {
+			bool editSpotLight(BlinnPhongLight_spot &light_data, const size_t index) {
 				bool success = false;
 				if (index < max_of_spotLight) {
 					if (updateSpotLight(light_data, index)) {
@@ -468,6 +519,7 @@ namespace CustomHelper {
 			void bindUniformBlockBuffer() {
 				glGenBuffers(1, &(this->unifrom_buffer));
 				glBindBuffer(GL_UNIFORM_BUFFER, (this->unifrom_buffer));
+				// Bind to GL_DYNAMIC_DRAW is really important that if don't do so, here will cause some buffer copy problems
 				glBufferData(GL_UNIFORM_BUFFER, size_of_total_light, NULL, GL_DYNAMIC_DRAW);
 				glBindBufferBase(GL_UNIFORM_BUFFER, UBOPOINT_BLINPHONG_LIGHTING, (this->unifrom_buffer));
 				glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -737,13 +789,14 @@ namespace CustomHelper {
 		return light;
 	}
 
-
+	// Draw the point lights in the global light uniform block
 	void DrawGlobalPointLightCube(GlobalBlinnPongLightManager &manager, Shader &shader, const unsigned int VAO, const unsigned int number = MAX_NUM_POINTLIGHT) {
 		shader.use();
 		glBindVertexArray(VAO);
 		BlinnPhongLight_point light = {};
 		for (unsigned int i = 0; i < number; i++) {
 			light = manager.getpointLight(i);
+			// If the light isn't move, we assume it has not been set yet
 			if (light.position == glm::vec3(0.0f))
 				continue;
 			glm::mat4 model(1.0f);
