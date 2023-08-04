@@ -10,6 +10,7 @@
 #include "shader_m.h"
 #include "camera_plus.h"
 
+#include <random>
 #include <ctime>
 #include <cstdint>
 #include <cmath>
@@ -697,29 +698,64 @@ namespace CustomHelper {
 
 	// Random color generator
 	glm::vec3 GenerateRandomColor(glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
+
+		// Original generator version
+		/*
 		glm::vec3 color(0.0f);
 		srand(glfwGetTime() * 1000000 + time(NULL));
 		glm::vec3 range = (glm::abs(max_col - min_col) * glm::vec3(255.0f, 255.0f, 255.0f)) + glm::vec3(1.0f);
 		color.r = (rand() % static_cast<int>(range.r)) / 255.0f + fminf(min_col.r, max_col.r);
 		color.g = (rand() % static_cast<int>(range.g)) / 255.0f + fminf(min_col.g, max_col.g);
-		color.b = (rand() % static_cast<int>(range.b)) / 255.0f + fminf(min_col.b, max_col.b);
+		color.b = (rand() % static_cast<int>(range.b)) / 255.0f + fminf(min_col.b, max_col.b);		
+		*/
+
+		// Lastest optimized version, using STL random generator
+		typedef std::mt19937 random_engine;
+		std::random_device rd;
+		random_engine ran_gen(rd());
+		std::uniform_real_distribution<> real_dist_r(min_col.r, max_col.r);
+		std::uniform_real_distribution<> real_dist_g(min_col.g, max_col.g);
+		std::uniform_real_distribution<> real_dist_b(min_col.b, max_col.b);
+
+		glm::vec3 color(0.0f);
+		color.r = static_cast<float>(real_dist_r(ran_gen));
+		color.g = static_cast<float>(real_dist_g(ran_gen));
+		color.b = static_cast<float>(real_dist_b(ran_gen));
 
 		return color;
 	}
 
 	// Random vec3 generator
-	glm::vec3 GenerateRandomVec3(const glm::vec3 min_vec3, const glm::vec3 max_vec3, glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
+	glm::vec3 GenerateRandomVec3(const glm::vec3 min_vec3, const glm::vec3 max_vec3) {
+		
+		// Original generator version
+		/*
 		// Set up random seed and range
 		srand(glfwGetTime() * 1000000 + time(NULL));
 		glm::vec3 range = (glm::abs(max_vec3 - min_vec3) * glm::vec3(100.0f, 100.0f, 100.0f)) + glm::vec3(1.0f);
 		glm::vec3 ran_vec;
 
-		// Generate random color
-		glm::vec3 color = GenerateRandomColor(min_col, max_col);
 		// Generate random vector
 		ran_vec.x = (rand() % static_cast<int>(range.x)) / 100.0f + fminf(min_vec3.x, max_vec3.x);
 		ran_vec.y = (rand() % static_cast<int>(range.y)) / 100.0f + fminf(min_vec3.y, max_vec3.y);
-		ran_vec.z = (rand() % static_cast<int>(range.z)) / 100.0f + fminf(min_vec3.z, max_vec3.z);
+		ran_vec.z = (rand() % static_cast<int>(range.z)) / 100.0f + fminf(min_vec3.z, max_vec3.z);		
+		*/
+
+		// Lastest optimized version, using STL random generator
+		// Set up distribute random number generator
+		typedef std::mt19937 random_engine;
+		std::random_device rd;
+		random_engine ran_gen(rd());
+		std::uniform_real_distribution<> real_dist_x(min_vec3.x, max_vec3.x);
+		std::uniform_real_distribution<> real_dist_y(min_vec3.y, max_vec3.y);
+		std::uniform_real_distribution<> real_dist_z(min_vec3.z, max_vec3.z);
+
+		// Generate random vector
+		glm::vec3 ran_vec;
+		ran_vec.x = static_cast<float>(real_dist_x(ran_gen));
+		ran_vec.y = static_cast<float>(real_dist_y(ran_gen));
+		ran_vec.z = static_cast<float>(real_dist_z(ran_gen));
+
 
 		return ran_vec;
 	}
