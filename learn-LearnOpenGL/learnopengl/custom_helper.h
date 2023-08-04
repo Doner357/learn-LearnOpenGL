@@ -10,6 +10,7 @@
 #include "shader_m.h"
 #include "camera_plus.h"
 
+#include <ctime>
 #include <cstdint>
 #include <cmath>
 #include <string>
@@ -697,7 +698,7 @@ namespace CustomHelper {
 	// Random color generator
 	glm::vec3 GenerateRandomColor(glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
 		glm::vec3 color(0.0f);
-		srand(glfwGetTime() * 100000);
+		srand(glfwGetTime() * 1000000 + time(NULL));
 		glm::vec3 range = (glm::abs(max_col - min_col) * glm::vec3(255.0f, 255.0f, 255.0f)) + glm::vec3(1.0f);
 		color.r = (rand() % static_cast<int>(range.r)) / 255.0f + fminf(min_col.r, max_col.r);
 		color.g = (rand() % static_cast<int>(range.g)) / 255.0f + fminf(min_col.g, max_col.g);
@@ -709,7 +710,7 @@ namespace CustomHelper {
 	// Random vec3 generator
 	glm::vec3 GenerateRandomVec3(const glm::vec3 min_vec3, const glm::vec3 max_vec3, glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
 		// Set up random seed and range
-		srand(glfwGetTime() * 100000);
+		srand(glfwGetTime() * 1000000 + time(NULL));
 		glm::vec3 range = (glm::abs(max_vec3 - min_vec3) * glm::vec3(100.0f, 100.0f, 100.0f)) + glm::vec3(1.0f);
 		glm::vec3 ran_vec;
 
