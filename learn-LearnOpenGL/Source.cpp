@@ -213,9 +213,9 @@ int main(void) {
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
 	CustomHelper::VAOManager vaoManager;
-	unsigned int cubemapVAO = vaoManager.getVAO(VAO_SKYBOX);
-	unsigned int quadVAO = vaoManager.getVAO(VAO_QUAD);
-	unsigned int cubeVAO = vaoManager.getVAO(VAO_CUBE);
+	unsigned int cubemapVAO = vaoManager.getVAO(CustomHelper::VAO_SKYBOX);
+	unsigned int quadVAO = vaoManager.getVAO(CustomHelper::VAO_QUAD);
+	unsigned int cubeVAO = vaoManager.getVAO(CustomHelper::VAO_CUBE);
 
 
 
@@ -230,6 +230,8 @@ int main(void) {
 	 * Texture loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
+	unsigned int metalTex_diff = loadTexture("textures/metal.png");
+	unsigned int metalTex_spec = loadTexture("textures/metal_spec.png");
 
 
 
@@ -237,7 +239,7 @@ int main(void) {
 	 * Cubemap loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	const std::string folder_path = "cubemaps/space_1/";
+	const std::string folder_path = "cubemaps/skybox/";
 	std::vector<std::string> faces = {
 		folder_path + "right.png",
 		folder_path + "left.png",
@@ -257,8 +259,9 @@ int main(void) {
 	*/
 	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
 	Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
-	Shader cubeShader("shaders/vertex/global_lighting_color_cube.vert", "shaders/fragment/global_lighting_color_cube.frag");
+	Shader cubeShader("shaders/vertex/lighting_color_cube.vert", "shaders/fragment/global_lighting_color_cube.frag");
 	Shader lightCubeShader("shaders/vertex/light_cube.vert", "shaders/fragment/light_cube.frag");
+	Shader cubeTexShader("shaders/vertex/lighting_texture_cube.vert", "shaders/fragment/global_lighting_texture_cube.frag");
 
 
 
@@ -281,7 +284,10 @@ int main(void) {
 	cubeShader.setVec3("material.specular", glm::vec3(0.508273f));
 	cubeShader.setFloat("material.shininess", 51.2f);
 
-
+	cubeTexShader.use();
+	cubeTexShader.setInt("material.diffuse", 0);
+	cubeTexShader.setInt("material.specular", 1);
+	cubeTexShader.setFloat("material.shininess", 128.0f);
 
 
 	glUseProgram(0);
@@ -292,9 +298,10 @@ int main(void) {
 	 * Uniform Block Object setting
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	CustomHelper::CameraMatricesManager cameraManager("Matrices");
+	CustomHelper::CameraMatricesManager cameraManager("CameraMatrices");
 	cameraManager.registerShader(skyboxShader);
 	cameraManager.registerShader(cubeShader);
+	cameraManager.registerShader(cubeTexShader);
 
 
 	CustomHelper::GlobalBlinnPongLightManager lightmanager("GlobalLights");
@@ -302,16 +309,17 @@ int main(void) {
 	CustomHelper::BlinnPhongLight_direct dirLight;
 	CustomHelper::BlinnPhongLight_spot spotLight;
 	lightmanager.registerShader(cubeShader);
+	lightmanager.registerShader(cubeTexShader);
 	for (int i = 0; i < 1; i++) {
 		dirLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_dirLight(glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(0.5f), glm::vec3(0.5f));
 		lightmanager.editDirLight(dirLight, i);
 	}
 	for (int i = 0; i < 32; i++) {
-		pointLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_pointLight(glm::vec3(-40.0f, 1.0f, -40.0f), glm::vec3(40.0f, 3.0f, 40.0f), glm::vec3(0.3f));
+		pointLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_pointLight(glm::vec3(-40.0f, 1.0f, -40.0f), glm::vec3(40.0f, 3.0f, 40.0f));
 		lightmanager.editPointLight(pointLight, i);
 	}
 	for (int i = 0; i < 8; i++) {
-		spotLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_spotLight(glm::vec3(-0.25f, -1.0f, -0.25f), glm::vec3(0.25f, -1.0f, 0.25f), glm::vec3(-40.0f, 5.0f, -40.0f), glm::vec3(40.0f, 8.0f, 40.0f));
+		spotLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_spotLight(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(-40.0f, 5.0f, -40.0f), glm::vec3(40.0f, 5.0f, 40.0f), 12.5f, 90.0f);
 		lightmanager.editSpotLight(spotLight, i);
 	}
 
@@ -406,11 +414,31 @@ int main(void) {
 
 		// Render Objects
 		//---------------
-		cubeShader.use();
+		cubeTexShader.use();
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, metalTex_diff);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, metalTex_spec);
 
 		model = glm::mat4(1.0f);
 		model = glm::scale(model, glm::vec3(50.0f));
 		model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		normalMat = CustomHelper::CalculateNormalMat(model);
+		cubeTexShader.setMat4("model", model);
+		cubeTexShader.setMat3("normalMat", normalMat);
+		cubeTexShader.setVec3("viewPos", camera.Position);
+
+		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+		cubeShader.use();
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, 8.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(50.0f));
+		model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		normalMat = CustomHelper::CalculateNormalMat(model);
 		cubeShader.setMat4("model", model);
 		cubeShader.setMat3("normalMat", normalMat);
@@ -420,10 +448,8 @@ int main(void) {
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
-		lightCubeShader.use();
-		
 
-		CustomHelper::DrawGlobalPointLightCube(lightmanager, lightCubeShader, cubeVAO);
+		CustomHelper::DrawGlobalPointLightCube(lightmanager, lightCubeShader, cubeVAO, 0.25f);
 
 
 
@@ -566,7 +592,7 @@ unsigned int loadTexture(char const *path, bool flip_vertically) {
 	int width, height, nrComponents;
 	unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
 	if (data) {
-		GLenum format;
+		GLenum format = 4;
 		if (nrComponents == 1)
 			format = GL_RED;
 		else if (nrComponents == 3)
@@ -617,7 +643,7 @@ unsigned int loadCubemap(std::vector<std::string> faces, bool flip_vertically) {
 	for (unsigned int i = 0; i < faces.size(); i++) {
 		unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
 		if (data) {
-			GLenum format;
+			GLenum format = 4;
 			if (nrChannels == 1)
 				format = GL_RED;
 			else if (nrChannels == 3)

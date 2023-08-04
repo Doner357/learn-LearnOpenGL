@@ -155,9 +155,10 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\fragment\global_lighting_texture_cube.frag" />
+    <None Include="shaders\fragment\global_lighting_model.frag" />
     <None Include="shaders\fragment\global_lighting_color_cube.frag" />
-    <None Include="shaders\vertex\global_lighting_color_cube.vert" />
-    <None Include="shaders\fragment\lighting_color_cube.frag" />
+    <None Include="shaders\fragment\local_lighting_color_cube.frag" />
     <None Include="shaders\vertex\lighting_color_cube.vert" />
     <None Include="shaders\fragment\model.frag" />
     <None Include="shaders\vertex\model.vert" />
@@ -190,8 +191,8 @@
     <None Include="shaders\vertex\kernel_sharpen.vert" />
     <None Include="shaders\vertex\pure_texture.vert" />
     <None Include="shaders\fragment\light_cube.frag" />
-    <None Include="shaders\fragment\lighting_texture_cube.frag" />
-    <None Include="shaders\fragment\lighting_model.frag" />
+    <None Include="shaders\fragment\local_lighting_texture_cube.frag" />
+    <None Include="shaders\fragment\local_lighting_model.frag" />
     <None Include="shaders\vertex\lighting_texture_cube.vert" />
     <None Include="shaders\vertex\light_cube.vert" />
     <None Include="shaders\vertex\lighting_model.vert" />

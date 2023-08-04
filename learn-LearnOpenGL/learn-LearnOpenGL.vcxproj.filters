@@ -64,7 +64,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\fragment\lighting_texture_cube.frag">
+    <None Include="shaders\fragment\local_lighting_texture_cube.frag">
       <Filter>Resource Files\shaders\fragment</Filter>
     </None>
     <None Include="shaders\vertex\lighting_texture_cube.vert">
@@ -76,7 +76,7 @@
     <None Include="shaders\fragment\light_cube.frag">
       <Filter>Resource Files\shaders\fragment</Filter>
     </None>
-    <None Include="shaders\fragment\lighting_model.frag">
+    <None Include="shaders\fragment\local_lighting_model.frag">
       <Filter>Resource Files\shaders\fragment</Filter>
     </None>
     <None Include="shaders\vertex\lighting_model.vert">
@@ -184,13 +184,16 @@
     <None Include="shaders\vertex\lighting_color_cube.vert">
       <Filter>Resource Files\shaders\vertex</Filter>
     </None>
-    <None Include="shaders\fragment\lighting_color_cube.frag">
+    <None Include="shaders\fragment\local_lighting_color_cube.frag">
       <Filter>Resource Files\shaders\fragment</Filter>
     </None>
-    <None Include="shaders\vertex\global_lighting_color_cube.vert">
-      <Filter>Resource Files\shaders\vertex</Filter>
-    </None>
     <None Include="shaders\fragment\global_lighting_color_cube.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\fragment\global_lighting_model.frag">
+      <Filter>Resource Files\shaders\fragment</Filter>
+    </None>
+    <None Include="shaders\fragment\global_lighting_texture_cube.frag">
       <Filter>Resource Files\shaders\fragment</Filter>
     </None>
   </ItemGroup>

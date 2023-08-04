@@ -21,6 +21,7 @@ struct DirLight {
 	vec3 diffuse;
 	vec3 specular;
 };
+#define NUM_OF_DIRLIGHTS 4
 
 struct PointLight {
 	vec3 position;
@@ -33,7 +34,7 @@ struct PointLight {
 	vec3 diffuse;
 	vec3 specular;
 };
-#define NUM_OF_POINTLIGHT 3
+#define NUM_OF_POINTLIGHTS 32
 
 struct SpotLight {
 	vec3 direction;
@@ -50,6 +51,7 @@ struct SpotLight {
 	vec3 diffuse;
 	vec3 specular;
 };
+#define NUM_OF_SPOTLIGHTS 8
 
 #define NO_LIGHT vec3(0.0)
 
@@ -61,25 +63,21 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);   
 
 uniform vec3 viewPos;
 uniform Material material;
-uniform DirLight dirLight;
-uniform PointLight pointLights[NUM_OF_POINTLIGHT];
-uniform SpotLight spotLight;
+uniform DirLight dirLights[NUM_OF_DIRLIGHTS];
+uniform PointLight pointLights[NUM_OF_POINTLIGHTS];
+uniform SpotLight spotLights[NUM_OF_SPOTLIGHTS];
 
 void main() {
 	vec3 normal = normalize(fs_in.normal);
 	vec3 viewDir = normalize(viewPos - fs_in.fragPos);
 	vec3 result = vec3(0.0);
 
-	if (dirLight.direction != NO_LIGHT)
-		result += CalcDirLight(dirLight, normal, viewDir);
-	for(int i = 0; i < NUM_OF_POINTLIGHT; i++){
-		if (pointLights[i].constant == 0)
-			break;
-		result += CalcPointLight(pointLights[i], normal, fs_in.fragPos, viewDir);
-	}
-
-	if (spotLight.direction != NO_LIGHT)
-		result += CalcSpotLight(spotLight, normal, fs_in.fragPos, viewDir);
+	for(int i = 0; i < NUM_OF_DIRLIGHTS; i++)
+		result += dirLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcDirLight(dirLights[i], normal, viewDir);
+	for(int i = 0; i < NUM_OF_POINTLIGHTS; i++)
+		result += pointLights[i].position == NO_LIGHT ? vec3(0.0) : CalcPointLight(pointLights[i], normal, fs_in.fragPos, viewDir);
+	for(int i = 0; i < NUM_OF_SPOTLIGHTS; i++)
+		result += spotLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcSpotLight(spotLights[i], normal, fs_in.fragPos, viewDir);
 
 	FragColor = vec4(result, 1.0);
 }

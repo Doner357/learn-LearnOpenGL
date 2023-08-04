@@ -18,30 +18,32 @@
 #include <vector>
 #include <map>
 
-enum VAOType {
-	VAO_CUBE,
-	VAO_QUAD,
-	VAO_SKYBOX,
-};
-
-enum UBOBindingPoints {
-	UBOPOINT_CAMERA_MATRICES = 0,
-	UBOPOINT_BLINPHONG_LIGHTING = 1
-};
-
-enum LightType {
-	DIRECTIONAL_LIGHT,
-	POINT_LIGHT,
-	SPOT_LIGHT
-};
-
-enum LightProperties {
-	MAX_NUM_DIRECTIONALLIGHT = 4,
-	MAX_NUM_POINTLIGHT = 32,
-	MAX_NUM_SPOTLIGHT = 8
-};
-
 namespace CustomHelper {
+
+	enum VAOType {
+		VAO_CUBE,
+		VAO_QUAD,
+		VAO_SKYBOX,
+	};
+
+	enum UBOBindingPoints {
+		UBOPOINT_CAMERA_MATRICES = 0,
+		UBOPOINT_BLINPHONG_LIGHTING = 1
+	};
+
+	enum LightType {
+		DIRECTIONAL_LIGHT,
+		POINT_LIGHT,
+		SPOT_LIGHT
+	};
+
+	enum LightProperties {
+		MAX_NUM_DIRECTIONALLIGHT = 4,
+		MAX_NUM_POINTLIGHT = 32,
+		MAX_NUM_SPOTLIGHT = 8
+	};
+
+
 	const float cubeVertices[] = {
 		// positions			// normal				// texture Coords
 		// Back face
@@ -760,6 +762,19 @@ namespace CustomHelper {
 		return ran_vec;
 	}
 
+	float GenerateRandomAngle(const float min_angle, const float max_angle) {
+		// Set up distribute random number generator
+		typedef std::mt19937 random_engine;
+		std::random_device rd;
+		random_engine ran_gen(rd());
+		std::uniform_real_distribution<> real_dist(min_angle, max_angle);
+
+		// Generate random angle
+		float angle = static_cast<float>(real_dist(ran_gen));
+
+		return angle;
+	}
+
 	BlinnPhongLight_direct GenerateRandomGlobalBlinnPhongLight_dirLight(const glm::vec3 min_dir, const glm::vec3 max_dir, glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
 		BlinnPhongLight_direct light{};
 
@@ -795,11 +810,11 @@ namespace CustomHelper {
 		return light;
 	}
 
-	BlinnPhongLight_spot GenerateRandomGlobalBlinnPhongLight_spotLight(const glm::vec3 min_dir, const glm::vec3 max_dir, const glm::vec3 min_pos, const glm::vec3 max_pos, glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
+	BlinnPhongLight_spot GenerateRandomGlobalBlinnPhongLight_spotLight(const glm::vec3 min_dir, const glm::vec3 max_dir, 
+																	   const glm::vec3 min_pos, const glm::vec3 max_pos, 
+																	   const float min_angle  , const float max_angle,
+																		glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
 		BlinnPhongLight_spot light{};
-
-		// Set up random seed
-		srand(glfwGetTime());
 
 		// Generate color
 		glm::vec3 color = GenerateRandomColor(min_col, max_col);
@@ -808,7 +823,7 @@ namespace CustomHelper {
 		// Generate random position
 		glm::vec3 position = GenerateRandomVec3(min_pos, max_pos);
 		// Generate random inner cutoff and outer cutoff. The inner cutoff is between 10 and 90 degree, and the outer cutoff is always 3 degrees larger than inner cutoff.
-		float angle = static_cast<float>((rand() % 81) + 10);
+		float angle = GenerateRandomAngle(min_angle, max_angle);
 		float innerCutoff = glm::cos(glm::radians(angle));
 		float outerCutoff = glm::cos(glm::radians(angle + 3.0f));
 
@@ -827,7 +842,7 @@ namespace CustomHelper {
 	}
 
 	// Draw the point lights in the global light uniform block
-	void DrawGlobalPointLightCube(GlobalBlinnPongLightManager &manager, Shader &shader, const unsigned int VAO, const unsigned int number = MAX_NUM_POINTLIGHT) {
+	void DrawGlobalPointLightCube(GlobalBlinnPongLightManager &manager, Shader &shader, const unsigned int VAO, const float scale, const unsigned int number = MAX_NUM_POINTLIGHT) {
 		shader.use();
 		glBindVertexArray(VAO);
 		BlinnPhongLight_point light = {};
@@ -838,7 +853,7 @@ namespace CustomHelper {
 				continue;
 			glm::mat4 model(1.0f);
 			model = glm::translate(model, manager.getpointLight(i).position);
-			model = glm::scale(model, glm::vec3(0.25f));
+			model = glm::scale(model, glm::vec3(scale));
 			shader.setMat4("model", model);
 			shader.setVec3("lightColor", manager.getpointLight(i).specular);
 

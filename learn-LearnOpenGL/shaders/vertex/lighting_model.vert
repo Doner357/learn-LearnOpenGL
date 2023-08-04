@@ -10,7 +10,7 @@ out VS_OUT {
 } vs_out;
 
 uniform mat4 model;
-layout (std140) uniform Matrices {
+layout (std140) uniform CameraMatrices {
 	mat4 view;
 	mat4 projection;
 };

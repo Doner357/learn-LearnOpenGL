@@ -12,43 +12,43 @@ struct Material {
 	float shininess;
 };
 
-struct DirLight {       // size  ali
-	vec3 direction;     // 12    0
+struct DirLight {
+	vec3 direction;
 
-	vec3 ambient;       // 12    12 + 4 = 16
-	vec3 diffuse;       // 12    28 + 4 = 32
-	vec3 specular;      // 12    44 + 4 = 48
-}; // total 60 + 4 = 64 bytes
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+};
 #define NUM_OF_DIRLIGHTS 4
 
-struct PointLight {		// size  ali
-	vec3 position;		// 12    0
+struct PointLight {
+	vec3 position;
 
-	float constant;		//  4    12
-	float linear;       //  4    16
-	float quadratic;    //  4    20
-	
-	vec3 ambient;       // 12    24 + 8 = 32
-	vec3 diffuse;       // 12    44 + 4 = 48
-	vec3 specular;      // 12    60 + 4 = 64
-}; // total 76 + 4 = 80 bytes
+	float constant;
+	float linear;
+	float quadratic;
+
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+};
 #define NUM_OF_POINTLIGHTS 32
 
-struct SpotLight {      // size  ali
-	vec3 position;      // 12    0
-	vec3 direction;     // 12    12 + 4 = 16
+struct SpotLight {
+	vec3 position;
+	vec3 direction;
 
-	float innerCutOff;  //  4    28
-	float outerCutOff;  //  4    32
+	float innerCutOff;
+	float outerCutOff;
 
-	float constant;     //  4    36
-	float linear;       //  4    40
-	float quadratic;    //  4    44
-	
-	vec3 ambient;       // 12    48
-	vec3 diffuse;       // 12    60 + 4 = 64
-	vec3 specular;      // 12    76 + 4 = 80
-}; // total 92 + 4 = 96 bytes
+	float constant;
+	float linear;
+	float quadratic;
+
+	float ambient;
+	float diffuse;
+	float specular;
+};
 #define NUM_OF_SPOTLIGHTS 8
 
 #define NO_LIGHT vec3(0.0)
@@ -61,24 +61,21 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 uniform vec3 viewPos;
 uniform Material material;
-layout (std140) uniform GlobalLights {               // size      ali
-	DirLight dirLights[NUM_OF_DIRLIGHTS];            //  256        0
-	PointLight pointLights[NUM_OF_POINTLIGHTS];      // 2560	  256
-	SpotLight spotLights[NUM_OF_SPOTLIGHTS];         //  768     2816
-}; // total 3584
+uniform DirLight dirLights[NUM_OF_DIRLIGHTS];
+uniform PointLight pointLights[NUM_OF_POINTLIGHTS];
+uniform SpotLight spotLights[NUM_OF_SPOTLIGHTS];
 
 void main() {
 	vec3 normal = normalize(Normal);
 	vec3 viewDir = normalize(viewPos - FragPos);
 	vec3 result = vec3(0.0);
-	
+
 	for(int i = 0; i < NUM_OF_DIRLIGHTS; i++)
 		result += dirLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcDirLight(dirLights[i], normal, viewDir);
 	for(int i = 0; i < NUM_OF_POINTLIGHTS; i++)
 		result += pointLights[i].position == NO_LIGHT ? vec3(0.0) : CalcPointLight(pointLights[i], normal, FragPos, viewDir);
 	for(int i = 0; i < NUM_OF_SPOTLIGHTS; i++)
-		result += spotLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcSpotLight(spotLights[i], normal, FragPos, viewDir);	
-	
+		result += spotLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcSpotLight(spotLights[i], normal, FragPos, viewDir);
 
 	FragColor = vec4(result, 1.0);
 }
