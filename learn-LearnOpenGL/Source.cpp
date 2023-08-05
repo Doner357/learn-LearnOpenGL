@@ -21,8 +21,8 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 
 // Custom function
-unsigned int loadTexture(char const* path, bool flip_vertically = true);
-unsigned int loadCubemap(std::vector<std::string> faces, bool flip_vertically = false);
+unsigned int LoadTexture(char const* path, bool flip_vertically = true);
+unsigned int LoadCubemap(std::vector<std::string> faces, bool flip_vertically = false);
 unsigned int CreateFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample = false, const unsigned int samples = 1);
 
 // Screen Width and Height setting
@@ -230,8 +230,8 @@ int main(void) {
 	 * Texture loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	unsigned int wood_diff = loadTexture("textures/wood.jpg");
-	unsigned int common_spec = loadTexture("textures/common_spec.jpg");
+	unsigned int wood_diff = LoadTexture("textures/wood.jpg");
+	unsigned int common_spec = LoadTexture("textures/common_spec.jpg");
 
 
 
@@ -249,7 +249,7 @@ int main(void) {
 		folder_path + "back.png"
 	};
 
-	unsigned int skyboxTexture = loadCubemap(faces);
+	unsigned int skyboxTexture = LoadCubemap(faces);
 
 
 
@@ -283,7 +283,6 @@ int main(void) {
 	TexShader.setInt("material.diffuse", 0);
 	TexShader.setInt("material.specular", 1);
 	TexShader.setFloat("material.shininess", 256.0f);
-
 
 
 	glUseProgram(0);
@@ -335,7 +334,7 @@ int main(void) {
 	// Setting global light data
 	// Number of each type light
 	unsigned int num_of_dirLight = 1;
-	unsigned int num_of_pointLight = 10;
+	unsigned int num_of_pointLight = 32;
 	unsigned int num_of_spotLight = 0;
 	// Appear area(x, z) = (-area, -area) ~ (area, area)
 	float appear_area = 20.0f;
@@ -432,7 +431,11 @@ int main(void) {
 		//---------------
 
 
+
+
+		// Draw floor
 		CustomHelper::DrawTexFloor(quadVAO, repeatTexShader, camera.Position, wood_diff, common_spec, 256.0f, glm::vec3(0.0f, -1.0f, 0.0f), 30.0f, 10);
+		// Draw light cube
 		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.25f);
 
 
@@ -566,7 +569,7 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
 
 // utility function for loading a 2D texture from file
 // ---------------------------------------------------
-unsigned int loadTexture(char const *path, bool flip_vertically) {
+unsigned int LoadTexture(char const *path, bool flip_vertically) {
 	// Set whether filp vertical axis
 	stbi_set_flip_vertically_on_load(flip_vertically);
 
@@ -615,7 +618,7 @@ unsigned int loadTexture(char const *path, bool flip_vertically) {
 
 // utility function for loading a cubemap textures from file
 // ------------------------------------------------------------
-unsigned int loadCubemap(std::vector<std::string> faces, bool flip_vertically) {
+unsigned int LoadCubemap(std::vector<std::string> faces, bool flip_vertically) {
 	// Set whether filp vertical axis
 	stbi_set_flip_vertically_on_load(flip_vertically);
 
