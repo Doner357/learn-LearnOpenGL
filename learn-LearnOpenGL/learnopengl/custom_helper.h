@@ -693,6 +693,7 @@ namespace CustomHelper {
 	};
 
 
+
 	// Calculate the normal matrix
 	glm::mat3 CalculateNormalMat(const glm::mat4 &modelMat) {
 		return glm::mat3(glm::transpose(glm::inverse(modelMat)));
@@ -842,7 +843,7 @@ namespace CustomHelper {
 	}
 
 	// Draw the point lights in the global light uniform block
-	void DrawGlobalPointLightCube(GlobalBlinnPongLightManager &manager, Shader &shader, const unsigned int VAO, const float scale, const unsigned int number = MAX_NUM_POINTLIGHT) {
+	void DrawGlobalPointLightCube(GlobalBlinnPongLightManager &manager,const unsigned int VAO,  Shader &shader, const float scale, const unsigned int number = MAX_NUM_POINTLIGHT) {
 		shader.use();
 		glBindVertexArray(VAO);
 		BlinnPhongLight_point light = {};
@@ -859,8 +860,39 @@ namespace CustomHelper {
 
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
+		glBindVertexArray(0);
 		glUseProgram(0);
 	}
+
+	void DrawTexFloor(const unsigned int &quad_VAO, Shader & const shader, glm::vec3 & const viewPos, const unsigned int &diffuse_tex, const unsigned int &specular_tex, const float shininess, const glm::vec3 position = glm::vec3(0.0f), const float scale = 1.0f, const int tex_repeate_times = 1) {
+		shader.use();
+		shader.setInt("material.diffuse", 0);
+		shader.setInt("material.specular", 1);
+		shader.setFloat("material.shininess", shininess);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, diffuse_tex);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, specular_tex);
+		glm::mat4 model(1.0f);
+		glm::mat3 normalMat(1.0f);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, position);
+		model = glm::scale(model, glm::vec3(scale));
+		model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		normalMat = CustomHelper::CalculateNormalMat(model);
+		shader.setMat4("model", model);
+		shader.setMat3("normalMat", normalMat);
+		shader.setVec3("viewPos", viewPos);
+		shader.setInt("repeat_times", tex_repeate_times);
+
+		glBindVertexArray(quad_VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		glBindVertexArray(0);
+		glUseProgram(0);
+	}
+
 }
 
 #endif

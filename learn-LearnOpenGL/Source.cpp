@@ -230,8 +230,8 @@ int main(void) {
 	 * Texture loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	unsigned int metalTex_diff = loadTexture("textures/metal.png");
-	unsigned int metalTex_spec = loadTexture("textures/metal_spec.png");
+	unsigned int wood_diff = loadTexture("textures/wood.jpg");
+	unsigned int common_spec = loadTexture("textures/common_spec.jpg");
 
 
 
@@ -257,11 +257,12 @@ int main(void) {
 	* Build and compile shader program
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
-	Shader screenShader("shaders/vertex/framebuffer_screen.vert", "shaders/fragment/framebuffer_screen.frag");
-	Shader skyboxShader("shaders/vertex/skybox.vert", "shaders/fragment/skybox.frag");
-	Shader cubeShader("shaders/vertex/lighting_color_cube.vert", "shaders/fragment/global_lighting_color_cube.frag");
-	Shader lightCubeShader("shaders/vertex/light_cube.vert", "shaders/fragment/light_cube.frag");
-	Shader cubeTexShader("shaders/vertex/lighting_texture_cube.vert", "shaders/fragment/global_lighting_texture_cube.frag");
+
+	Shader screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/regular_screen.frag");
+	Shader skyboxShader("shaders/general/vertex/skybox.vert", "shaders/general/fragment/skybox.frag");
+	Shader lightCubeShader("shaders/general/vertex/light_cube.vert", "shaders/general/fragment/light_cube.frag");
+	Shader TexShader("shaders/general/vertex/lighting_texture.vert", "shaders/general/fragment/global-lighting_texture.frag");
+	Shader repeatTexShader("shaders/general/vertex/lighting_repeated-texture.vert", "shaders/general/fragment/global-lighting_texture.frag");
 
 
 
@@ -278,16 +279,11 @@ int main(void) {
 	screenShader.setInt("screenTexture", 0);
 
 
-	cubeShader.use();
-	cubeShader.setVec3("material.ambient", glm::vec3(0.19225f, 0.19225f, 0.19225f));
-	cubeShader.setVec3("material.diffuse", glm::vec3(0.50754f, 0.50754f, 0.50754f));
-	cubeShader.setVec3("material.specular", glm::vec3(0.508273f));
-	cubeShader.setFloat("material.shininess", 51.2f);
+	TexShader.use();
+	TexShader.setInt("material.diffuse", 0);
+	TexShader.setInt("material.specular", 1);
+	TexShader.setFloat("material.shininess", 256.0f);
 
-	cubeTexShader.use();
-	cubeTexShader.setInt("material.diffuse", 0);
-	cubeTexShader.setInt("material.specular", 1);
-	cubeTexShader.setFloat("material.shininess", 128.0f);
 
 
 	glUseProgram(0);
@@ -298,30 +294,18 @@ int main(void) {
 	 * Uniform Block Object setting
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	CustomHelper::CameraMatricesManager cameraManager("CameraMatrices");
-	cameraManager.registerShader(skyboxShader);
-	cameraManager.registerShader(cubeShader);
-	cameraManager.registerShader(cubeTexShader);
 
+	// Camera matrices uniform block
+	CustomHelper::CameraMatricesManager cameraMatManager("CameraMatrices");
+	cameraMatManager.registerShader(skyboxShader);
+	cameraMatManager.registerShader(TexShader);
+	cameraMatManager.registerShader(repeatTexShader);
 
-	CustomHelper::GlobalBlinnPongLightManager lightmanager("GlobalLights");
-	CustomHelper::BlinnPhongLight_point pointLight;
-	CustomHelper::BlinnPhongLight_direct dirLight;
-	CustomHelper::BlinnPhongLight_spot spotLight;
-	lightmanager.registerShader(cubeShader);
-	lightmanager.registerShader(cubeTexShader);
-	for (int i = 0; i < 1; i++) {
-		dirLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_dirLight(glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(0.5f), glm::vec3(0.5f));
-		lightmanager.editDirLight(dirLight, i);
-	}
-	for (int i = 0; i < 32; i++) {
-		pointLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_pointLight(glm::vec3(-40.0f, 1.0f, -40.0f), glm::vec3(40.0f, 3.0f, 40.0f));
-		lightmanager.editPointLight(pointLight, i);
-	}
-	for (int i = 0; i < 8; i++) {
-		spotLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_spotLight(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(-40.0f, 5.0f, -40.0f), glm::vec3(40.0f, 5.0f, 40.0f), 12.5f, 90.0f);
-		lightmanager.editSpotLight(spotLight, i);
-	}
+	// Global light uniform block
+	CustomHelper::GlobalBlinnPongLightManager globalLightManager("GlobalLights");
+	globalLightManager.registerShader(TexShader);
+	globalLightManager.registerShader(repeatTexShader);
+
 
 
 	/*
@@ -340,6 +324,38 @@ int main(void) {
 	 * Others data calculation
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
+
+
+
+	/*
+	 * Global light setting
+	 * --------------------------------------------------------------------------------------------------------------------
+	 */
+
+	// Setting global light data
+	// Number of each type light
+	unsigned int num_of_dirLight = 1;
+	unsigned int num_of_pointLight = 10;
+	unsigned int num_of_spotLight = 0;
+	// Appear area(x, z) = (-area, -area) ~ (area, area)
+	float appear_area = 20.0f;
+	// Appear height(y) = (0) ~ (height)
+	float appear_hieght = 4.0f;
+	CustomHelper::BlinnPhongLight_point pointLight;
+	CustomHelper::BlinnPhongLight_direct dirLight;
+	CustomHelper::BlinnPhongLight_spot spotLight;
+	for (unsigned int i = 0; i < num_of_dirLight; i++) {
+		dirLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_dirLight(glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(0.5f), glm::vec3(0.5f));
+		globalLightManager.editDirLight(dirLight, i);
+	}
+	for (unsigned int i = 0; i < num_of_pointLight; i++) {
+		pointLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_pointLight(glm::vec3(-appear_area, 1.0f, -appear_area), glm::vec3(appear_area, appear_hieght, appear_area));
+		globalLightManager.editPointLight(pointLight, i);
+	}
+	for (unsigned int i = 0; i < num_of_spotLight; i++) {
+		spotLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_spotLight(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(-appear_area, 5.0f, -appear_area), glm::vec3(appear_area, 5.0f, appear_area), 12.5f, 90.0f);
+		globalLightManager.editSpotLight(spotLight, i);
+	}
 
 
 
@@ -403,10 +419,10 @@ int main(void) {
 		// Fill the uniform buffer
 		//-------------------------
 		// View
-		cameraManager.updateView(view);
+		cameraMatManager.updateView(view);
 
 		// Projection
-		cameraManager.updateProjection(projection);
+		cameraMatManager.updateProjection(projection);
 
 
 		// Render scene
@@ -414,42 +430,10 @@ int main(void) {
 
 		// Render Objects
 		//---------------
-		cubeTexShader.use();
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, metalTex_diff);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, metalTex_spec);
-
-		model = glm::mat4(1.0f);
-		model = glm::scale(model, glm::vec3(50.0f));
-		model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		normalMat = CustomHelper::CalculateNormalMat(model);
-		cubeTexShader.setMat4("model", model);
-		cubeTexShader.setMat3("normalMat", normalMat);
-		cubeTexShader.setVec3("viewPos", camera.Position);
-
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
-		cubeShader.use();
-
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 8.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(50.0f));
-		model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		normalMat = CustomHelper::CalculateNormalMat(model);
-		cubeShader.setMat4("model", model);
-		cubeShader.setMat3("normalMat", normalMat);
-		cubeShader.setVec3("viewPos", camera.Position);
-
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-
-
-		CustomHelper::DrawGlobalPointLightCube(lightmanager, lightCubeShader, cubeVAO, 0.25f);
+		CustomHelper::DrawTexFloor(quadVAO, repeatTexShader, camera.Position, wood_diff, common_spec, 256.0f, glm::vec3(0.0f, -1.0f, 0.0f), 30.0f, 10);
+		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.25f);
 
 
 
