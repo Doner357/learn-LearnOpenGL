@@ -102,6 +102,8 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir) {
 	// Basic data calculation
 	//--------------------------
 	vec3 lightDir = normalize(-light.direction);   // light's direction
+	// Blinn-Phong halfway direction factor
+	vec3 halfwayDir = normalize(viewDir + lightDir);
 
 	// Lighting Calculation
 	//--------------------------
@@ -114,7 +116,8 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir) {
 
 	// --specular--
 	vec3 reflectDir = reflect(-lightDir, normal);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+	float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);     // Measure the angle between normal and halfway instead of view direction and refection direction
+	spec = diff != 0.0 ? spec : 0.0;                                             // Avoid some light specular light error when the light is below the surface
 	vec3 specular = light.specular * spec * texture(material.specular, fs_in.texCoords).rgb;
 
 	// Result
@@ -126,6 +129,8 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 	// Basic data calculation
 	//--------------------------
 	vec3 lightDir = normalize(light.position - fragPos);   // light direction
+	// Blinn-Phong halfway direction factor
+	vec3 halfwayDir = normalize(viewDir + lightDir);
 
 	// Lighting Calculation
 	//--------------------------
@@ -137,8 +142,9 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 	vec3 diffuse = light.diffuse * diff * texture(material.diffuse, fs_in.texCoords).rgb;
 
 	// --specular--
-	vec3 reflectDir = normalize(reflect(-lightDir, normal));
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+	vec3 reflectDir = reflect(-lightDir, normal);
+	float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);     // Measure the angle between normal and halfway instead of view direction and refection direction
+	spec = diff != 0.0 ? spec : 0.0;                                             // Avoid some light specular light error when the light is below the surface
 	vec3 specular = light.specular * spec * texture(material.specular, fs_in.texCoords).rgb;
 
 	// --attenuation--
@@ -157,6 +163,8 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 	// Basic data calculation
 	//--------------------------
 	vec3 lightDir = normalize(light.position - fragPos);        // light direction
+	// Blinn-Phong halfway direction factor
+	vec3 halfwayDir = normalize(viewDir + lightDir);
 
 	
 	// Lighting Calculation
@@ -169,8 +177,9 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 	vec3 diffuse = light.diffuse * diff * texture(material.diffuse, fs_in.texCoords).rgb;
 
 	// --specular--
-	vec3 reflectDir = normalize(reflect(-lightDir, normal));
-	float spec = pow(max(dot(reflectDir, viewDir), 0.0), material.shininess);
+	vec3 reflectDir = reflect(-lightDir, normal);
+	float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);     // Measure the angle between normal and halfway instead of view direction and refection direction
+	spec = diff != 0.0 ? spec : 0.0;                                             // Avoid some light specular light error when the light is below the surface
 	vec3 specular = light.specular * spec * texture(material.specular, fs_in.texCoords).rgb;
 
 	// --attenuation--
@@ -178,8 +187,8 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 	float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * distance * distance);
 
 	// --spotlight intensity--
-	float theta     = dot(lightDir, normalize(-light.direction));   // the cosine of the angle between spotlight direction and light direction
-	float epsilon   = light.innerCutOff - light.outerCutOff;      // the cosine difference between the inner cone and outer cone
+	float theta     = dot(lightDir, normalize(-light.direction));                // the cosine of the angle between spotlight direction and light direction
+	float epsilon   = light.innerCutOff - light.outerCutOff;                     // the cosine difference between the inner cone and outer cone
 	float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);    // the intensity of spotlight
 
 

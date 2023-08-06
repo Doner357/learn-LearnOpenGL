@@ -40,6 +40,9 @@ float deltaTime = 0.0f;   // Time between current frame and last frame
 float lastFrame = 0.0f;   // Time of last frame
 
 
+// Control whether use the Blinn-Phong model
+bool blinn = 0;
+
 
 int main(void) {
 
@@ -332,8 +335,8 @@ int main(void) {
 	 */
 
 	// Setting global light data
-	CustomHelper::BlinnPhongLight_point pointLight;
 	CustomHelper::BlinnPhongLight_direct dirLight;
+	CustomHelper::BlinnPhongLight_point pointLight;
 	CustomHelper::BlinnPhongLight_spot spotLight;
 	// Number of each type light
 	unsigned int num_of_dirLight = 0;
@@ -341,13 +344,30 @@ int main(void) {
 	unsigned int num_of_spotLight = 0;
 
 	// Manual setting part
+	dirLight = {
+		glm::vec3(-1.0f, -0.2, 0.1f),
+		glm::vec3(0.5f) * 0.2f,
+		glm::vec3(0.5f) * 0.5f,
+		glm::vec3(0.5f) * 1.0f
+	};
+	globalLightManager.editDirLight(dirLight, num_of_dirLight++);
+	pointLight = {
+		glm::vec3(0.0f, 1.0f, 0.0f),
+		1.0f,
+		0.09f,
+		0.032f,
+		glm::vec3(0.2f),
+		glm::vec3(0.8f),
+		glm::vec3(0.8f),
+	};
+	globalLightManager.editPointLight(pointLight, num_of_pointLight++);
 
 	// Random generate part
-	unsigned int num_of_random_dirLight = 1;
-	unsigned int num_of_random_pointLight = 32;
+	unsigned int num_of_random_dirLight = 0;
+	unsigned int num_of_random_pointLight = 0;
 	unsigned int num_of_random_spotLight = 0;
 	// Appear area(x, z) = (-area, -area) ~ (area, area)
-	float appear_area = 20.0f;
+	float appear_area = 30.0f;
 	// Appear height(y) = (0) ~ (height)
 	float appear_hieght = 4.0f;
 	for (unsigned int i = 0; i < num_of_random_dirLight; i++) {
@@ -438,13 +458,10 @@ int main(void) {
 		//---------------
 
 
-
-
-		// Draw floor
-		CustomHelper::DrawTexFloor(quadVAO, repeatTexShader, camera.Position, wood_diff, common_spec, 256.0f, glm::vec3(0.0f, -1.0f, 0.0f), 30.0f, 10);
 		// Draw light cube
-		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.25f);
-
+		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.125f);
+		// Draw floor
+		CustomHelper::DrawTexFloor(quadVAO, repeatTexShader, camera.Position, wood_diff, common_spec, 1024.0f, blinn, glm::vec3(0.0f, -1.0f, 0.0f), 30.0f, 10);
 
 
 		// skybox
@@ -543,6 +560,10 @@ void processInput(GLFWwindow *window) {
 		camera.ProcessKeyboard(CAMERA_UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+		blinn = false;
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+		blinn = true;
 }
 
 // glfw: whenever the mouse moves, this callback is called
