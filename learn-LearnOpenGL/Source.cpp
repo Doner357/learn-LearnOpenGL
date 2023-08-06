@@ -332,28 +332,35 @@ int main(void) {
 	 */
 
 	// Setting global light data
+	CustomHelper::BlinnPhongLight_point pointLight;
+	CustomHelper::BlinnPhongLight_direct dirLight;
+	CustomHelper::BlinnPhongLight_spot spotLight;
 	// Number of each type light
-	unsigned int num_of_dirLight = 1;
-	unsigned int num_of_pointLight = 32;
+	unsigned int num_of_dirLight = 0;
+	unsigned int num_of_pointLight = 0;
 	unsigned int num_of_spotLight = 0;
+
+	// Manual setting part
+
+	// Random generate part
+	unsigned int num_of_random_dirLight = 1;
+	unsigned int num_of_random_pointLight = 32;
+	unsigned int num_of_random_spotLight = 0;
 	// Appear area(x, z) = (-area, -area) ~ (area, area)
 	float appear_area = 20.0f;
 	// Appear height(y) = (0) ~ (height)
 	float appear_hieght = 4.0f;
-	CustomHelper::BlinnPhongLight_point pointLight;
-	CustomHelper::BlinnPhongLight_direct dirLight;
-	CustomHelper::BlinnPhongLight_spot spotLight;
-	for (unsigned int i = 0; i < num_of_dirLight; i++) {
+	for (unsigned int i = 0; i < num_of_random_dirLight; i++) {
 		dirLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_dirLight(glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(0.5f), glm::vec3(0.5f));
-		globalLightManager.editDirLight(dirLight, i);
+		globalLightManager.editDirLight(dirLight, num_of_dirLight++);
 	}
-	for (unsigned int i = 0; i < num_of_pointLight; i++) {
+	for (unsigned int i = 0; i < num_of_random_pointLight; i++) {
 		pointLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_pointLight(glm::vec3(-appear_area, 1.0f, -appear_area), glm::vec3(appear_area, appear_hieght, appear_area));
-		globalLightManager.editPointLight(pointLight, i);
+		globalLightManager.editPointLight(pointLight, num_of_pointLight++);
 	}
-	for (unsigned int i = 0; i < num_of_spotLight; i++) {
+	for (unsigned int i = 0; i < num_of_random_spotLight; i++) {
 		spotLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_spotLight(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(-appear_area, 5.0f, -appear_area), glm::vec3(appear_area, 5.0f, appear_area), 12.5f, 90.0f);
-		globalLightManager.editSpotLight(spotLight, i);
+		globalLightManager.editSpotLight(spotLight, num_of_spotLight++);
 	}
 
 
