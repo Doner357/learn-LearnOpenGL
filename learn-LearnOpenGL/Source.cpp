@@ -40,10 +40,6 @@ float deltaTime = 0.0f;   // Time between current frame and last frame
 float lastFrame = 0.0f;   // Time of last frame
 
 
-// Control whether use the Blinn-Phong model
-bool blinn = 0;
-
-
 int main(void) {
 
 	/*
@@ -187,6 +183,11 @@ int main(void) {
 	glEnable(GL_PROGRAM_POINT_SIZE);
 	*/
 	
+
+	// Enable OpenGL's built-in sRGB framebuffer support.
+	/*
+	glEnable(GL_FRAMEBUFFER_SRGB);	
+	*/
 
 
 
@@ -461,7 +462,7 @@ int main(void) {
 		// Draw light cube
 		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.125f);
 		// Draw floor
-		CustomHelper::DrawTexFloor(quadVAO, repeatTexShader, camera.Position, wood_diff, common_spec, 1024.0f, blinn, glm::vec3(0.0f, -1.0f, 0.0f), 30.0f, 10);
+		CustomHelper::DrawTexFloor(quadVAO, repeatTexShader, camera.Position, wood_diff, common_spec, 1024.0f, glm::vec3(0.0f, -1.0f, 0.0f), 30.0f, 10);
 
 
 		// skybox
@@ -486,6 +487,7 @@ int main(void) {
 
 		// **SECOND PASS**
 		//----------------------------------------------------------------------
+
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, ms_Framebuffer);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, screenFramebuffer);
 		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
@@ -498,6 +500,10 @@ int main(void) {
 		
 		// Render scene
 		//-------------------------
+		
+		// Enable OpenGL's built-in sRGB framebuffer support.
+		glEnable(GL_FRAMEBUFFER_SRGB);
+
 		screenShader.use();
 
 		glBindVertexArray(quadVAO);
@@ -506,6 +512,8 @@ int main(void) {
 
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
+		// Disable OpenGL built-in sRGB framebuffer support.
+		glDisable(GL_FRAMEBUFFER_SRGB);
 
 
 		// Unbind VAO
@@ -560,10 +568,6 @@ void processInput(GLFWwindow *window) {
 		camera.ProcessKeyboard(CAMERA_UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-		blinn = false;
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-		blinn = true;
 }
 
 // glfw: whenever the mouse moves, this callback is called

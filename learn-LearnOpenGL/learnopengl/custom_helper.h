@@ -864,12 +864,11 @@ namespace CustomHelper {
 		glUseProgram(0);
 	}
 
-	void DrawTexFloor(const unsigned int &quad_VAO, Shader & const shader, glm::vec3 & const viewPos, const unsigned int &diffuse_tex, const unsigned int &specular_tex, const float shininess, bool blinn, const glm::vec3 position = glm::vec3(0.0f), const float scale = 1.0f, const int tex_repeate_times = 1) {
+	void DrawTexFloor(const unsigned int &quad_VAO, Shader & const shader, glm::vec3 & const viewPos, const unsigned int &diffuse_tex, const unsigned int &specular_tex, const float shininess, const glm::vec3 position = glm::vec3(0.0f), const float scale = 1.0f, const int tex_repeate_times = 1) {
 		shader.use();
 		shader.setInt("material.diffuse", 0);
 		shader.setInt("material.specular", 1);
 		shader.setFloat("material.shininess", shininess);
-		shader.setBool("blinn", blinn);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, diffuse_tex);
