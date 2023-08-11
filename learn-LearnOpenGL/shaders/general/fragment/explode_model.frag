@@ -28,13 +28,20 @@ uniform vec3 ViewPos;
 uniform Material material;
 uniform DirLight dirLight;
 
+uniform float gamma;    // Used for gamma correction
+
 void main() {
 	vec3 normal = normalize(Normal);
 	vec3 viewDir = normalize(ViewPos - FragPos);
 
 	vec3 result = CalcDirLight(dirLight, normal, viewDir);
 
-	FragColor = vec4(result, 1.0);
+	// Gamma correction
+	float gam = gamma == 0.0 ? 1.0 : gamma;    // Avoid the 0 exponent
+	result = pow(result, vec3(1.0 / gam));
+	
+	float alpha = texture(material.texture_diffuse1, TexCoords).a;
+	FragColor = vec4(result, alpha);
 }
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir){

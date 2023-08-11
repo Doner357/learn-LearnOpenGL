@@ -843,7 +843,7 @@ namespace CustomHelper {
 	}
 
 	// Draw the point lights in the global light uniform block
-	void DrawGlobalPointLightCube(GlobalBlinnPongLightManager &manager,const unsigned int VAO,  Shader &shader, const float scale, const unsigned int number = MAX_NUM_POINTLIGHT) {
+	void DrawGlobalPointLightCube(GlobalBlinnPongLightManager &manager,const unsigned int VAO,  Shader &shader, const float scale, const float gamma, const unsigned int number = MAX_NUM_POINTLIGHT) {
 		shader.use();
 		glBindVertexArray(VAO);
 		BlinnPhongLight_point light = {};
@@ -857,6 +857,7 @@ namespace CustomHelper {
 			model = glm::scale(model, glm::vec3(scale));
 			shader.setMat4("model", model);
 			shader.setVec3("lightColor", manager.getpointLight(i).specular);
+			shader.setFloat("gamma", gamma);
 
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
@@ -864,7 +865,7 @@ namespace CustomHelper {
 		glUseProgram(0);
 	}
 
-	void DrawTexFloor(const unsigned int &quad_VAO, Shader & const shader, glm::vec3 & const viewPos, const unsigned int &diffuse_tex, const unsigned int &specular_tex, const float shininess, const glm::vec3 position = glm::vec3(0.0f), const float scale = 1.0f, const int tex_repeate_times = 1) {
+	void DrawTexFloor(const unsigned int &quad_VAO, Shader & const shader, glm::vec3 & const viewPos, const unsigned int &diffuse_tex, const unsigned int &specular_tex, const float shininess, float gamma, const glm::vec3 position = glm::vec3(0.0f), const float scale = 1.0f, const int tex_repeate_times = 1) {
 		shader.use();
 		shader.setInt("material.diffuse", 0);
 		shader.setInt("material.specular", 1);
@@ -884,6 +885,7 @@ namespace CustomHelper {
 		shader.setMat4("model", model);
 		shader.setMat3("normalMat", normalMat);
 		shader.setVec3("viewPos", viewPos);
+		shader.setFloat("gamma", gamma);
 		shader.setInt("repeat_times", tex_repeate_times);
 
 		glBindVertexArray(quad_VAO);

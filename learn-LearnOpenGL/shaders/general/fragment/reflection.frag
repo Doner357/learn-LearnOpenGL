@@ -7,8 +7,18 @@ out vec4 FragColor;
 uniform vec3 viewPos;
 uniform samplerCube cubemap;
 
+uniform float gamma;
+
 void main() {
 	vec3 viewDir = normalize(Position - viewPos);
 	vec3 reflectDir = reflect(viewDir, normalize(Normal));
-	FragColor = vec4(texture(cubemap, reflectDir).rgb, 1.0);
+
+	vec3 result = texture(cubemap, reflectDir).rgb;
+
+	// Gamma correction
+	float gam = gamma == 0.0 ? 1.0 : gamma;    // Avoid 0 as exponent
+	result = pow(result, vec3(1.0 / gam));
+	
+	float alpha = texture(cubemap, reflectDir).a;
+	FragColor = vec4(result, alpha);
 }

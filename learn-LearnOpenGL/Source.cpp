@@ -29,6 +29,9 @@ unsigned int CreateFramebuffer(unsigned int &frameColortexture, const unsigned i
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
+// Gamma
+const float gamma = 2.2f;
+
 // Camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float lastX = (float)SCR_WIDTH / 2.0f;
@@ -460,9 +463,9 @@ int main(void) {
 
 
 		// Draw light cube
-		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.125f);
+		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.125f, gamma);
 		// Draw floor
-		CustomHelper::DrawTexFloor(quadVAO, repeatTexShader, camera.Position, wood_diff, common_spec, 1024.0f, glm::vec3(0.0f, -1.0f, 0.0f), 30.0f, 10);
+		CustomHelper::DrawTexFloor(quadVAO, repeatTexShader, camera.Position, wood_diff, common_spec, 1024.0f, gamma, glm::vec3(0.0f, -1.0f, 0.0f), 30.0f, 10);
 
 
 		// skybox
@@ -477,6 +480,8 @@ int main(void) {
 		// Bind cubemap
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+
+		skyboxShader.setFloat("gamma", gamma);
 
 		glBindVertexArray(cubemapVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -501,9 +506,6 @@ int main(void) {
 		// Render scene
 		//-------------------------
 		
-		// Enable OpenGL's built-in sRGB framebuffer support.
-		glEnable(GL_FRAMEBUFFER_SRGB);
-
 		screenShader.use();
 
 		glBindVertexArray(quadVAO);
@@ -511,9 +513,6 @@ int main(void) {
 		glBindTexture(GL_TEXTURE_2D, screentexuture);
 
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		// Disable OpenGL built-in sRGB framebuffer support.
-		glDisable(GL_FRAMEBUFFER_SRGB);
 
 
 		// Unbind VAO
