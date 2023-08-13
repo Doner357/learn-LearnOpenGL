@@ -31,6 +31,9 @@ const unsigned int SCR_HEIGHT = 600;
 
 // Gamma value
 float gamma = 2.2f;
+bool gammaKeyPressed = false;
+bool linearLightKeyPressed = false;
+bool linearLight = false;
 
 // Camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -237,7 +240,8 @@ int main(void) {
 	 * Texture loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	unsigned int wood_diff = LoadTexture("textures/wood.jpg", true);
+	unsigned int wood_diff_gamma = LoadTexture("textures/wood.jpg", true);
+	unsigned int wood_diff_no_gamma = LoadTexture("textures/wood.jpg", false);
 	unsigned int common_spec = LoadTexture("textures/common_spec.jpg", false);
 
 
@@ -256,7 +260,8 @@ int main(void) {
 		folder_path + "back.png"
 	};
 
-	unsigned int skyboxTexture = LoadCubemap(faces, true);
+	unsigned int skyboxTexture_gamma = LoadCubemap(faces, true);
+	unsigned int skyboxTexture_no_gamma = LoadCubemap(faces, false);
 
 
 
@@ -362,12 +367,12 @@ int main(void) {
 	// Manual setting part
 	pointLight = {
 		glm::vec3(0.0f, 1.0f, 0.0f),
+		0.0f,
+		0.0f,
 		1.0f,
-		0.09f,
-		0.032f,
 		glm::vec3(0.2f),
 		glm::vec3(0.8f),
-		glm::vec3(0.8f),
+		glm::vec3(1.0f),
 	};
 	for (float i = -10.0f; i <= 10.0f; i += 5.0f) {
 		pointLight.position = glm::vec3(i, 1.0f, 0.0f);
@@ -474,6 +479,48 @@ int main(void) {
 		// Projection
 		cameraMatManager.updateProjection(projection);
 
+		// Gamma value
+		gammaManager.updateGamma(gamma);
+
+		// Light sources
+		num_of_pointLight = 0;
+		if (linearLight) {
+			pointLight = {
+				glm::vec3(0.0f, 1.0f, 0.0f),
+				0.0f,
+				1.0f,
+				0.0f,
+				glm::vec3(0.2f),
+				glm::vec3(0.8f),
+				glm::vec3(1.0f),
+			};
+			for (float i = -10.0f; i <= 10.0f; i += 5.0f) {
+				pointLight.position = glm::vec3(i, 1.0f, 0.0f);
+				globalLightManager.editPointLight(pointLight, num_of_pointLight++);
+				pointLight.ambient *= 0.7f;
+				pointLight.diffuse *= 0.7f;
+				pointLight.specular *= 0.7f;
+			}
+		}
+		else {
+			pointLight = {
+				glm::vec3(0.0f, 1.0f, 0.0f),
+				0.0f,
+				0.0f,
+				1.0f,
+				glm::vec3(0.2f),
+				glm::vec3(0.8f),
+				glm::vec3(1.0f),
+			};
+			for (float i = -10.0f; i <= 10.0f; i += 5.0f) {
+				pointLight.position = glm::vec3(i, 1.0f, 0.0f);
+				globalLightManager.editPointLight(pointLight, num_of_pointLight++);
+				pointLight.ambient *= 0.7f;
+				pointLight.diffuse *= 0.7f;
+				pointLight.specular *= 0.7f;
+			}
+		}
+
 
 		// Render scene
 		//-------------------------
@@ -485,7 +532,7 @@ int main(void) {
 		// Draw light cube
 		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.125f);
 		// Draw floor
-		CustomHelper::DrawTexFloor(quadVAO, repeatTexShader, camera.Position, wood_diff, common_spec, 1024.0f, glm::vec3(0.0f, -1.0f, 0.0f), 30.0f, 10);
+		CustomHelper::DrawTexFloor(quadVAO, repeatTexShader, camera.Position, (gamma == 1.0f ? wood_diff_no_gamma : wood_diff_gamma), common_spec, 1024.0f, glm::vec3(0.0f, -1.0f, 0.0f), 30.0f, 10);
 
 
 		// skybox
@@ -499,7 +546,7 @@ int main(void) {
 
 		// Bind cubemap
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, (gamma == 1.0f ? skyboxTexture_no_gamma : skyboxTexture_gamma));
 
 		glBindVertexArray(cubemapVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -585,6 +632,20 @@ void processInput(GLFWwindow *window) {
 		camera.ProcessKeyboard(CAMERA_UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS && !gammaKeyPressed) {
+		gamma = (gamma == 1.0f ? 2.2f : 1.0f);
+		gammaKeyPressed = true;
+		std::cout << "Gamma Correction : " + std::string(gamma == 1.0f ? "OFF" : "ON") << std::endl;
+	}
+	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_RELEASE)
+		gammaKeyPressed = false;
+	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS && !linearLightKeyPressed) {
+		linearLight = !linearLight;
+		linearLightKeyPressed = true;
+		std::cout << "Light Attenuation : " + std::string(linearLight ? "Linear" : "Quadratic") << std::endl;
+	}
+	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_RELEASE)
+		linearLightKeyPressed = false;
 }
 
 // glfw: whenever the mouse moves, this callback is called

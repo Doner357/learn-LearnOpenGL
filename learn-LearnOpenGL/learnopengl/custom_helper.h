@@ -847,9 +847,9 @@ namespace CustomHelper {
 		glm::vec3 position = GenerateRandomVec3(min_pos, max_pos);
 
 		light.position = position;
-		light.constant = 1.0f;
-		light.linear = 0.09f;
-		light.quadratic = 0.032f;
+		light.constant = 0.0f;
+		light.linear = 0.0f;
+		light.quadratic = 1.0f;
 		light.ambient = color * 0.2f;
 		light.diffuse = color * 0.8f;
 		light.specular = color;
@@ -878,9 +878,9 @@ namespace CustomHelper {
 		light.position = position;
 		light.innerCutOff = innerCutoff;
 		light.outerCutOff = outerCutoff;
-		light.constant = 1.0f;
-		light.linear = 0.09f;
-		light.quadratic = 0.025f;
+		light.constant = 0.0f;
+		light.linear = 0.0f;
+		light.quadratic = 1.0f;
 		light.ambient = color * 0.2f;
 		light.diffuse = color * 0.8f;
 		light.specular = color;
