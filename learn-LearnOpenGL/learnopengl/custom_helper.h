@@ -28,9 +28,13 @@ namespace CustomHelper {
 
 	enum UBOBindingPoints {
 		UBOPOINT_CAMERA_MATRICES = 0,
-		UBOPOINT_BLINPHONG_LIGHTING = 1
+		UBOPOINT_BLINPHONG_LIGHTING = 1,
+		UBOPOINT_GAMMA_CORRECTION = 2
 	};
-
+	std::string UBOPOINT_NAME_CAMERA_MATRICES = "CameraMatrices";
+	std::string UBOPOINT_NAME_BLINPHONG_LIGHTING = "GlobalLights";
+	std::string UBOPOINT_NAME_GAMMA_CORRECTION = "GammaCorrection";
+	
 	enum LightType {
 		DIRECTIONAL_LIGHT,
 		POINT_LIGHT,
@@ -298,6 +302,48 @@ namespace CustomHelper {
 				glBindBuffer(GL_UNIFORM_BUFFER, this->uniform_buffer);
 				glBufferData(GL_UNIFORM_BUFFER, size_of_total_block, NULL, GL_DYNAMIC_DRAW);
 				glBindBufferBase(GL_UNIFORM_BUFFER, UBOPOINT_CAMERA_MATRICES, (this->uniform_buffer));
+				glBindBuffer(GL_UNIFORM_BUFFER, 0);
+			}
+	};
+
+
+	class GammaManager {
+		public:
+			GammaManager(std::string name) {
+				this->uniform_block_name = name;
+				bindUniformBlockBuffer();
+			}
+
+			~GammaManager() {
+				glDeleteBuffers(1, &(this->uniform_buffer));
+			}
+
+			void registerShader(Shader &shader) {
+				unsigned int unifrom_block_index = glGetUniformBlockIndex(shader.ID, this->uniform_block_name.c_str());
+				glUniformBlockBinding(shader.ID, unifrom_block_index, UBOPOINT_GAMMA_CORRECTION);
+			}
+
+			void updateGamma(const float gamma) {
+				glBindBuffer(GL_UNIFORM_BUFFER, (this->uniform_buffer));
+				glBufferSubData(GL_UNIFORM_BUFFER, gamma_start_pos, gamma_size, &gamma);
+				glBindBuffer(GL_UNIFORM_BUFFER, 0);
+			}
+
+		private:
+			std::string uniform_block_name;
+			unsigned int uniform_buffer;
+
+			const GLsizeiptr gamma_start_pos = 0;
+			const GLsizeiptr gamma_size = sizeof(float);
+			const GLsizeiptr gamma_next_bias = 0;
+
+			const GLsizeiptr size_of_total_block = gamma_start_pos + gamma_size + gamma_next_bias;
+
+			void bindUniformBlockBuffer() {
+				glGenBuffers(1, &(this->uniform_buffer));
+				glBindBuffer(GL_UNIFORM_BUFFER, this->uniform_buffer);
+				glBufferData(GL_UNIFORM_BUFFER, size_of_total_block, NULL, GL_DYNAMIC_DRAW);
+				glBindBufferBase(GL_UNIFORM_BUFFER, UBOPOINT_GAMMA_CORRECTION, (this->uniform_buffer));
 				glBindBuffer(GL_UNIFORM_BUFFER, 0);
 			}
 	};
@@ -843,7 +889,7 @@ namespace CustomHelper {
 	}
 
 	// Draw the point lights in the global light uniform block
-	void DrawGlobalPointLightCube(GlobalBlinnPongLightManager &manager,const unsigned int VAO,  Shader &shader, const float scale, const float gamma, const unsigned int number = MAX_NUM_POINTLIGHT) {
+	void DrawGlobalPointLightCube(GlobalBlinnPongLightManager &manager,const unsigned int VAO,  Shader &shader, const float scale, const unsigned int number = MAX_NUM_POINTLIGHT) {
 		shader.use();
 		glBindVertexArray(VAO);
 		BlinnPhongLight_point light = {};
@@ -856,8 +902,7 @@ namespace CustomHelper {
 			model = glm::translate(model, manager.getpointLight(i).position);
 			model = glm::scale(model, glm::vec3(scale));
 			shader.setMat4("model", model);
-			shader.setVec3("lightColor", manager.getpointLight(i).specular);
-			shader.setFloat("gamma", gamma);
+			shader.setVec3("lightColor", manager.getpointLight(i).specular * 1.2f);
 
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
@@ -865,7 +910,7 @@ namespace CustomHelper {
 		glUseProgram(0);
 	}
 
-	void DrawTexFloor(const unsigned int &quad_VAO, Shader & const shader, glm::vec3 & const viewPos, const unsigned int &diffuse_tex, const unsigned int &specular_tex, const float shininess, float gamma, const glm::vec3 position = glm::vec3(0.0f), const float scale = 1.0f, const int tex_repeate_times = 1) {
+	void DrawTexFloor(const unsigned int &quad_VAO, Shader & const shader, glm::vec3 & const viewPos, const unsigned int &diffuse_tex, const unsigned int &specular_tex, const float shininess, const glm::vec3 position = glm::vec3(0.0f), const float scale = 1.0f, const int tex_repeate_times = 1) {
 		shader.use();
 		shader.setInt("material.diffuse", 0);
 		shader.setInt("material.specular", 1);
@@ -885,7 +930,6 @@ namespace CustomHelper {
 		shader.setMat4("model", model);
 		shader.setMat3("normalMat", normalMat);
 		shader.setVec3("viewPos", viewPos);
-		shader.setFloat("gamma", gamma);
 		shader.setInt("repeat_times", tex_repeate_times);
 
 		glBindVertexArray(quad_VAO);

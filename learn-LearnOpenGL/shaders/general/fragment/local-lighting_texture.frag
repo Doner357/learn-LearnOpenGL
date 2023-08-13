@@ -78,7 +78,10 @@ uniform DirLight dirLights[NUM_OF_DIRLIGHTS];         // Directional light
 uniform PointLight pointLights[NUM_OF_POINTLIGHTS];   // Point light
 uniform SpotLight spotLights[NUM_OF_SPOTLIGHTS];      // Spot light
 
-uniform float gamma;    // Used for gamma correction
+// Used for gamma correction
+layout (std140) uniform GammaCorrection {
+	float gamma;    // 4 bytes
+};
 
 void main() {
 	// Properties

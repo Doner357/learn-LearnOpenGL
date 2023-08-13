@@ -12,7 +12,10 @@ struct Material {
 
 uniform Material material;
 
-uniform float gamma;    // Used for gamma correction
+// Used for gamma correction
+layout (std140) uniform GammaCorrection {
+	float gamma;    // 4 bytes
+};
 
 void main() {
 	vec3 result = texture(material.texture_diffuse1, TexCoords).rgb;

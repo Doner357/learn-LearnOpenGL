@@ -76,7 +76,10 @@ layout (std140) uniform GlobalLights {               // size      ali
 	SpotLight spotLights[NUM_OF_SPOTLIGHTS];         //  768     2816
 }; // total 3584
 
-uniform float gamma;    // Used for gamma correction
+// Used for gamma correction
+layout (std140) uniform GammaCorrection {
+	float gamma;    // 4 bytes
+};
 
 void main() {
 	// Properties

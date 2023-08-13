@@ -7,7 +7,10 @@ out vec4 FragColor;
 uniform vec3 viewPos;
 uniform samplerCube cubemap;
 
-uniform float gamma;    // Used for gamma correction
+// Used for gamma correction
+layout (std140) uniform GammaCorrection {
+	float gamma;    // 4 bytes
+};
 
 void main() {
 	float ratio = 1.00 / 1.52;

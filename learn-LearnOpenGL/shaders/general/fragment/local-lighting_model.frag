@@ -67,7 +67,10 @@ uniform DirLight dirLights[NUM_OF_DIRLIGHTS];
 uniform PointLight pointLights[NUM_OF_POINTLIGHTS];
 uniform SpotLight spotLights[NUM_OF_SPOTLIGHTS];
 
-uniform float gamma;    // Used for gamma correction
+// Used for gamma correction
+layout (std140) uniform GammaCorrection {
+	float gamma;    // 4 bytes
+};
 
 void main() {
 	vec3 normal = normalize(fs_in.normal);

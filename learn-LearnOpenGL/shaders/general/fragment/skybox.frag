@@ -5,7 +5,10 @@ out vec4 FragColor;
 
 uniform samplerCube cubemap;
 
-uniform float gamma;    // Used for gamma correction
+// Used for gamma correction
+layout (std140) uniform GammaCorrection {
+	float gamma;    // 4 bytes
+};
 
 void main() {
 

@@ -6,7 +6,10 @@ out vec4 FragColor;
 
 uniform sampler2D texture1;
 
-uniform float gamma;    // Used for gamma correction
+// Used for gamma correction
+layout (std140) uniform GammaCorrection {
+	float gamma;    // 4 bytes
+};
 
 void main() {
 	vec3 texColor = texture(texture1, TexCoords).rgb;

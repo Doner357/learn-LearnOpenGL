@@ -28,7 +28,10 @@ uniform vec3 ViewPos;
 uniform Material material;
 uniform DirLight dirLight;
 
-uniform float gamma;    // Used for gamma correction
+// Used for gamma correction
+layout (std140) uniform GammaCorrection {
+	float gamma;    // 4 bytes
+};
 
 void main() {
 	vec3 normal = normalize(Normal);

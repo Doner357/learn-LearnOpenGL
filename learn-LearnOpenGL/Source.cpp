@@ -29,9 +29,6 @@ unsigned int CreateFramebuffer(unsigned int &frameColortexture, const unsigned i
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-// Gamma
-const float gamma = 2.2f;
-
 // Camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float lastX = (float)SCR_WIDTH / 2.0f;
@@ -302,15 +299,23 @@ int main(void) {
 	 */
 
 	// Camera matrices uniform block
-	CustomHelper::CameraMatricesManager cameraMatManager("CameraMatrices");
+	CustomHelper::CameraMatricesManager cameraMatManager(CustomHelper::UBOPOINT_NAME_CAMERA_MATRICES);
 	cameraMatManager.registerShader(skyboxShader);
+	cameraMatManager.registerShader(lightCubeShader);
 	cameraMatManager.registerShader(TexShader);
 	cameraMatManager.registerShader(repeatTexShader);
 
 	// Global light uniform block
-	CustomHelper::GlobalBlinnPongLightManager globalLightManager("GlobalLights");
+	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING);
 	globalLightManager.registerShader(TexShader);
 	globalLightManager.registerShader(repeatTexShader);
+
+	// Gamma Correction uniform block
+	CustomHelper::GammaManager gammaManager(CustomHelper::UBOPOINT_NAME_GAMMA_CORRECTION);
+	gammaManager.registerShader(skyboxShader);
+	gammaManager.registerShader(lightCubeShader);
+	gammaManager.registerShader(TexShader);
+	gammaManager.registerShader(repeatTexShader);
 
 
 
@@ -348,13 +353,6 @@ int main(void) {
 	unsigned int num_of_spotLight = 0;
 
 	// Manual setting part
-	dirLight = {
-		glm::vec3(-1.0f, -0.2, 0.1f),
-		glm::vec3(0.5f) * 0.2f,
-		glm::vec3(0.5f) * 0.5f,
-		glm::vec3(0.5f) * 1.0f
-	};
-	globalLightManager.editDirLight(dirLight, num_of_dirLight++);
 	pointLight = {
 		glm::vec3(0.0f, 1.0f, 0.0f),
 		1.0f,
@@ -364,7 +362,13 @@ int main(void) {
 		glm::vec3(0.8f),
 		glm::vec3(0.8f),
 	};
-	globalLightManager.editPointLight(pointLight, num_of_pointLight++);
+	for (float i = -10.0f; i <= 10.0f; i += 5.0f) {
+		pointLight.position = glm::vec3(i, 1.0f, 0.0f);
+		globalLightManager.editPointLight(pointLight, num_of_pointLight++);
+		pointLight.ambient  *= 0.7f;
+		pointLight.diffuse  *= 0.7f;
+		pointLight.specular *= 0.7f;
+	}
 
 	// Random generate part
 	unsigned int num_of_random_dirLight = 0;
@@ -386,6 +390,15 @@ int main(void) {
 		spotLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_spotLight(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(-appear_area, 5.0f, -appear_area), glm::vec3(appear_area, 5.0f, appear_area), 12.5f, 90.0f);
 		globalLightManager.editSpotLight(spotLight, num_of_spotLight++);
 	}
+
+
+
+	/*
+	 * Gamma setting
+	 * --------------------------------------------------------------------------------------------------------------------
+	 */
+
+	gammaManager.updateGamma(2.2f);
 
 
 
@@ -463,9 +476,9 @@ int main(void) {
 
 
 		// Draw light cube
-		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.125f, gamma);
+		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.125f);
 		// Draw floor
-		CustomHelper::DrawTexFloor(quadVAO, repeatTexShader, camera.Position, wood_diff, common_spec, 1024.0f, gamma, glm::vec3(0.0f, -1.0f, 0.0f), 30.0f, 10);
+		CustomHelper::DrawTexFloor(quadVAO, repeatTexShader, camera.Position, wood_diff, common_spec, 1024.0f, glm::vec3(0.0f, -1.0f, 0.0f), 30.0f, 10);
 
 
 		// skybox
@@ -480,8 +493,6 @@ int main(void) {
 		// Bind cubemap
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
-
-		skyboxShader.setFloat("gamma", gamma);
 
 		glBindVertexArray(cubemapVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
