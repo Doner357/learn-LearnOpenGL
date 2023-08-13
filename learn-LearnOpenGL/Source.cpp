@@ -21,13 +21,16 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 
 // Custom function
-unsigned int LoadTexture(char const* path, bool flip_vertically = true);
-unsigned int LoadCubemap(std::vector<std::string> faces, bool flip_vertically = false);
+unsigned int LoadTexture(char const* path, bool gammaCorrection, bool flip_vertically = true);
+unsigned int LoadCubemap(std::vector<std::string> faces, bool gammaCorrection, bool flip_vertically = false);
 unsigned int CreateFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample = false, const unsigned int samples = 1);
 
 // Screen Width and Height setting
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
+
+// Gamma value
+float gamma = 2.2f;
 
 // Camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -234,8 +237,8 @@ int main(void) {
 	 * Texture loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	unsigned int wood_diff = LoadTexture("textures/wood.jpg");
-	unsigned int common_spec = LoadTexture("textures/common_spec.jpg");
+	unsigned int wood_diff = LoadTexture("textures/wood.jpg", true);
+	unsigned int common_spec = LoadTexture("textures/common_spec.jpg", false);
 
 
 
@@ -253,7 +256,7 @@ int main(void) {
 		folder_path + "back.png"
 	};
 
-	unsigned int skyboxTexture = LoadCubemap(faces);
+	unsigned int skyboxTexture = LoadCubemap(faces, true);
 
 
 
@@ -267,6 +270,7 @@ int main(void) {
 	Shader lightCubeShader("shaders/general/vertex/light_cube.vert", "shaders/general/fragment/light_cube.frag");
 	Shader TexShader("shaders/general/vertex/lighting_texture.vert", "shaders/general/fragment/global-lighting_texture.frag");
 	Shader repeatTexShader("shaders/general/vertex/lighting_repeated-texture.vert", "shaders/general/fragment/global-lighting_texture.frag");
+	Shader modelShader("shaders/general/vertex/lighting_model.vert", "shaders/general/fragment/global-lighting_model.frag");
 
 
 
@@ -304,11 +308,13 @@ int main(void) {
 	cameraMatManager.registerShader(lightCubeShader);
 	cameraMatManager.registerShader(TexShader);
 	cameraMatManager.registerShader(repeatTexShader);
+	cameraMatManager.registerShader(modelShader);
 
 	// Global light uniform block
 	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING);
 	globalLightManager.registerShader(TexShader);
 	globalLightManager.registerShader(repeatTexShader);
+	globalLightManager.registerShader(modelShader);
 
 	// Gamma Correction uniform block
 	CustomHelper::GammaManager gammaManager(CustomHelper::UBOPOINT_NAME_GAMMA_CORRECTION);
@@ -316,6 +322,7 @@ int main(void) {
 	gammaManager.registerShader(lightCubeShader);
 	gammaManager.registerShader(TexShader);
 	gammaManager.registerShader(repeatTexShader);
+	gammaManager.registerShader(modelShader);
 
 
 
@@ -398,7 +405,7 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	gammaManager.updateGamma(2.2f);
+	gammaManager.updateGamma(gamma);
 
 
 
@@ -611,7 +618,7 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
 
 // utility function for loading a 2D texture from file
 // ---------------------------------------------------
-unsigned int LoadTexture(char const *path, bool flip_vertically) {
+unsigned int LoadTexture(char const *path, bool gammaCorrection, bool flip_vertically) {
 	// Set whether filp vertical axis
 	stbi_set_flip_vertically_on_load(flip_vertically);
 
@@ -621,19 +628,25 @@ unsigned int LoadTexture(char const *path, bool flip_vertically) {
 	int width, height, nrComponents;
 	unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
 	if (data) {
-		GLenum format = 4;
-		if (nrComponents == 1)
-			format = GL_RED;
-		else if (nrComponents == 3)
-			format = GL_RGB;
-		else if (nrComponents == 4)
-			format = GL_RGBA;
+		GLenum internalFormat;
+		GLenum dataFormat;
+		if (nrComponents == 1) {
+			internalFormat = dataFormat = GL_RED;
+		}
+		else if (nrComponents == 3) {
+			internalFormat = (gammaCorrection ? GL_SRGB : GL_RGB);
+			dataFormat = GL_RGB;
+		}
+		else if (nrComponents == 4) {
+			internalFormat = (gammaCorrection ? GL_SRGB_ALPHA : GL_RGBA);
+			dataFormat = GL_RGBA;
+		}
 
 		glBindTexture(GL_TEXTURE_2D, textureID);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		if (format == GL_RGBA) {
+		if (dataFormat == GL_RGBA) {
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		}
@@ -660,7 +673,7 @@ unsigned int LoadTexture(char const *path, bool flip_vertically) {
 
 // utility function for loading a cubemap textures from file
 // ------------------------------------------------------------
-unsigned int LoadCubemap(std::vector<std::string> faces, bool flip_vertically) {
+unsigned int LoadCubemap(std::vector<std::string> faces, bool gammaCorrection, bool flip_vertically) {
 	// Set whether filp vertical axis
 	stbi_set_flip_vertically_on_load(flip_vertically);
 
@@ -672,15 +685,21 @@ unsigned int LoadCubemap(std::vector<std::string> faces, bool flip_vertically) {
 	for (unsigned int i = 0; i < faces.size(); i++) {
 		unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
 		if (data) {
-			GLenum format = 4;
-			if (nrChannels == 1)
-				format = GL_RED;
-			else if (nrChannels == 3)
-				format = GL_RGB;
-			else if (nrChannels == 4)
-				format = GL_RGBA;
+			GLenum internalFormat;
+			GLenum dataFormat;
+			if (nrChannels == 1) {
+				internalFormat = dataFormat = GL_RED;
+			}
+			else if (nrChannels == 3) {
+				internalFormat = (gammaCorrection ? GL_SRGB : GL_RGB);
+				dataFormat = GL_RGB;
+			}
+			else if (nrChannels == 4) {
+				internalFormat = (gammaCorrection ? GL_SRGB_ALPHA : GL_RGBA);
+				dataFormat = GL_RGBA;
+			}
 
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
 			stbi_image_free(data);
 		}
 		else {

@@ -20,7 +20,7 @@
 #include <map>
 #include <vector>
 
-unsigned int TextureFromFile(const char *path, const std::string &directory, bool gamma = false);
+unsigned int TextureFromFile(const char *path, const std::string &directory, bool gammaCorrection);
 
 class Model {
 public:
@@ -31,7 +31,7 @@ public:
 	std::string directory;
 	bool gammaCorrection;
 	// Constructor, expects a filepath to a 3D model.
-	Model(std::string const &path, bool flipUVs = false, bool gamma = false) : gammaCorrection(gamma) {
+	Model(std::string const &path, bool gamma, bool flipUVs = false) : gammaCorrection(gamma) {
 		loadModel(path, flipUVs);
 	}
 
@@ -54,7 +54,7 @@ private:
 			flipUVmask = aiPostProcessSteps::aiProcess_FlipUVs;
 		// Load model into the assimp scene
 		Assimp::Importer importer;
-		const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | (aiProcess_FlipUVs & flipUVmask));
+		const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | flipUVmask);
 		
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
 			std::cout << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
@@ -179,7 +179,8 @@ private:
 			}
 			if (!skip) {
 				Texture texture;
-				texture.id = TextureFromFile(str.C_Str(), this->directory);
+				float gammaCorrect = (typeName == "texture_diffuse") && this->gammaCorrection;
+				texture.id = TextureFromFile(str.C_Str(), this->directory, gammaCorrect);
 				texture.type = typeName;
 				texture.path = str.C_Str();
 				textures.push_back(texture);
@@ -190,7 +191,7 @@ private:
 	}
 };
 
-unsigned int TextureFromFile(const char *path, const std::string &directory, bool gamma) {
+unsigned int TextureFromFile(const char *path, const std::string &directory, bool gammaCorrection) {
 	std::string filename = std::string(path);
 	filename = directory + '/' + filename;
 
@@ -200,16 +201,22 @@ unsigned int TextureFromFile(const char *path, const std::string &directory, boo
 	int width, height, nrComponents;
 	unsigned char *data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
 	if (data) {
-		GLenum format = 4;
-		if (nrComponents == 1)
-			format = GL_RED;
-		if (nrComponents == 3)
-			format = GL_RGB;
-		if (nrComponents == 4)
-			format = GL_RGBA;
+		GLenum internalFormat;
+		GLenum dataFormat;
+		if (nrComponents == 1) {
+			internalFormat = dataFormat = GL_RED;
+		}
+		else if (nrComponents == 3) {
+			internalFormat = (gammaCorrection ? GL_SRGB : GL_RGB);
+			dataFormat = GL_RGB;
+		}
+		else if (nrComponents == 4) {
+			internalFormat = (gammaCorrection ? GL_SRGB_ALPHA : GL_RGBA);
+			dataFormat = GL_RGBA;
+		}
 
 		glBindTexture(GL_TEXTURE_2D, textureID);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
