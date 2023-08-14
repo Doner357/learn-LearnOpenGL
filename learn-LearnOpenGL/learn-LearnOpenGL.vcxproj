@@ -155,6 +155,7 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\post-processing\fragment\gamma_correction.frag" />
     <None Include="shaders\general\vertex\lighting_repeated-texture.vert" />
     <None Include="shaders\general\fragment\global-lighting_texture.frag" />
     <None Include="shaders\general\fragment\global-lighting_model.frag" />
@@ -174,9 +175,7 @@
     <None Include="shaders\general\fragment\skybox.frag" />
     <None Include="shaders\general\vertex\skybox.vert" />
     <None Include="shaders\post-processing\fragment\kernel_self.frag" />
-    <None Include="shaders\post-processing\vertex\kernel_self.vert" />
     <None Include="shaders\post-processing\fragment\kernel_emboss.frag" />
-    <None Include="shaders\post-processing\vertex\kernel_emboss.vert" />
     <None Include="shaders\post-processing\fragment\regular_screen.frag" />
     <None Include="shaders\post-processing\fragment\grayscale.frag" />
     <None Include="shaders\post-processing\fragment\inversion.frag" />
@@ -185,11 +184,6 @@
     <None Include="shaders\post-processing\fragment\kernel_sharpen.frag" />
     <None Include="shaders\general\fragment\pure_texture.frag" />
     <None Include="shaders\post-processing\vertex\regular_screen.vert" />
-    <None Include="shaders\post-processing\vertex\grayscale.vert" />
-    <None Include="shaders\post-processing\vertex\inversion.vert" />
-    <None Include="shaders\post-processing\vertex\kernel_blur.vert" />
-    <None Include="shaders\post-processing\vertex\kernel_edge_detection.vert" />
-    <None Include="shaders\post-processing\vertex\kernel_sharpen.vert" />
     <None Include="shaders\general\vertex\pure_texture.vert" />
     <None Include="shaders\general\fragment\light_cube.frag" />
     <None Include="shaders\general\fragment\local-lighting_texture.frag" />

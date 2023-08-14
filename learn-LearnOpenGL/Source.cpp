@@ -256,7 +256,7 @@ int main(void) {
 		folder_path + "back.png"
 	};
 
-	unsigned int skyboxTexture = LoadCubemap(faces, true);
+	unsigned int skyboxTexture = LoadCubemap(faces, false);
 
 
 
@@ -318,7 +318,6 @@ int main(void) {
 
 	// Gamma Correction uniform block
 	CustomHelper::GammaManager gammaManager(CustomHelper::UBOPOINT_NAME_GAMMA_CORRECTION);
-	gammaManager.registerShader(skyboxShader);
 	gammaManager.registerShader(lightCubeShader);
 	gammaManager.registerShader(TexShader);
 	gammaManager.registerShader(repeatTexShader);
@@ -362,7 +361,7 @@ int main(void) {
 	// Manual setting part
 	dirLight = {
 		glm::vec3(0.0f, -1.0f, 0.5f),
-		glm::vec3(0.09f),
+		glm::vec3(0.009f),
 		glm::vec3(0.2f),
 		glm::vec3(0.2f)
 	};
@@ -465,8 +464,6 @@ int main(void) {
 		// Projection
 		cameraMatManager.updateProjection(projection);
 
-		// Gamma value
-		gammaManager.updateGamma(gamma);
 
 		// Render scene
 		//-------------------------
