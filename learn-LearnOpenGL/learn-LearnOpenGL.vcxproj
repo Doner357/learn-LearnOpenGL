@@ -155,6 +155,9 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\post-processing\fragment\depth_map.frag" />
+    <None Include="shaders\general\fragment\depth_map.frag" />
+    <None Include="shaders\general\vertex\depth_map.vert" />
     <None Include="shaders\post-processing\fragment\gamma_correction.frag" />
     <None Include="shaders\general\vertex\lighting_repeated-texture.vert" />
     <None Include="shaders\general\fragment\global-lighting_texture.frag" />
