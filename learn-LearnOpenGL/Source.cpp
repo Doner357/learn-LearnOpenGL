@@ -240,6 +240,9 @@ int main(void) {
 	unsigned int wood_diff = LoadTexture("textures/wood.jpg", true);
 	unsigned int common_spec = LoadTexture("textures/common_spec.jpg", false);
 
+	unsigned int container_diff = LoadTexture("textures/container2/container2.png", true);
+	unsigned int container_spec = LoadTexture("textures/container2/container2_specular.png", false);
+
 
 
 	/*
@@ -290,7 +293,7 @@ int main(void) {
 	TexShader.use();
 	TexShader.setInt("material.diffuse", 0);
 	TexShader.setInt("material.specular", 1);
-	TexShader.setFloat("material.shininess", 256.0f);
+	TexShader.setFloat("material.shininess", 2048.0f);
 
 
 	glUseProgram(0);
@@ -341,6 +344,11 @@ int main(void) {
 	 * Others data calculation
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
+	std::vector<glm::vec3> containerPos = {
+		glm::vec3(0.0f, -0.5f, -2.0f),
+		glm::vec3(1.0f, 2.0f, 2.0f),
+		glm::vec3(0.0f, 4.0f, -4.0f)
+	};
 
 
 
@@ -470,6 +478,27 @@ int main(void) {
 
 		// Render Objects
 		//---------------
+
+		TexShader.use();
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, container_diff);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, container_spec);
+
+		for (unsigned int i = 0; i < containerPos.size(); i++) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, containerPos[i]);
+			model = glm::rotate(model, static_cast<float>(i), glm::vec3(1.0f, 2.0f, 0.5f));
+			model = glm::scale(model, glm::vec3(0.5f));
+			normalMat = CustomHelper::CalculateNormalMat(model);
+			TexShader.setMat4("model", model);
+			TexShader.setMat3("normalMat", normalMat);
+			TexShader.setVec3("viewPos", camera.Position);
+
+			glBindVertexArray(cubeVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 
 
 		// Draw light cube
