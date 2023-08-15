@@ -155,10 +155,11 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\post-processing\fragment\perspect_depth-map.frag" />
     <None Include="shaders\general\vertex\lighting_shadow_repeated-texture.vert" />
     <None Include="shaders\general\fragment\local-lighting_shadow_texture.frag" />
     <None Include="shaders\general\vertex\lighting_shadow_texture.vert" />
-    <None Include="shaders\post-processing\fragment\depth_map.frag" />
+    <None Include="shaders\post-processing\fragment\ortho_depth-map.frag" />
     <None Include="shaders\general\fragment\depth_map.frag" />
     <None Include="shaders\general\vertex\depth_map.vert" />
     <None Include="shaders\post-processing\fragment\gamma_correction.frag" />

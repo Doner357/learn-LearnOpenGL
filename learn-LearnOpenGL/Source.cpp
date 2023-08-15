@@ -269,7 +269,7 @@ int main(void) {
 	*/
 
 	Shader screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/regular_screen.frag");
-	Shader viewDepthShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/depth_map.frag");
+	Shader viewDepthShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/perspect_depth-map.frag");
 	Shader skyboxShader("shaders/general/vertex/skybox.vert", "shaders/general/fragment/skybox.frag");
 	Shader lightCubeShader("shaders/general/vertex/light_cube.vert", "shaders/general/fragment/light_cube.frag");
 	Shader TexShader("shaders/general/vertex/lighting_shadow_texture.vert", "shaders/general/fragment/local-lighting_shadow_texture.frag");
@@ -534,11 +534,12 @@ int main(void) {
 		// projection near plane and far plane
 		float near_plane = 1.0f, far_plane = 10.0f;
 		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+		glm::mat4 lightPerspective = glm::perspective(glm::radians(90.0f), (float)(SHADOW_WIDTH / SHADOW_HEIGHT), 1.0f, 150.0f);
 		// light position (get by multiply the direction of the directional light's direction)
-		glm::vec3 lightPos = shadowDirLight.direction * -6.5f;
+		glm::vec3 lightPos = shadowDirLight.direction * -10.5f;
 		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		// Transform matrix which transform world space vector to light clip space
-		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+		glm::mat4 lightSpaceMatrix = lightPerspective * lightView;
 
 		simpleDepthShader.use();
 		simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
@@ -710,7 +711,12 @@ int main(void) {
 		//-------------------------
 		
 		screenShader.use();
-		//viewDepthShader.use();
+		/*
+		viewDepthShader.use();
+		viewDepthShader.setFloat("near_plane", near_plane);
+		viewDepthShader.setFloat("far_plane", far_plane);		
+		*/
+
 
 		glBindVertexArray(quadVAO);
 		glActiveTexture(GL_TEXTURE0);
