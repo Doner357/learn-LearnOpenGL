@@ -366,8 +366,11 @@ int main(void) {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// Set the image wraping to clamp to border and set the border to 1.0 so whenever the sample outside the depth map, it always return 1.0 and the shadow value will be 0.0
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
@@ -387,7 +390,9 @@ int main(void) {
 	std::vector<glm::vec3> containerPos = {
 		glm::vec3(0.0f, -0.5f, -2.0f),
 		glm::vec3(1.0f, 2.0f, 2.0f),
-		glm::vec3(0.0f, 4.0f, -4.0f)
+		glm::vec3(0.0f, 4.0f, -4.0f),
+		glm::vec3(-4.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 5.0f, 0.0f)
 	};
 
 	CustomHelper::BlinnPhongLight_direct shadowDirLight = {
@@ -527,7 +532,7 @@ int main(void) {
 
 		// Render shadow map
 		// projection near plane and far plane
-		float near_plane = 1.0f, far_plane = 10.5f;
+		float near_plane = 1.0f, far_plane = 10.0f;
 		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 		// light position (get by multiply the direction of the directional light's direction)
 		glm::vec3 lightPos = shadowDirLight.direction * -6.5f;
@@ -548,7 +553,11 @@ int main(void) {
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
+
 		// Draw Boxes
+		// Avoid peter panning by cull the front faces
+		glCullFace(GL_FRONT);
+
 		for (unsigned int i = 0; i < containerPos.size(); i++) {
 			model = glm::mat4(1.0f);
 			model = glm::translate(model, containerPos[i]);
@@ -559,6 +568,9 @@ int main(void) {
 			glBindVertexArray(cubeVAO);
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
+		// Set culled faces as back faces
+		glCullFace(GL_BACK);
+
 		glBindVertexArray(0);
 
 

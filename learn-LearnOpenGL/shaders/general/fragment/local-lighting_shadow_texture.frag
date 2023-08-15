@@ -79,7 +79,7 @@ struct SpotLight {
 
 // Shadow calculation function
 //------------------------------
-float DirLightShadowCalculation(ShadowDirLight light, vec4 fragPosLightSpace);    // Calculate whether the fragment is in the shadow
+float DirLightShadowCalculation(ShadowDirLight light, vec4 fragPosLightSpace, vec3 normal, vec3 lightDir);    // Calculate whether the fragment is in the shadow
 
 // Lighting calculation function
 //------------------------------
@@ -126,7 +126,7 @@ void main() {
 	FragColor = vec4(result, alpha);
 }
 
-float DirLightShadowCalculation(ShadowDirLight light, vec4 fragPosLightSpace) {
+float DirLightShadowCalculation(ShadowDirLight light, vec4 fragPosLightSpace, vec3 normal, vec3 lightDir) {
 	// Perform perspective divide
 	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
 	// Transform NDC coordinates to the range [0, 1]
@@ -135,8 +135,15 @@ float DirLightShadowCalculation(ShadowDirLight light, vec4 fragPosLightSpace) {
 	float closestDepth = texture(light.shadowMap, projCoords.xy).r;
 	// Get current fragment's depth from light view space
 	float currentDepth = projCoords.z;
+
+	// Calculate depth bias according to the angle between light direction and surface normal
+	float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
 	// Check whether the current depth is higher than closest depth and if so, it's in ShadowDirLight
-	float shadow = currentDepth > closestDepth ? 1.0 : 0.0;
+	float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+	
+	// Avoid the sample fragment is exceed the project far plane. If it is exceed, assume it is not in shadow
+	if (projCoords.z > 1.0)
+		shadow = 0.0;
 
 	return shadow;
 }
@@ -165,7 +172,7 @@ vec3 CalcShadowDirLight(ShadowDirLight light, vec3 normal, vec3 viewDir) {
 	vec3 specular = light.specular * spec * texture(material.specular, fs_in.texCoords).rgb;
 
 	// --shadow--
-	float shadow = DirLightShadowCalculation(light, fs_in.fragPosLightSpace);
+	float shadow = DirLightShadowCalculation(light, fs_in.fragPosLightSpace, normal, lightDir);
 
 	// Result
 	//--------------------------
