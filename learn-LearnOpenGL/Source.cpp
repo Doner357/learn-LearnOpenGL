@@ -556,7 +556,7 @@ int main(void) {
 
 		// Draw Boxes
 		// Avoid peter panning by cull the front faces
-		glCullFace(GL_FRONT);
+		//glCullFace(GL_FRONT);
 
 		for (unsigned int i = 0; i < containerPos.size(); i++) {
 			model = glm::mat4(1.0f);
@@ -569,7 +569,7 @@ int main(void) {
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
 		// Set culled faces as back faces
-		glCullFace(GL_BACK);
+		//glCullFace(GL_BACK);
 
 		glBindVertexArray(0);
 

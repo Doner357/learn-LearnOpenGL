@@ -131,15 +131,25 @@ float DirLightShadowCalculation(ShadowDirLight light, vec4 fragPosLightSpace, ve
 	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
 	// Transform NDC coordinates to the range [0, 1]
 	projCoords = projCoords * 0.5 + 0.5;
-	// Get the closest point from light view space
-	float closestDepth = texture(light.shadowMap, projCoords.xy).r;
 	// Get current fragment's depth from light view space
 	float currentDepth = projCoords.z;
 
 	// Calculate depth bias according to the angle between light direction and surface normal
 	float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
-	// Check whether the current depth is higher than closest depth and if so, it's in ShadowDirLight
-	float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+	
+	// Apply PCF (percentage-closer filtering)
+	float shadow = 0.0;
+	vec2 texelSize = 1.0 / textureSize(light.shadowMap, 0);    // Used to offset the sample
+	for (int x = -1; x <= 1; x++) {
+		for(int y = -1; y <= 1; y++) {
+			// Get the closest point from light view space
+			float pcfDepth = texture(light.shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
+			// Check whether the current depth is higher than closest depth and if so, it's in ShadowDirLight
+			shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+		}
+	}
+	// Normalize the shadow value
+	shadow /= 9.0;
 	
 	// Avoid the sample fragment is exceed the project far plane. If it is exceed, assume it is not in shadow
 	if (projCoords.z > 1.0)
