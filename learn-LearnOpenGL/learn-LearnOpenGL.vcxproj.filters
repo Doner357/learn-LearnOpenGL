@@ -163,27 +163,6 @@
     <None Include="shaders\general\vertex\lighting_repeated-texture.vert">
       <Filter>Resource Files\shaders\general\vertex</Filter>
     </None>
-    <None Include="shaders\post-processing\vertex\kernel_blur.vert">
-      <Filter>Resource Files\shaders\post-processing\vertex</Filter>
-    </None>
-    <None Include="shaders\post-processing\vertex\kernel_edge_detection.vert">
-      <Filter>Resource Files\shaders\post-processing\vertex</Filter>
-    </None>
-    <None Include="shaders\post-processing\vertex\kernel_emboss.vert">
-      <Filter>Resource Files\shaders\post-processing\vertex</Filter>
-    </None>
-    <None Include="shaders\post-processing\vertex\kernel_self.vert">
-      <Filter>Resource Files\shaders\post-processing\vertex</Filter>
-    </None>
-    <None Include="shaders\post-processing\vertex\kernel_sharpen.vert">
-      <Filter>Resource Files\shaders\post-processing\vertex</Filter>
-    </None>
-    <None Include="shaders\post-processing\vertex\inversion.vert">
-      <Filter>Resource Files\shaders\post-processing\vertex</Filter>
-    </None>
-    <None Include="shaders\post-processing\vertex\grayscale.vert">
-      <Filter>Resource Files\shaders\post-processing\vertex</Filter>
-    </None>
     <None Include="shaders\post-processing\vertex\regular_screen.vert">
       <Filter>Resource Files\shaders\post-processing\vertex</Filter>
     </None>
@@ -210,6 +189,19 @@
     </None>
     <None Include="shaders\post-processing\fragment\regular_screen.frag">
       <Filter>Resource Files\shaders\post-processing\fragment</Filter>
+    </None>
+    <None Include="shaders\post-processing\fragment\depth_map.frag" />
+    <None Include="shaders\general\fragment\depth_map.frag" />
+    <None Include="shaders\general\vertex\depth_map.vert" />
+    <None Include="shaders\post-processing\fragment\gamma_correction.frag" />
+    <None Include="shaders\general\fragment\local-lighting_shadow_texture.frag">
+      <Filter>Resource Files\shaders\general\fragment</Filter>
+    </None>
+    <None Include="shaders\general\vertex\lighting_shadow_texture.vert">
+      <Filter>Resource Files\shaders\general\vertex</Filter>
+    </None>
+    <None Include="shaders\general\vertex\lighting_shadow_repeated-texture.vert">
+      <Filter>Resource Files\shaders\general\vertex</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

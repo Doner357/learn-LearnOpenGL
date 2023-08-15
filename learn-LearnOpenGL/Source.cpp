@@ -272,8 +272,8 @@ int main(void) {
 	Shader viewDepthShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/depth_map.frag");
 	Shader skyboxShader("shaders/general/vertex/skybox.vert", "shaders/general/fragment/skybox.frag");
 	Shader lightCubeShader("shaders/general/vertex/light_cube.vert", "shaders/general/fragment/light_cube.frag");
-	Shader TexShader("shaders/general/vertex/lighting_texture.vert", "shaders/general/fragment/global-lighting_texture.frag");
-	Shader repeatTexShader("shaders/general/vertex/lighting_repeated-texture.vert", "shaders/general/fragment/global-lighting_texture.frag");
+	Shader TexShader("shaders/general/vertex/lighting_shadow_texture.vert", "shaders/general/fragment/local-lighting_shadow_texture.frag");
+	Shader repeatTexShader("shaders/general/vertex/lighting_shadow_repeated-texture.vert", "shaders/general/fragment/local-lighting_shadow_texture.frag");
 	Shader modelShader("shaders/general/vertex/lighting_model.vert", "shaders/general/fragment/global-lighting_model.frag");
 	Shader simpleDepthShader("shaders/general/vertex/depth_map.vert", "shaders/general/fragment/depth_map.frag");
 
@@ -296,9 +296,17 @@ int main(void) {
 	viewDepthShader.setInt("screenTexture", 0);
 
 
+	repeatTexShader.use();
+	repeatTexShader.setInt("material.diffuse", 0);
+	repeatTexShader.setInt("material.specular", 1);
+	repeatTexShader.setInt("dirLight_sh.shadowMap", 2);
+	repeatTexShader.setFloat("material.shininess", 1024);
+
+
 	TexShader.use();
 	TexShader.setInt("material.diffuse", 0);
 	TexShader.setInt("material.specular", 1);
+	TexShader.setInt("dirLight_sh.shadowMap", 2);
 	TexShader.setFloat("material.shininess", 2048.0f);
 
 
@@ -321,8 +329,8 @@ int main(void) {
 
 	// Global light uniform block
 	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING);
-	globalLightManager.registerShader(TexShader);
-	globalLightManager.registerShader(repeatTexShader);
+	//globalLightManager.registerShader(TexShader);
+	//globalLightManager.registerShader(repeatTexShader);
 	globalLightManager.registerShader(modelShader);
 
 	// Gamma Correction uniform block
@@ -382,10 +390,17 @@ int main(void) {
 		glm::vec3(0.0f, 4.0f, -4.0f)
 	};
 
+	CustomHelper::BlinnPhongLight_direct shadowDirLight = {
+		glm::vec3(0.1f, -1.0f, 0.3f),
+		glm::vec3(0.009f),
+		glm::vec3(0.2f),
+		glm::vec3(0.2f)
+	};
+
 
 
 	/*
-	 * Global light setting
+	 * Light setting
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
@@ -399,13 +414,7 @@ int main(void) {
 	unsigned int num_of_spotLight = 0;
 
 	// Manual setting part
-	dirLight = {
-		glm::vec3(0.0f, -1.0f, 0.5f),
-		glm::vec3(0.009f),
-		glm::vec3(0.2f),
-		glm::vec3(0.2f)
-	};
-	globalLightManager.editDirLight(dirLight, num_of_dirLight++);
+
 
 	// Random generate part
 	unsigned int num_of_random_dirLight = 0;
@@ -427,6 +436,15 @@ int main(void) {
 		spotLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_spotLight(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(-appear_area, 5.0f, -appear_area), glm::vec3(appear_area, 5.0f, appear_area), 12.5f, 90.0f);
 		globalLightManager.editSpotLight(spotLight, num_of_spotLight++);
 	}
+
+
+
+	/*
+	 * Local Light setting
+	 * --------------------------------------------------------------------------------------------------------------------
+	 */
+
+	glUseProgram(0);
 
 
 
@@ -485,10 +503,10 @@ int main(void) {
 
 		// Fill the uniform buffer
 		//-------------------------
-		// View
+		// Camera view
 		cameraMatManager.updateView(view);
 
-		// Projection
+		// Camera projection
 		cameraMatManager.updateProjection(projection);
 
 
@@ -509,10 +527,10 @@ int main(void) {
 
 		// Render shadow map
 		// projection near plane and far plane
-		float near_plane = 1.0f, far_plane = 7.5f;
+		float near_plane = 1.0f, far_plane = 10.5f;
 		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 		// light position (get by multiply the direction of the directional light's direction)
-		glm::vec3 lightPos = globalLightManager.getDirLight(0).direction * -6.5f;
+		glm::vec3 lightPos = shadowDirLight.direction * -6.5f;
 		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		// Transform matrix which transform world space vector to light clip space
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
@@ -546,7 +564,7 @@ int main(void) {
 
 		// Render Objects
 		//--------------------------
-		/*
+		
 		// Rescale the view port to the size of the screen
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 		// Bind framebuffer
@@ -562,10 +580,22 @@ int main(void) {
 		// Draw boxes
 		TexShader.use();
 
+		// Light setting
+		TexShader.use();
+		TexShader.setVec3("dirLight_sh.direction", shadowDirLight.direction);
+		TexShader.setVec3("dirLight_sh.ambient", shadowDirLight.ambient);
+		TexShader.setVec3("dirLight_sh.diffuse", shadowDirLight.diffuse);
+		TexShader.setVec3("dirLight_sh.specular", shadowDirLight.specular);
+
+		// Light space transform matrix
+		repeatTexShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, container_diff);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, container_spec);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
 
 		for (unsigned int i = 0; i < containerPos.size(); i++) {
 			model = glm::mat4(1.0f);
@@ -582,10 +612,52 @@ int main(void) {
 		}
 
 
-		// Draw light cube
-		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.125f);
 		// Draw floor
+		repeatTexShader.use();
+
+		// Light setting
+		repeatTexShader.use();
+		repeatTexShader.setVec3("dirLight_sh.direction", shadowDirLight.direction);
+		repeatTexShader.setVec3("dirLight_sh.ambient", shadowDirLight.ambient);
+		repeatTexShader.setVec3("dirLight_sh.diffuse", shadowDirLight.diffuse);
+		repeatTexShader.setVec3("dirLight_sh.specular", shadowDirLight.specular);
+
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, wood_diff);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, common_spec);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		model = glm::mat4(1.0f);
+		normalMat = glm::mat3(1.0f);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(30.0f));
+		model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		normalMat = CustomHelper::CalculateNormalMat(model);
+		repeatTexShader.setMat4("model", model);
+		repeatTexShader.setMat3("normalMat", normalMat);
+		repeatTexShader.setVec3("viewPos", camera.Position);
+		repeatTexShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+		repeatTexShader.setInt("repeat_times", 10);
+
+		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+		// Draw light cube
+		/*
+		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.125f);
+		*/
+		// Draw floor
+		/*
 		CustomHelper::DrawTexFloor(quadVAO, repeatTexShader, camera.Position, wood_diff, common_spec, 1024.0f, glm::vec3(0.0f, -1.0f, 0.0f), 30.0f, 10);
+		*/
+
+		glBindVertexArray(0);
+		glUseProgram(0);
+
 
 
 		// skybox
@@ -606,18 +678,16 @@ int main(void) {
 		// Set the depth function and culling face to default
 		glDepthFunc(GL_LESS);
 		glCullFace(GL_BACK);		
-		*/
+		
 
 
 		// **SECOND PASS**
 		//----------------------------------------------------------------------
-		/*
+		
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, ms_Framebuffer);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, screenFramebuffer);
 		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);		
-		*/
 
-		
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -627,12 +697,12 @@ int main(void) {
 		// Render scene
 		//-------------------------
 		
-		//screenShader.use();
-		viewDepthShader.use();
+		screenShader.use();
+		//viewDepthShader.use();
 
 		glBindVertexArray(quadVAO);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, depthMap);
+		glBindTexture(GL_TEXTURE_2D, screentexuture);
 
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
