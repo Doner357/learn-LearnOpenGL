@@ -190,10 +190,6 @@
     <None Include="shaders\post-processing\fragment\regular_screen.frag">
       <Filter>Resource Files\shaders\post-processing\fragment</Filter>
     </None>
-    <None Include="shaders\post-processing\fragment\depth_map.frag" />
-    <None Include="shaders\general\fragment\depth_map.frag" />
-    <None Include="shaders\general\vertex\depth_map.vert" />
-    <None Include="shaders\post-processing\fragment\gamma_correction.frag" />
     <None Include="shaders\general\fragment\local-lighting_shadow_texture.frag">
       <Filter>Resource Files\shaders\general\fragment</Filter>
     </None>
@@ -202,6 +198,18 @@
     </None>
     <None Include="shaders\general\vertex\lighting_shadow_repeated-texture.vert">
       <Filter>Resource Files\shaders\general\vertex</Filter>
+    </None>
+    <None Include="shaders\post-processing\fragment\depth_map.frag">
+      <Filter>Resource Files\shaders\post-processing\fragment</Filter>
+    </None>
+    <None Include="shaders\general\fragment\depth_map.frag">
+      <Filter>Resource Files\shaders\general\fragment</Filter>
+    </None>
+    <None Include="shaders\general\vertex\depth_map.vert">
+      <Filter>Resource Files\shaders\general\vertex</Filter>
+    </None>
+    <None Include="shaders\post-processing\fragment\gamma_correction.frag">
+      <Filter>Resource Files\shaders\post-processing\fragment</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
