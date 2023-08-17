@@ -161,7 +161,7 @@ float PointLightShadowCalculation(ShadowPointLight light, vec3 fragPos, vec3 nor
 
 	// It is too costly to sample 4 * 4 * 4 = 64 samples, instead we create an offset array to cheap the sampling
 	float shadow  = 0.0;
-	float bias    = 0.055 - 0.05 * dot(normal, normalize(fragToLight));    // 0.005 + (0.05 * (1 - dot(normal, normalize(fragToLight))))
+	float bias    = 0.02 - 0.015 * dot(normal, normalize(fragToLight));    // 0.005 + (0.015 * (1 - dot(normal, normalize(fragToLight))))
 	int samples   = 20;
 	float viewDistance = length(viewPos - fragPos);
 	// Change radius based on the distance of the viewer to the fragment,

@@ -135,7 +135,7 @@ float DirLightShadowCalculation(ShadowDirLight light, vec4 fragPosLightSpace, ve
 	float currentDepth = projCoords.z;
 
 	// Calculate depth bias according to the angle between light direction and surface normal
-	float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+	float bias = 0.02 - 0.015 * dot(normal, lightDir);
 	
 	// Apply PCF (percentage-closer filtering)
 	float shadow = 0.0;
