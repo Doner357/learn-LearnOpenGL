@@ -199,9 +199,6 @@
     <None Include="shaders\general\vertex\lighting_shadow_repeated-texture.vert">
       <Filter>Resource Files\shaders\general\vertex</Filter>
     </None>
-    <None Include="shaders\post-processing\fragment\depth_map.frag">
-      <Filter>Resource Files\shaders\post-processing\fragment</Filter>
-    </None>
     <None Include="shaders\general\fragment\depth_map.frag">
       <Filter>Resource Files\shaders\general\fragment</Filter>
     </None>
@@ -209,6 +206,12 @@
       <Filter>Resource Files\shaders\general\vertex</Filter>
     </None>
     <None Include="shaders\post-processing\fragment\gamma_correction.frag">
+      <Filter>Resource Files\shaders\post-processing\fragment</Filter>
+    </None>
+    <None Include="shaders\post-processing\fragment\perspect_depth-map.frag">
+      <Filter>Resource Files\shaders\post-processing\fragment</Filter>
+    </None>
+    <None Include="shaders\post-processing\fragment\ortho_depth-map.frag">
       <Filter>Resource Files\shaders\post-processing\fragment</Filter>
     </None>
   </ItemGroup>
