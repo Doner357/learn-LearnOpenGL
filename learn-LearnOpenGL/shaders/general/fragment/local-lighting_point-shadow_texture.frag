@@ -134,16 +134,55 @@ void main() {
 float PointLightShadowCalculation(ShadowPointLight light, vec3 fragPos, vec3 normal) {
 	// Get the vector from light to fragment position
 	vec3 fragToLight = fragPos - light.position;
-	// Get the closest depth perspect from light
-	float closestDepth = texture(light.shadowMap, fragToLight).r;
-	// Trans the light's depth from [0, 1] back to [0, far_plane]
-	closestDepth *= light.far_plane;
 	// Get the depth value from current fragment to light source
 	float currentDepth = length(fragToLight);
-	// Calculatre bias
-	float bias = 0.005 + (0.05 * (1 - dot(normal, normalize(fragToLight))));
-	// Check whether the current fragment is in shadow
-	float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+
+	// Apply PCF (Percentage-closer filtering)
+	// This is too costly
+	/*
+	float shadow  = 0.0;
+	float bias    = 0.055 - 0.05 * dot(normal, normalize(fragToLight));    // 0.005 + (0.05 * (1 - dot(normal, normalize(fragToLight))))
+	float samples = 4.0;
+	float offset  = 0.1;
+	for (float x = -offset; x < offset; x += offset / (samples * 0.5)) {
+		for (float y = -offset; y < offset; y += offset / (samples * 0.5)) {
+			for (float z = -offset; z < offset; z += offset / (samples * 0.5)) {
+				// Get the closest depth perspect from light
+				float closestDepth = texture(light.shadowMap, fragToLight + vec3(x, y, z)).r;
+				// Trans the light's depth from [0, 1] back to [0, far_plane]
+				closestDepth *= light.far_plane;
+				if (currentDepth - bias > closestDepth)
+					shadow += 1.0;
+			}
+		}
+	}
+	shadow /= samples * samples * samples;
+	*/
+
+	// It is too costly to sample 4 * 4 * 4 = 64 samples, instead we create an offset array to cheap the sampling
+	float shadow  = 0.0;
+	float bias    = 0.055 - 0.05 * dot(normal, normalize(fragToLight));    // 0.005 + (0.05 * (1 - dot(normal, normalize(fragToLight))))
+	int samples   = 20;
+	float viewDistance = length(viewPos - fragPos);
+	// Change radius based on the distance of the viewer to the fragment,
+	// making the shadows softer when far away and sharper when close by.
+	float diskRadius = (1.0 + (viewDistance / light.far_plane)) / 25.0;
+	vec3 sampleOffsetDirections[20] = vec3[](
+		vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
+		vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+		vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+		vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+		vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+	);
+	for (int i = 0; i < samples; i++) {
+		// Get the closest depth perspect from light
+		float closestDepth = texture(light.shadowMap, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
+		// Trans the light's depth from [0, 1] back to [0, far_plane]
+		closestDepth *= light.far_plane;
+		if (currentDepth - bias > closestDepth)
+			shadow += 1.0;
+	}
+	shadow /= float(samples);
 
 	return shadow;
 }

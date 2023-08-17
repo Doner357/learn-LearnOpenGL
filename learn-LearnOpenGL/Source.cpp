@@ -564,7 +564,7 @@ int main(void) {
 		// Create perspective projection matrix
 		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, cube_near, cube_far);
 		// Create view matrices for each faces and multiply them to create tranform matrice
-		shadowPointLight.position = glm::vec3(0.0f, 4.75f * glm::sin(glfwGetTime()), 0.0f);
+		shadowPointLight.position = glm::vec3(0.0f, 4.75f * glm::sin(glfwGetTime()), 0.0f);		// make light move with time
 		glm::vec3 shadowPointLightPos = shadowPointLight.position;
 		std::vector<glm::mat4> cubeShadowTransform = {
 			shadowProj * glm::lookAt(shadowPointLightPos, shadowPointLightPos + glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
@@ -585,7 +585,7 @@ int main(void) {
 
 		// Draw Boxes
 		// Avoid peter panning by cull the front faces
-		//glCullFace(GL_FRONT);
+		glCullFace(GL_FRONT);
 		for (unsigned int i = 0; i < containerPos.size(); i++) {
 			model = glm::mat4(1.0f);
 			model = glm::translate(model, containerPos[i]);
@@ -597,7 +597,7 @@ int main(void) {
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
 		// Set culled faces as back faces
-		//glCullFace(GL_BACK);
+		glCullFace(GL_BACK);
 		
 		// Draw room
 		model = glm::mat4(1.0f);
