@@ -217,11 +217,11 @@
     <None Include="shaders\general\fragment\cube-depth_map.frag">
       <Filter>Resource Files\shaders\general\fragment</Filter>
     </None>
-    <None Include="shaders\post-processing\fragment\ortho_depth-map.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
-    </None>
     <None Include="shaders\post-processing\fragment\perspect_depth-map.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
+      <Filter>Resource Files\shaders\post-processing\fragment</Filter>
+    </None>
+    <None Include="shaders\post-processing\fragment\ortho_depth-map.frag">
+      <Filter>Resource Files\shaders\post-processing\fragment</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
