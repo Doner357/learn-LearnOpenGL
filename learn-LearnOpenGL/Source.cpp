@@ -388,7 +388,7 @@ int main(void) {
 	glGenFramebuffers(1, &depthCubemapFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthCubemapFBO);
 	// Bind whole the cube map onto framebuffer
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_CUBE_MAP, depthCubemap, 0);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
 	// Check whether the framebuffer is complete
