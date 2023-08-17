@@ -274,8 +274,8 @@ int main(void) {
 	Shader viewDepthShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/perspect_depth-map.frag");
 	Shader skyboxShader("shaders/general/vertex/skybox.vert", "shaders/general/fragment/skybox.frag");
 	Shader lightCubeShader("shaders/general/vertex/light_cube.vert", "shaders/general/fragment/light_cube.frag");
-	Shader TexShader("shaders/general/vertex/lighting_dir-shadow_texture.vert", "shaders/general/fragment/local-lighting_dir-shadow_texture.frag");
-	Shader repeatTexShader("shaders/general/vertex/lighting_dir-shadow_repeated-texture.vert", "shaders/general/fragment/local-lighting_dir-shadow_texture.frag");
+	Shader TexShader("shaders/general/vertex/lighting_point-shadow_texture.vert", "shaders/general/fragment/local-lighting_point-shadow_texture.frag");
+	Shader repeatTexShader("shaders/general/vertex/lighting_point-shadow_repeated-texture.vert", "shaders/general/fragment/local-lighting_point-shadow_texture.frag");
 	Shader modelShader("shaders/general/vertex/lighting_model.vert", "shaders/general/fragment/global-lighting_model.frag");
 	Shader simpleDepthShader("shaders/general/vertex/dir-depth_map.vert", "shaders/general/fragment/dir-depth_map.frag");
 	Shader cubeDepthShader("shaders/general/vertex/cube-depth_map.vert", "shaders/general/fragment/cube-depth_map.frag", "shaders/general/geometry/cube-depth_map.geom");
@@ -302,14 +302,14 @@ int main(void) {
 	repeatTexShader.use();
 	repeatTexShader.setInt("material.diffuse", 0);
 	repeatTexShader.setInt("material.specular", 1);
-	repeatTexShader.setInt("dirLight_sh.shadowMap", 2);
+	repeatTexShader.setInt("pointLight_sh.shadowMap", 2);
 	repeatTexShader.setFloat("material.shininess", 1024);
 
 
 	TexShader.use();
 	TexShader.setInt("material.diffuse", 0);
 	TexShader.setInt("material.specular", 1);
-	TexShader.setInt("dirLight_sh.shadowMap", 2);
+	TexShader.setInt("pointLight_sh.shadowMap", 2);
 	TexShader.setFloat("material.shininess", 2048.0f);
 
 
@@ -383,12 +383,13 @@ int main(void) {
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
 	unsigned int depthCubemapFBO;
 	glGenFramebuffers(1, &depthCubemapFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthCubemapFBO);
 	// Bind whole the cube map onto framebuffer
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_CUBE_MAP, depthCubemap, 0);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
 	// Check whether the framebuffer is complete
@@ -408,7 +409,8 @@ int main(void) {
 		glm::vec3(0.0f, 3.0f, -4.0f),
 		glm::vec3(-4.0f, -1.5f, 0.0f),
 		glm::vec3(3.0f, 4.0f, 0.0f),
-		glm::vec3(-4.0f, 4.0f, 4.0f)
+		glm::vec3(-4.0f, 4.0f, 4.0f),
+		glm::vec3( 2.0f, 0.0f, 0.0f)
 	};
 
 
@@ -466,7 +468,7 @@ int main(void) {
 	};
 
 	CustomHelper::BlinnPhongLight_point shadowPointLight = {
-		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 0.5f, 0.0f),
 		0.0f,
 		0.0f,
 		1.0f,
@@ -549,60 +551,20 @@ int main(void) {
 		// Render Shadow
 		//--------------------------
 
-		// Rescale the view port to the size of the shadow map
-		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+		// Render omnidirectional shadow map
+		// Scale the view port to the size of the shadow map
+		glViewport(0, 0, CUBESHADOW_WIDTH, CUBESHADOW_HEIGHT);
 
+		glBindFramebuffer(GL_FRAMEBUFFER, depthCubemapFBO);
 		glClear(GL_DEPTH_BUFFER_BIT);
 
-		// Render directional shadow map
-		// projection near plane and far plane
-		float dir_near = 1.0f, dir_far = 20.0f;
-		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, dir_near, dir_far);
-		// light position (get by multiply the direction of the directional light's direction)
-		glm::vec3 lightPos = shadowDirLight.direction * -10.5f;
-		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		// Transform matrix which transform world space vector to light clip space
-		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-
-		simpleDepthShader.use();
-		simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-
-		// Draw room
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(5.0f));
-		simpleDepthShader.setMat4("model", model);
-
-		glBindVertexArray(roomVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// Draw Boxes
-		// Avoid peter panning by cull the front faces
-		//glCullFace(GL_FRONT);
-
-		for (unsigned int i = 0; i < containerPos.size(); i++) {
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, containerPos[i]);
-			model = glm::rotate(model, static_cast<float>(i), glm::vec3(1.0f, 2.0f, 0.5f));
-			model = glm::scale(model, glm::vec3(0.5f));
-			simpleDepthShader.setMat4("model", model);
-
-			glBindVertexArray(cubeVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
-		// Set culled faces as back faces
-		//glCullFace(GL_BACK);
-
-		glBindVertexArray(0);
-		
-
-		// Render omnidirectional shadow map
+		// Set up transform matrix
 		float aspect = static_cast<float>(CUBESHADOW_WIDTH) / static_cast<float>(CUBESHADOW_HEIGHT);
 		float cube_near = 1.0f, cube_far = 25.0f;
 		// Create perspective projection matrix
 		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, cube_near, cube_far);
 		// Create view matrices for each faces and multiply them to create tranform matrice
+		shadowPointLight.position = glm::vec3(0.0f, 4.75f * glm::sin(glfwGetTime()), 0.0f);
 		glm::vec3 shadowPointLightPos = shadowPointLight.position;
 		std::vector<glm::mat4> cubeShadowTransform = {
 			shadowProj * glm::lookAt(shadowPointLightPos, shadowPointLightPos + glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
@@ -612,6 +574,40 @@ int main(void) {
 			shadowProj * glm::lookAt(shadowPointLightPos, shadowPointLightPos + glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
 			shadowProj * glm::lookAt(shadowPointLightPos, shadowPointLightPos + glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
 		};
+
+
+		cubeDepthShader.use();
+		for (unsigned int i = 0; i < 6; i++) {
+			cubeDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", cubeShadowTransform[i]);
+		}
+		cubeDepthShader.setVec3("lightPos", shadowPointLightPos);
+		cubeDepthShader.setFloat("far_plane", cube_far);
+
+		// Draw Boxes
+		// Avoid peter panning by cull the front faces
+		//glCullFace(GL_FRONT);
+		for (unsigned int i = 0; i < containerPos.size(); i++) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, containerPos[i]);
+			model = glm::rotate(model, static_cast<float>(i), glm::vec3(1.0f, 2.0f, 0.5f));
+			model = glm::scale(model, glm::vec3(0.5f));
+			cubeDepthShader.setMat4("model", model);
+
+			glBindVertexArray(cubeVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+		// Set culled faces as back faces
+		//glCullFace(GL_BACK);
+		
+		// Draw room
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(5.0f));
+		cubeDepthShader.setMat4("model", model);
+		glBindVertexArray(roomVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		glBindVertexArray(0);
 
 
 		// Render Objects
@@ -634,20 +630,23 @@ int main(void) {
 
 		// Light setting
 		TexShader.use();
-		TexShader.setVec3("dirLight_sh.direction", shadowDirLight.direction);
-		TexShader.setVec3("dirLight_sh.ambient", shadowDirLight.ambient);
-		TexShader.setVec3("dirLight_sh.diffuse", shadowDirLight.diffuse);
-		TexShader.setVec3("dirLight_sh.specular", shadowDirLight.specular);
+		TexShader.setVec3("pointLight_sh.position", shadowPointLight.position);
+		TexShader.setFloat("pointLight_sh.constant", shadowPointLight.constant);
+		TexShader.setFloat("pointLight_sh.linear", shadowPointLight.linear);
+		TexShader.setFloat("pointLight_sh.quadratic", shadowPointLight.quadratic);
+		TexShader.setVec3("pointLight_sh.ambient", shadowPointLight.ambient);
+		TexShader.setVec3("pointLight_sh.diffuse", shadowPointLight.diffuse);
+		TexShader.setVec3("pointLight_sh.specular", shadowPointLight.specular);
+		TexShader.setFloat("pointLight_sh.far_plane", cube_far);
 
 		// Light space transform matrix
-		repeatTexShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, container_diff);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, container_spec);
 		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, depthMap);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
 
 		for (unsigned int i = 0; i < containerPos.size(); i++) {
 			model = glm::mat4(1.0f);
@@ -669,18 +668,21 @@ int main(void) {
 
 		// Light setting
 		repeatTexShader.use();
-		repeatTexShader.setVec3("dirLight_sh.direction", shadowDirLight.direction);
-		repeatTexShader.setVec3("dirLight_sh.ambient", shadowDirLight.ambient);
-		repeatTexShader.setVec3("dirLight_sh.diffuse", shadowDirLight.diffuse);
-		repeatTexShader.setVec3("dirLight_sh.specular", shadowDirLight.specular);
-
+		repeatTexShader.setVec3("pointLight_sh.position", shadowPointLight.position);
+		repeatTexShader.setFloat("pointLight_sh.constant", shadowPointLight.constant);
+		repeatTexShader.setFloat("pointLight_sh.linear", shadowPointLight.linear);
+		repeatTexShader.setFloat("pointLight_sh.quadratic", shadowPointLight.quadratic);
+		repeatTexShader.setVec3("pointLight_sh.ambient", shadowPointLight.ambient);
+		repeatTexShader.setVec3("pointLight_sh.diffuse", shadowPointLight.diffuse);
+		repeatTexShader.setVec3("pointLight_sh.specular", shadowPointLight.specular);
+		repeatTexShader.setFloat("pointLight_sh.far_plane", cube_far);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, wood_diff);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, common_spec);
 		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, depthMap);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
 
 		// Draw room
 		model = glm::mat4(1.0f);
@@ -692,13 +694,24 @@ int main(void) {
 		repeatTexShader.setMat4("model", model);
 		repeatTexShader.setMat3("normalMat", normalMat);
 		repeatTexShader.setVec3("viewPos", camera.Position);
-		repeatTexShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 		repeatTexShader.setInt("repeat_times", 10);
 
 		glBindVertexArray(roomVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
+		// Draw light cube
+		lightCubeShader.use();
+		glBindVertexArray(cubeVAO);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, shadowPointLightPos);
+		model = glm::scale(model, glm::vec3(0.125));
+		lightCubeShader.setMat4("model", model);
+		lightCubeShader.setVec3("lightColor", shadowPointLight.specular * 1.2f);
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+		glUseProgram(0);
 		// Draw light cube
 		/*
 		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.125f);
