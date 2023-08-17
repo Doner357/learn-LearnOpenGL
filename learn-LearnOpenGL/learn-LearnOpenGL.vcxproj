@@ -155,13 +155,16 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\general\fragment\cube-depth_map.frag" />
+    <None Include="shaders\general\geometry\cube-depth_map.geom" />
+    <None Include="shaders\general\vertex\cube-depth_map.vert" />
     <None Include="shaders\post-processing\fragment\perspect_depth-map.frag" />
-    <None Include="shaders\general\vertex\lighting_shadow_repeated-texture.vert" />
-    <None Include="shaders\general\fragment\local-lighting_shadow_texture.frag" />
-    <None Include="shaders\general\vertex\lighting_shadow_texture.vert" />
+    <None Include="shaders\general\vertex\lighting_dir-shadow_repeated-texture.vert" />
+    <None Include="shaders\general\fragment\local-lighting_dir-shadow_texture.frag" />
+    <None Include="shaders\general\vertex\lighting_dir-shadow_texture.vert" />
     <None Include="shaders\post-processing\fragment\ortho_depth-map.frag" />
-    <None Include="shaders\general\fragment\depth_map.frag" />
-    <None Include="shaders\general\vertex\depth_map.vert" />
+    <None Include="shaders\general\fragment\dir-depth_map.frag" />
+    <None Include="shaders\general\vertex\dir-depth_map.vert" />
     <None Include="shaders\post-processing\fragment\gamma_correction.frag" />
     <None Include="shaders\general\vertex\lighting_repeated-texture.vert" />
     <None Include="shaders\general\fragment\global-lighting_texture.frag" />

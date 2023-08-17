@@ -23,7 +23,8 @@ void processInput(GLFWwindow *window);
 // Custom function
 unsigned int LoadTexture(char const* path, bool gammaCorrection, bool flip_vertically = true);
 unsigned int LoadCubemap(std::vector<std::string> faces, bool gammaCorrection, bool flip_vertically = false);
-unsigned int CreateFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample = false, const unsigned int samples = 1);
+unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample = false, const unsigned int samples = 1);
+unsigned int CreateDepthFramebuffer(unsigned int &depthTexture, const unsigned int width, const unsigned int height);
 
 // Screen Width and Height setting
 const unsigned int SCR_WIDTH = 800;
@@ -223,6 +224,7 @@ int main(void) {
 	unsigned int cubemapVAO = vaoManager.getVAO(CustomHelper::VAO_SKYBOX);
 	unsigned int quadVAO = vaoManager.getVAO(CustomHelper::VAO_QUAD);
 	unsigned int cubeVAO = vaoManager.getVAO(CustomHelper::VAO_CUBE);
+	unsigned int roomVAO = vaoManager.getVAO(CustomHelper::VAO_ROOM);
 
 
 
@@ -272,10 +274,11 @@ int main(void) {
 	Shader viewDepthShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/perspect_depth-map.frag");
 	Shader skyboxShader("shaders/general/vertex/skybox.vert", "shaders/general/fragment/skybox.frag");
 	Shader lightCubeShader("shaders/general/vertex/light_cube.vert", "shaders/general/fragment/light_cube.frag");
-	Shader TexShader("shaders/general/vertex/lighting_shadow_texture.vert", "shaders/general/fragment/local-lighting_shadow_texture.frag");
-	Shader repeatTexShader("shaders/general/vertex/lighting_shadow_repeated-texture.vert", "shaders/general/fragment/local-lighting_shadow_texture.frag");
+	Shader TexShader("shaders/general/vertex/lighting_dir-shadow_texture.vert", "shaders/general/fragment/local-lighting_dir-shadow_texture.frag");
+	Shader repeatTexShader("shaders/general/vertex/lighting_dir-shadow_repeated-texture.vert", "shaders/general/fragment/local-lighting_dir-shadow_texture.frag");
 	Shader modelShader("shaders/general/vertex/lighting_model.vert", "shaders/general/fragment/global-lighting_model.frag");
-	Shader simpleDepthShader("shaders/general/vertex/depth_map.vert", "shaders/general/fragment/depth_map.frag");
+	Shader simpleDepthShader("shaders/general/vertex/dir-depth_map.vert", "shaders/general/fragment/dir-depth_map.frag");
+	Shader cubeDepthShader("shaders/general/vertex/cube-depth_map.vert", "shaders/general/fragment/cube-depth_map.frag", "shaders/general/geometry/cube-depth_map.geom");
 
 
 
@@ -349,36 +352,48 @@ int main(void) {
 
 	unsigned int ms_Frametexture;
 	unsigned int screentexuture;
-	unsigned int ms_Framebuffer = CreateFramebuffer(ms_Frametexture, SCR_WIDTH, SCR_HEIGHT, true, 4);
-	unsigned int screenFramebuffer = CreateFramebuffer(screentexuture, SCR_WIDTH, SCR_HEIGHT);
+	unsigned int ms_Framebuffer = CreateColorFramebuffer(ms_Frametexture, SCR_WIDTH, SCR_HEIGHT, true, 4);
+	unsigned int screenFramebuffer = CreateColorFramebuffer(screentexuture, SCR_WIDTH, SCR_HEIGHT);
 
 
-	// Frambuffer to render depth map
-	unsigned int depthMapFBO;
-	glGenFramebuffers(1, &depthMapFBO);
 
-	// Create 2D texture that use as the frambuffer's depth buffer
+
+	/*
+	 * Depth map creating
+	 * --------------------------------------------------------------------------------------------------------------------
+	 */
+
+	// Create directional depth map and framebuffer
 	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-
 	unsigned int depthMap;
-	glGenTextures(1, &depthMap);
-	glBindTexture(GL_TEXTURE_2D, depthMap);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	// Set the image wraping to clamp to border and set the border to 1.0 so whenever the sample outside the depth map, it always return 1.0 and the shadow value will be 0.0
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	unsigned int depthMapFBO = CreateDepthFramebuffer(depthMap, SHADOW_WIDTH, SHADOW_HEIGHT);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+
+	// Create directional depth map and framebuffer
+	const unsigned int CUBESHADOW_WIDTH = 1024, CUBESHADOW_HEIGHT = 1024;
+	// Create omnidirectional depth map (cube map)
+	unsigned int depthCubemap;
+	glGenTextures(1, &depthCubemap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+	for (unsigned int i = 0; i < 6; i++) {
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, CUBESHADOW_WIDTH, CUBESHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	unsigned int depthCubemapFBO;
+	glGenFramebuffers(1, &depthCubemapFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, depthCubemapFBO);
+	// Bind whole the cube map onto framebuffer
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_CUBE_MAP, depthCubemap, 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
 	// Check whether the framebuffer is complete
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "ERROR::FRAMEBUFFER:: Shadow map framebuffer is not complete!" << std::endl;
+		std::cout << "ERROR::FRAMEBUFFER:: Cube shadow map framebuffer is not complete!" << std::endl;
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
@@ -388,18 +403,12 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 	std::vector<glm::vec3> containerPos = {
-		glm::vec3(0.0f, -0.5f, -2.0f),
-		glm::vec3(1.0f, 2.0f, 2.0f),
-		glm::vec3(0.0f, 4.0f, -4.0f),
-		glm::vec3(-4.0f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 5.0f, 0.0f)
-	};
-
-	CustomHelper::BlinnPhongLight_direct shadowDirLight = {
-		glm::vec3(0.1f, -1.0f, 0.3f),
-		glm::vec3(0.009f),
-		glm::vec3(0.2f),
-		glm::vec3(0.2f)
+		glm::vec3(0.0f, -2.0f, -2.0f),
+		glm::vec3(1.0f, 1.0f, 3.0f),
+		glm::vec3(0.0f, 3.0f, -4.0f),
+		glm::vec3(-4.0f, -1.5f, 0.0f),
+		glm::vec3(3.0f, 4.0f, 0.0f),
+		glm::vec3(-4.0f, 4.0f, 4.0f)
 	};
 
 
@@ -448,6 +457,23 @@ int main(void) {
 	 * Local Light setting
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
+
+	CustomHelper::BlinnPhongLight_direct shadowDirLight = {
+		glm::vec3(0.1f, -1.0f, 0.3f),
+		glm::vec3(0.009f),
+		glm::vec3(0.2f),
+		glm::vec3(0.2f)
+	};
+
+	CustomHelper::BlinnPhongLight_point shadowPointLight = {
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		0.0f,
+		0.0f,
+		1.0f,
+		glm::vec3(0.2f),
+		glm::vec3(0.8f),
+		glm::vec3(1.0f)
+	};
 
 	glUseProgram(0);
 
@@ -520,7 +546,6 @@ int main(void) {
 
 		glEnable(GL_DEPTH_TEST);
 
-
 		// Render Shadow
 		//--------------------------
 
@@ -530,30 +555,27 @@ int main(void) {
 
 		glClear(GL_DEPTH_BUFFER_BIT);
 
-		// Render shadow map
+		// Render directional shadow map
 		// projection near plane and far plane
-		float near_plane = 1.0f, far_plane = 10.0f;
-		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-		glm::mat4 lightPerspective = glm::perspective(glm::radians(90.0f), (float)(SHADOW_WIDTH / SHADOW_HEIGHT), 1.0f, 150.0f);
+		float dir_near = 1.0f, dir_far = 20.0f;
+		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, dir_near, dir_far);
 		// light position (get by multiply the direction of the directional light's direction)
 		glm::vec3 lightPos = shadowDirLight.direction * -10.5f;
 		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		// Transform matrix which transform world space vector to light clip space
-		glm::mat4 lightSpaceMatrix = lightPerspective * lightView;
+		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
 		simpleDepthShader.use();
 		simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
-		// Draw floor
+		// Draw room
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(30.0f));
-		model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(5.0f));
 		simpleDepthShader.setMat4("model", model);
 
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
+		glBindVertexArray(roomVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// Draw Boxes
 		// Avoid peter panning by cull the front faces
@@ -573,6 +595,23 @@ int main(void) {
 		//glCullFace(GL_BACK);
 
 		glBindVertexArray(0);
+		
+
+		// Render omnidirectional shadow map
+		float aspect = static_cast<float>(CUBESHADOW_WIDTH) / static_cast<float>(CUBESHADOW_HEIGHT);
+		float cube_near = 1.0f, cube_far = 25.0f;
+		// Create perspective projection matrix
+		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, cube_near, cube_far);
+		// Create view matrices for each faces and multiply them to create tranform matrice
+		glm::vec3 shadowPointLightPos = shadowPointLight.position;
+		std::vector<glm::mat4> cubeShadowTransform = {
+			shadowProj * glm::lookAt(shadowPointLightPos, shadowPointLightPos + glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+			shadowProj * glm::lookAt(shadowPointLightPos, shadowPointLightPos + glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+			shadowProj * glm::lookAt(shadowPointLightPos, shadowPointLightPos + glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+			shadowProj * glm::lookAt(shadowPointLightPos, shadowPointLightPos + glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+			shadowProj * glm::lookAt(shadowPointLightPos, shadowPointLightPos + glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+			shadowProj * glm::lookAt(shadowPointLightPos, shadowPointLightPos + glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		};
 
 
 		// Render Objects
@@ -642,12 +681,13 @@ int main(void) {
 		glBindTexture(GL_TEXTURE_2D, common_spec);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
+
+		// Draw room
 		model = glm::mat4(1.0f);
 		normalMat = glm::mat3(1.0f);
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(30.0f));
-		model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(5.0f));
 		normalMat = CustomHelper::CalculateNormalMat(model);
 		repeatTexShader.setMat4("model", model);
 		repeatTexShader.setMat3("normalMat", normalMat);
@@ -655,8 +695,8 @@ int main(void) {
 		repeatTexShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 		repeatTexShader.setInt("repeat_times", 10);
 
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glBindVertexArray(roomVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
 		// Draw light cube
@@ -713,8 +753,8 @@ int main(void) {
 		screenShader.use();
 		/*
 		viewDepthShader.use();
-		viewDepthShader.setFloat("near_plane", near_plane);
-		viewDepthShader.setFloat("far_plane", far_plane);		
+		viewDepthShader.setFloat("near_plane", dir_near);
+		viewDepthShader.setFloat("far_plane", dir_far);		
 		*/
 
 
@@ -745,6 +785,7 @@ int main(void) {
 	modelShader.clear();
 	simpleDepthShader.clear();
 	viewDepthShader.clear();
+	cubeDepthShader.clear();
 	glDeleteFramebuffers(1, &ms_Framebuffer);
 	glDeleteFramebuffers(1, &screenFramebuffer);
 
@@ -917,7 +958,7 @@ unsigned int LoadCubemap(std::vector<std::string> faces, bool gammaCorrection, b
 }
 
 // Generate a framebuffer attach the given texture as the color attachment.
-unsigned int CreateFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample, const unsigned int samples) {
+unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample, const unsigned int samples) {
 
 	unsigned int framebuffer;
 	// Generate a framebuffer and get its ID
@@ -975,4 +1016,32 @@ unsigned int CreateFramebuffer(unsigned int &frameColortexture, const unsigned i
 
 
 	return framebuffer;
+}
+
+unsigned int CreateDepthFramebuffer(unsigned int &depthTexture, const unsigned int width, const unsigned int height) {
+	// Frambuffer to render depth map
+	unsigned int depthMapFBO;
+	glGenFramebuffers(1, &depthMapFBO);
+
+	glGenTextures(1, &depthTexture);
+	glBindTexture(GL_TEXTURE_2D, depthTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	// Set the image wraping to clamp to border and set the border to 1.0 so whenever the sample outside the depth map, it always return 1.0 and the shadow value will be 0.0
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	// Check whether the framebuffer is complete
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "ERROR::FRAMEBUFFER:: Shadow map framebuffer is not complete!" << std::endl;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	return depthMapFBO;
 }

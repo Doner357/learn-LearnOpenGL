@@ -22,6 +22,7 @@ namespace CustomHelper {
 
 	enum VAOType {
 		VAO_CUBE,
+		VAO_ROOM,
 		VAO_QUAD,
 		VAO_SKYBOX,
 	};
@@ -94,6 +95,52 @@ namespace CustomHelper {
 		-1.0f,  1.0f,  1.0f,	 0.0f,  1.0f,  0.0f,	0.0f, 0.0f  // bottom-left
 	};
 
+	const float roomVertices[] = {
+		// positions			// normal				// texture Coords
+		// Back face
+		 1.0f,  1.0f, -1.0f,	 0.0f,  0.0f,  1.0f,	1.0f, 1.0f, // top-right
+		-1.0f, -1.0f, -1.0f,	 0.0f,  0.0f,  1.0f,	0.0f, 0.0f, // Bottom-left
+		 1.0f, -1.0f, -1.0f,	 0.0f,  0.0f,  1.0f,	1.0f, 0.0f, // bottom-right
+		-1.0f, -1.0f, -1.0f,	 0.0f,  0.0f,  1.0f,	0.0f, 0.0f, // bottom-left
+		 1.0f,  1.0f, -1.0f,	 0.0f,  0.0f,  1.0f,	1.0f, 1.0f, // top-right
+		-1.0f,  1.0f, -1.0f,	 0.0f,  0.0f,  1.0f,	0.0f, 1.0f, // top-left
+		// Front face
+		 1.0f, -1.0f,  1.0f,	 0.0f,  0.0f, -1.0f,	1.0f, 0.0f, // bottom-right
+		-1.0f, -1.0f,  1.0f,	 0.0f,  0.0f, -1.0f,	0.0f, 0.0f, // bottom-left
+		 1.0f,  1.0f,  1.0f,	 0.0f,  0.0f, -1.0f,	1.0f, 1.0f, // top-right
+		-1.0f,  1.0f,  1.0f,	 0.0f,  0.0f, -1.0f,	0.0f, 1.0f, // top-left
+		 1.0f,  1.0f,  1.0f,	 0.0f,  0.0f, -1.0f,	1.0f, 1.0f, // top-right
+		-1.0f, -1.0f,  1.0f,	 0.0f,  0.0f, -1.0f,	0.0f, 0.0f, // bottom-left
+		// Left face
+		-1.0f,  1.0f, -1.0f,	 1.0f,  0.0f,  0.0f,	1.0f, 1.0f, // top-left
+		-1.0f,  1.0f,  1.0f,	 1.0f,  0.0f,  0.0f,	1.0f, 0.0f, // top-right
+		-1.0f, -1.0f, -1.0f,	 1.0f,  0.0f,  0.0f,	0.0f, 1.0f, // bottom-left
+		-1.0f, -1.0f,  1.0f,	 1.0f,  0.0f,  0.0f,	0.0f, 0.0f, // bottom-right
+		-1.0f, -1.0f, -1.0f,	 1.0f,  0.0f,  0.0f,	0.0f, 1.0f, // bottom-left
+		-1.0f,  1.0f,  1.0f,	 1.0f,  0.0f,  0.0f,	1.0f, 0.0f, // top-right
+		// Right face
+		 1.0f, -1.0f, -1.0f,	-1.0f,  0.0f,  0.0f,	0.0f, 1.0f, // bottom-right
+		 1.0f,  1.0f,  1.0f,	-1.0f,  0.0f,  0.0f,	1.0f, 0.0f, // top-left
+		 1.0f,  1.0f, -1.0f,	-1.0f,  0.0f,  0.0f,	1.0f, 1.0f, // top-right
+		 1.0f,  1.0f,  1.0f,	-1.0f,  0.0f,  0.0f,	1.0f, 0.0f, // top-left
+		 1.0f, -1.0f, -1.0f,	-1.0f,  0.0f,  0.0f,	0.0f, 1.0f, // bottom-right
+		 1.0f, -1.0f,  1.0f,	-1.0f,  0.0f,  0.0f,	0.0f, 0.0f, // bottom-left     
+		 // Bottom face
+		 1.0f, -1.0f, -1.0f,	 0.0f,  1.0f,  0.0f,	1.0f, 1.0f, // top-left
+		-1.0f, -1.0f, -1.0f,	 0.0f,  1.0f,  0.0f,	0.0f, 1.0f, // top-right
+		 1.0f, -1.0f,  1.0f,	 0.0f,  1.0f,  0.0f,	1.0f, 0.0f, // bottom-left
+		-1.0f, -1.0f,  1.0f,	 0.0f,  1.0f,  0.0f,	0.0f, 0.0f, // bottom-right
+		 1.0f, -1.0f,  1.0f,	 0.0f,  1.0f,  0.0f,	1.0f, 0.0f, // bottom-left
+		-1.0f, -1.0f, -1.0f,	 0.0f,  1.0f,  0.0f,	0.0f, 1.0f, // top-right
+		 // Top face
+		 1.0f,  1.0f,  1.0f,	 0.0f, -1.0f,  0.0f,	1.0f, 0.0f, // bottom-right
+		-1.0f,  1.0f, -1.0f,	 0.0f, -1.0f,  0.0f,	0.0f, 1.0f, // top-left
+		 1.0f,  1.0f, -1.0f,	 0.0f, -1.0f,  0.0f,	1.0f, 1.0f, // top-right
+		-1.0f,  1.0f, -1.0f,	 0.0f, -1.0f,  0.0f,	0.0f, 1.0f, // top-left
+		 1.0f,  1.0f,  1.0f,	 0.0f, -1.0f,  0.0f,	1.0f, 0.0f, // bottom-right
+		-1.0f,  1.0f,  1.0f,	 0.0f, -1.0f,  0.0f,	0.0f, 0.0f  // bottom-left
+	};
+
 	const float quadVertices[] = {
 		// postions		 // normal				// texture Coords
 		 1.0f,  1.0f,	 0.0f,  0.0f,  1.0f,	1.0f,  1.0f,
@@ -153,6 +200,7 @@ namespace CustomHelper {
 		public:
 			VAOManager() {
 				InitialCubeVAO();
+				InitialRoomVAO();
 				InitialQuadVAO();
 				InitialSkyboxVAO();
 			};
@@ -164,6 +212,9 @@ namespace CustomHelper {
 				switch (type) {
 				case VAO_CUBE:
 					VAOname = "Common_VAO_Cube";
+					break;
+				case VAO_ROOM:
+					VAOname = "Common_VAO_Room";
 					break;
 				case VAO_QUAD:
 					VAOname = "Common_VAO_Quad";
@@ -209,6 +260,25 @@ namespace CustomHelper {
 				glDeleteBuffers(1, &VBO);
 
 				this->registerVAO("Common_VAO_Cube", VAO);
+			}
+			void InitialRoomVAO() {
+				unsigned int VAO, VBO;
+				glGenVertexArrays(1, &VAO);
+				glGenBuffers(1, &VBO);
+				glBindVertexArray(VAO);
+				glBindBuffer(GL_ARRAY_BUFFER, VBO);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(roomVertices), &roomVertices[0], GL_STATIC_DRAW);
+				glEnableVertexAttribArray(0);
+				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
+				glEnableVertexAttribArray(1);
+				glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
+				glEnableVertexAttribArray(2);
+				glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+				glBindVertexArray(0);
+				glBindBuffer(GL_ARRAY_BUFFER, 0);
+				glDeleteBuffers(1, &VBO);
+
+				this->registerVAO("Common_VAO_Room", VAO);
 			}
 			void InitialQuadVAO() {
 				unsigned int VAO, VBO;
