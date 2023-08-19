@@ -272,13 +272,13 @@ int main(void) {
 
 	Shader screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/regular_screen.frag");
 	Shader viewDepthShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/perspect_depth-map.frag");
-	Shader skyboxShader("shaders/general/vertex/skybox.vert", "shaders/general/fragment/skybox.frag");
-	Shader lightCubeShader("shaders/general/vertex/light_cube.vert", "shaders/general/fragment/light_cube.frag");
-	Shader TexShader("shaders/general/vertex/lighting_point-shadow_texture.vert", "shaders/general/fragment/local-lighting_point-shadow_texture.frag");
-	Shader repeatTexShader("shaders/general/vertex/lighting_point-shadow_repeated-texture.vert", "shaders/general/fragment/local-lighting_point-shadow_texture.frag");
-	Shader modelShader("shaders/general/vertex/lighting_model.vert", "shaders/general/fragment/global-lighting_model.frag");
-	Shader simpleDepthShader("shaders/general/vertex/dir-depth_map.vert", "shaders/general/fragment/dir-depth_map.frag");
-	Shader cubeDepthShader("shaders/general/vertex/cube-depth_map.vert", "shaders/general/fragment/cube-depth_map.frag", "shaders/general/geometry/cube-depth_map.geom");
+	Shader skyboxShader("shaders/others/vertex/skybox.vert", "shaders/others/fragment/skybox.frag");
+	Shader lightCubeShader("shaders/others/vertex/light_cube.vert", "shaders/others/fragment/light_cube.frag");
+	Shader TexShader("shaders/shadow-lighting/vertex/lighting_point-shadow_texture.vert", "shaders/shadow-lighting/fragment/local-lighting_point-shadow_texture.frag");
+	Shader repeatTexShader("shaders/shadow-lighting/vertex/lighting_point-shadow_repeated-texture.vert", "shaders/shadow-lighting/fragment/local-lighting_point-shadow_texture.frag");
+	Shader modelShader("shaders/lighting/vertex/lighting_model.vert", "shaders/lighting/fragment/global-lighting_model.frag");
+	Shader simpleDepthShader("shaders/bake/depth_map/vertex/dir-depth_map.vert", "shaders/bake/depth_map/fragment/dir-depth_map.frag");
+	Shader cubeDepthShader("shaders/bake/depth_map/vertex/cube-depth_map.vert", "shaders/bake/depth_map/fragment/cube-depth_map.frag", "shaders/bake/depth_map/geometry/cube-depth_map.geom");
 
 
 

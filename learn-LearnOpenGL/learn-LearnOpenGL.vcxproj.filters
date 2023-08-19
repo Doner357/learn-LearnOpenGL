@@ -19,26 +19,59 @@
     <Filter Include="Resource Files\textures">
       <UniqueIdentifier>{21cd82aa-8780-461f-904a-cd3e1eacf17e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files\shaders\general">
-      <UniqueIdentifier>{68c7ba0a-478a-49f0-869a-5957e1a2a604}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resource Files\shaders\post-processing">
       <UniqueIdentifier>{9033e703-7c45-496d-9556-3aee57cef23a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource Files\shaders\general\vertex">
-      <UniqueIdentifier>{d767c2fd-a7f3-4ef9-b7e5-069f1c9e20e4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource Files\shaders\general\fragment">
-      <UniqueIdentifier>{6a1b6970-2aba-484f-8575-79ea0ec5604f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource Files\shaders\general\geometry">
-      <UniqueIdentifier>{b9752052-0aa0-4305-ab61-cc040b6d71f6}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resource Files\shaders\post-processing\vertex">
       <UniqueIdentifier>{4ffef47c-ddee-48ac-8f20-d3a42e754056}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resource Files\shaders\post-processing\fragment">
       <UniqueIdentifier>{812de5be-fba6-4c11-84a7-b27101e6b767}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\lighting">
+      <UniqueIdentifier>{799956e0-f426-49f6-beba-d0684a6bbc33}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\shadow-lighting">
+      <UniqueIdentifier>{a87fd684-d32d-4dd6-9764-55053cda5528}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\lighting\fragment">
+      <UniqueIdentifier>{eb7ff753-d6b2-49cc-a2d7-f5cfcaab98bf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\lighting\vertex">
+      <UniqueIdentifier>{55d49334-783c-4c4d-8e65-873ca6c7bbe9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\shadow-lighting\fragment">
+      <UniqueIdentifier>{3085ffe6-bedb-4eaa-a34f-3a78bec94ed6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\shadow-lighting\vertex">
+      <UniqueIdentifier>{afe9b2b6-329a-4b8d-8eef-16c3bd71ecb2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\bake">
+      <UniqueIdentifier>{bfd51775-ac7b-4ed6-8c97-f1ac5b0c4c9a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\bake\depth_map">
+      <UniqueIdentifier>{f68f216c-98a8-4d9d-8c7b-a17fe5d9be82}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\bake\depth_map\fragment">
+      <UniqueIdentifier>{86f3413c-2d1a-4f13-afeb-6ffa0d59a9c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\bake\depth_map\vertex">
+      <UniqueIdentifier>{d4a35088-7ba7-4fa6-91e4-6600a8b852f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\bake\depth_map\geometry">
+      <UniqueIdentifier>{838f065d-4e01-4771-aad2-dd0fd41f11a2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\others">
+      <UniqueIdentifier>{68c7ba0a-478a-49f0-869a-5957e1a2a604}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\others\vertex">
+      <UniqueIdentifier>{d767c2fd-a7f3-4ef9-b7e5-069f1c9e20e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\others\fragment">
+      <UniqueIdentifier>{6a1b6970-2aba-484f-8575-79ea0ec5604f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\others\geometry">
+      <UniqueIdentifier>{b9752052-0aa0-4305-ab61-cc040b6d71f6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -76,92 +109,59 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\general\fragment\local-lighting_texture.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
+    <None Include="shaders\others\vertex\light_cube.vert">
+      <Filter>Resource Files\shaders\others\vertex</Filter>
     </None>
-    <None Include="shaders\general\vertex\lighting_texture.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
+    <None Include="shaders\others\fragment\light_cube.frag">
+      <Filter>Resource Files\shaders\others\fragment</Filter>
     </None>
-    <None Include="shaders\general\vertex\light_cube.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
+    <None Include="shaders\others\fragment\pure_texture.frag">
+      <Filter>Resource Files\shaders\others\fragment</Filter>
     </None>
-    <None Include="shaders\general\fragment\light_cube.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
+    <None Include="shaders\others\vertex\pure_texture.vert">
+      <Filter>Resource Files\shaders\others\vertex</Filter>
     </None>
-    <None Include="shaders\general\fragment\local-lighting_model.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
+    <None Include="shaders\others\vertex\skybox.vert">
+      <Filter>Resource Files\shaders\others\vertex</Filter>
     </None>
-    <None Include="shaders\general\vertex\lighting_model.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
+    <None Include="shaders\others\fragment\skybox.frag">
+      <Filter>Resource Files\shaders\others\fragment</Filter>
     </None>
-    <None Include="shaders\general\fragment\pure_texture.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
+    <None Include="shaders\others\fragment\reflection.frag">
+      <Filter>Resource Files\shaders\others\fragment</Filter>
     </None>
-    <None Include="shaders\general\vertex\pure_texture.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
+    <None Include="shaders\others\vertex\reflection.vert">
+      <Filter>Resource Files\shaders\others\vertex</Filter>
     </None>
-    <None Include="shaders\general\vertex\skybox.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
+    <None Include="shaders\others\fragment\refraction.frag">
+      <Filter>Resource Files\shaders\others\fragment</Filter>
     </None>
-    <None Include="shaders\general\fragment\skybox.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
+    <None Include="shaders\others\vertex\refraction.vert">
+      <Filter>Resource Files\shaders\others\vertex</Filter>
     </None>
-    <None Include="shaders\general\fragment\reflection.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
+    <None Include="shaders\others\fragment\explode_model.frag">
+      <Filter>Resource Files\shaders\others\fragment</Filter>
     </None>
-    <None Include="shaders\general\vertex\reflection.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
+    <None Include="shaders\others\geometry\explode_model.geom">
+      <Filter>Resource Files\shaders\others\geometry</Filter>
     </None>
-    <None Include="shaders\general\fragment\refraction.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
+    <None Include="shaders\others\vertex\explode_model.vert">
+      <Filter>Resource Files\shaders\others\vertex</Filter>
     </None>
-    <None Include="shaders\general\vertex\refraction.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
+    <None Include="shaders\others\vertex\visual_normal_vectors.vert">
+      <Filter>Resource Files\shaders\others\vertex</Filter>
     </None>
-    <None Include="shaders\general\fragment\explode_model.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
+    <None Include="shaders\others\geometry\visual_normal_vectors.geom">
+      <Filter>Resource Files\shaders\others\geometry</Filter>
     </None>
-    <None Include="shaders\general\geometry\explode_model.geom">
-      <Filter>Resource Files\shaders\general\geometry</Filter>
+    <None Include="shaders\others\fragment\visual_normal_vectors.frag">
+      <Filter>Resource Files\shaders\others\fragment</Filter>
     </None>
-    <None Include="shaders\general\vertex\explode_model.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
+    <None Include="shaders\others\vertex\model.vert">
+      <Filter>Resource Files\shaders\others\vertex</Filter>
     </None>
-    <None Include="shaders\general\vertex\visual_normal_vectors.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
-    </None>
-    <None Include="shaders\general\geometry\visual_normal_vectors.geom">
-      <Filter>Resource Files\shaders\general\geometry</Filter>
-    </None>
-    <None Include="shaders\general\fragment\visual_normal_vectors.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
-    </None>
-    <None Include="shaders\general\vertex\lighting_model_instanced.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
-    </None>
-    <None Include="shaders\general\vertex\model.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
-    </None>
-    <None Include="shaders\general\fragment\model.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
-    </None>
-    <None Include="shaders\general\vertex\lighting_color.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
-    </None>
-    <None Include="shaders\general\fragment\local-lighting_color.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
-    </None>
-    <None Include="shaders\general\fragment\global-lighting_color.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
-    </None>
-    <None Include="shaders\general\fragment\global-lighting_model.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
-    </None>
-    <None Include="shaders\general\fragment\global-lighting_texture.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
-    </None>
-    <None Include="shaders\general\vertex\lighting_repeated-texture.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
+    <None Include="shaders\others\fragment\model.frag">
+      <Filter>Resource Files\shaders\others\fragment</Filter>
     </None>
     <None Include="shaders\post-processing\vertex\regular_screen.vert">
       <Filter>Resource Files\shaders\post-processing\vertex</Filter>
@@ -190,32 +190,8 @@
     <None Include="shaders\post-processing\fragment\regular_screen.frag">
       <Filter>Resource Files\shaders\post-processing\fragment</Filter>
     </None>
-    <None Include="shaders\general\fragment\local-lighting_dir-shadow_texture.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
-    </None>
-    <None Include="shaders\general\vertex\lighting_dir-shadow_texture.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
-    </None>
-    <None Include="shaders\general\vertex\lighting_dir-shadow_repeated-texture.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
-    </None>
-    <None Include="shaders\general\fragment\dir-depth_map.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
-    </None>
-    <None Include="shaders\general\vertex\dir-depth_map.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
-    </None>
     <None Include="shaders\post-processing\fragment\gamma_correction.frag">
       <Filter>Resource Files\shaders\post-processing\fragment</Filter>
-    </None>
-    <None Include="shaders\general\vertex\cube-depth_map.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
-    </None>
-    <None Include="shaders\general\geometry\cube-depth_map.geom">
-      <Filter>Resource Files\shaders\general\geometry</Filter>
-    </None>
-    <None Include="shaders\general\fragment\cube-depth_map.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
     </None>
     <None Include="shaders\post-processing\fragment\perspect_depth-map.frag">
       <Filter>Resource Files\shaders\post-processing\fragment</Filter>
@@ -223,15 +199,68 @@
     <None Include="shaders\post-processing\fragment\ortho_depth-map.frag">
       <Filter>Resource Files\shaders\post-processing\fragment</Filter>
     </None>
-    <None Include="shaders\general\vertex\lighting_point-shadow_texture.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
+    <None Include="shaders\lighting\fragment\global-lighting_color.frag">
+      <Filter>Resource Files\shaders\lighting\fragment</Filter>
     </None>
-    <None Include="shaders\general\vertex\lighting_point-shadow_repeated-texture.vert">
-      <Filter>Resource Files\shaders\general\vertex</Filter>
+    <None Include="shaders\lighting\fragment\global-lighting_model.frag">
+      <Filter>Resource Files\shaders\lighting\fragment</Filter>
     </None>
-    <None Include="shaders\general\fragment\local-lighting_point-shadow_texture.frag">
-      <Filter>Resource Files\shaders\general\fragment</Filter>
+    <None Include="shaders\lighting\fragment\global-lighting_texture.frag">
+      <Filter>Resource Files\shaders\lighting\fragment</Filter>
     </None>
+    <None Include="shaders\lighting\fragment\local-lighting_color.frag">
+      <Filter>Resource Files\shaders\lighting\fragment</Filter>
+    </None>
+    <None Include="shaders\lighting\fragment\local-lighting_model.frag">
+      <Filter>Resource Files\shaders\lighting\fragment</Filter>
+    </None>
+    <None Include="shaders\lighting\fragment\local-lighting_texture.frag">
+      <Filter>Resource Files\shaders\lighting\fragment</Filter>
+    </None>
+    <None Include="shaders\lighting\vertex\lighting_texture.vert">
+      <Filter>Resource Files\shaders\lighting\vertex</Filter>
+    </None>
+    <None Include="shaders\lighting\vertex\lighting_repeated-texture.vert">
+      <Filter>Resource Files\shaders\lighting\vertex</Filter>
+    </None>
+    <None Include="shaders\lighting\vertex\lighting_model_instanced.vert">
+      <Filter>Resource Files\shaders\lighting\vertex</Filter>
+    </None>
+    <None Include="shaders\lighting\vertex\lighting_model.vert">
+      <Filter>Resource Files\shaders\lighting\vertex</Filter>
+    </None>
+    <None Include="shaders\lighting\vertex\lighting_color.vert">
+      <Filter>Resource Files\shaders\lighting\vertex</Filter>
+    </None>
+    <None Include="shaders\shadow-lighting\fragment\local-lighting_point-shadow_texture.frag">
+      <Filter>Resource Files\shaders\shadow-lighting\fragment</Filter>
+    </None>
+    <None Include="shaders\shadow-lighting\fragment\local-lighting_dir-shadow_texture.frag">
+      <Filter>Resource Files\shaders\shadow-lighting\fragment</Filter>
+    </None>
+    <None Include="shaders\shadow-lighting\vertex\lighting_dir-shadow_repeated-texture.vert">
+      <Filter>Resource Files\shaders\shadow-lighting\vertex</Filter>
+    </None>
+    <None Include="shaders\shadow-lighting\vertex\lighting_dir-shadow_texture.vert">
+      <Filter>Resource Files\shaders\shadow-lighting\vertex</Filter>
+    </None>
+    <None Include="shaders\shadow-lighting\vertex\lighting_point-shadow_repeated-texture.vert">
+      <Filter>Resource Files\shaders\shadow-lighting\vertex</Filter>
+    </None>
+    <None Include="shaders\shadow-lighting\vertex\lighting_point-shadow_texture.vert">
+      <Filter>Resource Files\shaders\shadow-lighting\vertex</Filter>
+    </None>
+    <None Include="shaders\bake\depth_map\fragment\cube-depth_map.frag">
+      <Filter>Resource Files\shaders\bake\depth_map\fragment</Filter>
+    </None>
+    <None Include="shaders\bake\depth_map\fragment\dir-depth_map.frag">
+      <Filter>Resource Files\shaders\bake\depth_map\fragment</Filter>
+    </None>
+    <None Include="shaders\bake\depth_map\geometry\cube-depth_map.geom">
+      <Filter>Resource Files\shaders\bake\depth_map\geometry</Filter>
+    </None>
+    <None Include="shaders\bake\depth_map\vertex\cube-depth_map.vert" />
+    <None Include="shaders\bake\depth_map\vertex\dir-depth_map.vert" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">
