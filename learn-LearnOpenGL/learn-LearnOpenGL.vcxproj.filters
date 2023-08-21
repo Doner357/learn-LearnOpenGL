@@ -259,8 +259,18 @@
     <None Include="shaders\bake\depth_map\geometry\cube-depth_map.geom">
       <Filter>Resource Files\shaders\bake\depth_map\geometry</Filter>
     </None>
-    <None Include="shaders\bake\depth_map\vertex\cube-depth_map.vert" />
-    <None Include="shaders\bake\depth_map\vertex\dir-depth_map.vert" />
+    <None Include="shaders\shadow-lighting\fragment\global-shadow-lighting_texture.frag">
+      <Filter>Resource Files\shaders\shadow-lighting\fragment</Filter>
+    </None>
+    <None Include="shaders\shadow-lighting\vertex\global-shadow-lighting_texture.vert">
+      <Filter>Resource Files\shaders\shadow-lighting\vertex</Filter>
+    </None>
+    <None Include="shaders\bake\depth_map\vertex\dir-depth_map.vert">
+      <Filter>Resource Files\shaders\bake\depth_map\vertex</Filter>
+    </None>
+    <None Include="shaders\bake\depth_map\vertex\cube-depth_map.vert">
+      <Filter>Resource Files\shaders\bake\depth_map\vertex</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">

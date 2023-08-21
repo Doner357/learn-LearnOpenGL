@@ -155,6 +155,8 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\shadow-lighting\fragment\global-shadow-lighting_texture.frag" />
+    <None Include="shaders\shadow-lighting\vertex\global-shadow-lighting_texture.vert" />
     <None Include="shaders\bake\depth_map\vertex\cube-depth_map.vert" />
     <None Include="shaders\bake\depth_map\vertex\dir-depth_map.vert" />
     <None Include="shaders\shadow-lighting\fragment\local-lighting_point-shadow_texture.frag" />

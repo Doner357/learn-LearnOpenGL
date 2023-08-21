@@ -29,7 +29,7 @@ struct DirLight {
 #define NUM_OF_DIRLIGHTS 4
 
 
-// --direction light with shadow--
+// --point light with shadow--
 struct ShadowPointLight {
 	vec3 position;
 

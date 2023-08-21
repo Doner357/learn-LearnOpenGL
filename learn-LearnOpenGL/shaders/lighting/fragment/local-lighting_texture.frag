@@ -1,9 +1,9 @@
 #version 330 core
 
 in VS_OUT {
-	vec2 texCoords;   // Texture coordinate
 	vec3 fragPos;     // Fragment position
-	vec3 normal;      // Fragment normal(denormalized)	
+	vec3 normal;      // Fragment normal(denormalized)
+	vec2 texCoords;   // Texture coordinate
 } fs_in;
 
 

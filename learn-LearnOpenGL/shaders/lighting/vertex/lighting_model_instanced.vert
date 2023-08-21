@@ -5,9 +5,9 @@ layout (location = 2) in vec2 aTexCoords;
 layout (location = 3) in mat4 instanceMatrix;
 
 out VS_OUT {
-	vec2 texCoords;
 	vec3 fragPos;
 	vec3 normal;
+	vec2 texCoords;
 } vs_out;
 
 uniform mat4 model;

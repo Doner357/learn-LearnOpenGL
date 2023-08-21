@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <functional>
 
 // glfw windows call back function
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -271,7 +272,8 @@ int main(void) {
 	*/
 
 	Shader screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/regular_screen.frag");
-	Shader viewDepthShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/perspect_depth-map.frag");
+	Shader viewDepthShader_ortho("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/ortho_depth-map.frag");
+	Shader viewDepthShader_pers("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/perspect_depth-map.frag");
 	Shader skyboxShader("shaders/others/vertex/skybox.vert", "shaders/others/fragment/skybox.frag");
 	Shader lightCubeShader("shaders/others/vertex/light_cube.vert", "shaders/others/fragment/light_cube.frag");
 	Shader TexShader("shaders/shadow-lighting/vertex/lighting_point-shadow_texture.vert", "shaders/shadow-lighting/fragment/local-lighting_point-shadow_texture.frag");
@@ -279,6 +281,7 @@ int main(void) {
 	Shader modelShader("shaders/lighting/vertex/lighting_model.vert", "shaders/lighting/fragment/global-lighting_model.frag");
 	Shader simpleDepthShader("shaders/bake/depth_map/vertex/dir-depth_map.vert", "shaders/bake/depth_map/fragment/dir-depth_map.frag");
 	Shader cubeDepthShader("shaders/bake/depth_map/vertex/cube-depth_map.vert", "shaders/bake/depth_map/fragment/cube-depth_map.frag", "shaders/bake/depth_map/geometry/cube-depth_map.geom");
+	Shader globalShadowTexShader("shaders/shadow-lighting/vertex/global-shadow-lighting_texture.vert", "shaders/shadow-lighting/fragment/global-shadow-lighting_texture.frag");
 
 
 
@@ -295,8 +298,12 @@ int main(void) {
 	screenShader.setInt("screenTexture", 0);
 
 
-	viewDepthShader.use();
-	viewDepthShader.setInt("screenTexture", 0);
+	viewDepthShader_ortho.use();
+	viewDepthShader_ortho.setInt("screenTexture", 0);
+
+
+	viewDepthShader_pers.use();
+	viewDepthShader_pers.setInt("screenTexture", 0);
 
 
 	repeatTexShader.use();
@@ -313,6 +320,12 @@ int main(void) {
 	TexShader.setFloat("material.shininess", 2048.0f);
 
 
+	globalShadowTexShader.use();
+	globalShadowTexShader.setInt("material.diffuse", 0);
+	globalShadowTexShader.setInt("material.specular", 1);
+	globalShadowTexShader.setFloat("material.shininess", 2048.0f);
+
+
 	glUseProgram(0);
 
 	
@@ -323,25 +336,45 @@ int main(void) {
 	 */
 
 	// Camera matrices uniform block
-	CustomHelper::CameraMatricesManager cameraMatManager(CustomHelper::UBOPOINT_NAME_CAMERA_MATRICES);
+	CustomHelper::CameraMatricesManager cameraMatManager(CustomHelper::UBOPOINT_NAME_CAMERA_MATRICES, CustomHelper::UBOPOINT_CAMERA_MATRICES);
 	cameraMatManager.registerShader(skyboxShader);
 	cameraMatManager.registerShader(lightCubeShader);
 	cameraMatManager.registerShader(TexShader);
 	cameraMatManager.registerShader(repeatTexShader);
 	cameraMatManager.registerShader(modelShader);
+	cameraMatManager.registerShader(globalShadowTexShader);
 
 	// Global light uniform block
-	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING);
+	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING, CustomHelper::UBOPOINT_BLINPHONG_LIGHTING, CustomHelper::MAX_NUM_DIRECTIONALLIGHT, CustomHelper::MAX_NUM_POINTLIGHT, CustomHelper::MAX_NUM_SPOTLIGHT);
 	//globalLightManager.registerShader(TexShader);
 	//globalLightManager.registerShader(repeatTexShader);
 	globalLightManager.registerShader(modelShader);
+	globalLightManager.registerShader(globalShadowTexShader);
+
+	// Global light with shadow uniform block
+	CustomHelper::GlobalBlinnPongShadowLightManager globalShadowLightManager(
+		CustomHelper::UBOPOINT_NAME_BLINPHONG_SHADOWLIGHTING,
+		CustomHelper::UBOPOINT_NAME_BLINPHONG_SHADOWMATRICES,
+		CustomHelper::UBOPOINT_NAME_BLINPHONG_SHADOWFARPLANE,
+		CustomHelper::UBOPOINT_BLINPHONG_SHADOWLIGHTING,
+		CustomHelper::UBOPOINT_BLINPHONG_SHADOWMATRICES,
+		CustomHelper::UBOPOINT_BLINPHONG_SHADOWFARPLANE,
+		CustomHelper::MAX_NUM_SHADOWDIRECTIONALLIGHT,
+		CustomHelper::MAX_NUM_SHADOWPOINTLIGHT,
+		CustomHelper::MAX_NUM_SHADOWSPOTLIGHT,
+		2048,
+		1024,
+		1024
+	);
+	globalShadowLightManager.registerShader(globalShadowTexShader);
 
 	// Gamma Correction uniform block
-	CustomHelper::GammaManager gammaManager(CustomHelper::UBOPOINT_NAME_GAMMA_CORRECTION);
+	CustomHelper::GammaManager gammaManager(CustomHelper::UBOPOINT_NAME_GAMMA_CORRECTION, CustomHelper::UBOPOINT_GAMMA_CORRECTION);
 	gammaManager.registerShader(lightCubeShader);
 	gammaManager.registerShader(TexShader);
 	gammaManager.registerShader(repeatTexShader);
 	gammaManager.registerShader(modelShader);
+	gammaManager.registerShader(globalShadowTexShader);
 
 
 
@@ -357,45 +390,10 @@ int main(void) {
 
 
 
-
 	/*
 	 * Depth map creating
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-
-	// Create directional depth map and framebuffer
-	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-	unsigned int depthMap;
-	unsigned int depthMapFBO = CreateDepthFramebuffer(depthMap, SHADOW_WIDTH, SHADOW_HEIGHT);
-
-
-	// Create directional depth map and framebuffer
-	const unsigned int CUBESHADOW_WIDTH = 1024, CUBESHADOW_HEIGHT = 1024;
-	// Create omnidirectional depth map (cube map)
-	unsigned int depthCubemap;
-	glGenTextures(1, &depthCubemap);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
-	for (unsigned int i = 0; i < 6; i++) {
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, CUBESHADOW_WIDTH, CUBESHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-
-	unsigned int depthCubemapFBO;
-	glGenFramebuffers(1, &depthCubemapFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, depthCubemapFBO);
-	// Bind whole the cube map onto framebuffer
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-	// Check whether the framebuffer is complete
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "ERROR::FRAMEBUFFER:: Cube shadow map framebuffer is not complete!" << std::endl;
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
 
@@ -454,28 +452,82 @@ int main(void) {
 	}
 
 
+	CustomHelper::BlinnPhongLight_direct shadowDirLight = {
+		glm::vec3(0.1f, -1.0f, 0.3f),
+		glm::vec3(0.009f),
+		glm::vec3(0.02f),
+		glm::vec3(0.02f)
+	};
+
+	CustomHelper::BlinnPhongLight_point shadowPointLight1 = {
+		glm::vec3(0.0f, 0.5f, 0.0f),
+		0.0f,
+		0.0f,
+		1.0f,
+		glm::vec3(0.2f) * 0.2f,
+		glm::vec3(0.8f) * 0.5f,
+		glm::vec3(1.0f) * 0.5f
+	};
+	CustomHelper::BlinnPhongLight_point shadowPointLight2 = {
+		glm::vec3(0.0f, 0.5f, 0.0f),
+		0.0f,
+		0.0f,
+		1.0f,
+		glm::vec3(0.0f, 0.2f, 0.2f) * 0.2f,
+		glm::vec3(0.0f, 1.0f, 1.0f) * 0.5f,
+		glm::vec3(0.0f, 1.0f, 1.0f) * 0.5f
+	};
+	CustomHelper::BlinnPhongLight_point shadowPointLight3 = {
+		glm::vec3(0.0f, 0.5f, 0.0f),
+		0.0f,
+		0.0f,
+		1.0f,
+		glm::vec3(0.2f, 0.0f, 0.2f) * 0.2f,
+		glm::vec3(1.0f, 0.0f, 1.0f) * 0.5f,
+		glm::vec3(1.0f, 0.0f, 1.0f) * 0.5f
+	};
+
+	CustomHelper::BlinnPhongLight_point shadowPointLight4 = {
+		glm::vec3(0.0f, 0.5f, 0.0f),
+		0.0f,
+		0.0f,
+		1.0f,
+		glm::vec3(0.2f, 0.2f, 0.0f) * 0.2f,
+		glm::vec3(1.0f, 1.0f, 0.0f) * 0.5f,
+		glm::vec3(1.0f, 1.0f, 0.0f) * 0.5f
+	};
+
+	CustomHelper::BlinnPhongLight_spot shadowSpotLight1 = {
+		glm::vec3(1.0f, 0.0f, 0.0f),
+		glm::vec3(-4.0f, -0.3f, 0.0f),
+		glm::cos(glm::radians(45.5f)),
+		glm::cos(glm::radians(48.5f)),
+		0.0f,
+		0.0f,
+		1.0f,
+		glm::vec3(0.2f, 0.0f, 0.0f) * 0.2f,
+		glm::vec3(1.0f, 0.0f, 0.0f) * 0.5f,
+		glm::vec3(1.0f, 0.0f, 0.0f) * 0.5f
+	};
+
+	CustomHelper::BlinnPhongLight_spot shadowSpotLight2 = {
+		glm::vec3(0.0f, 0.0f, 1.0f),
+		glm::vec3(-4.0f, -0.3f, 0.0f),
+		glm::cos(glm::radians(45.5f)),
+		glm::cos(glm::radians(48.5f)),
+		0.0f,
+		0.0f,
+		1.0f,
+		glm::vec3(0.0f, 0.0f, 0.2f) * 0.2f,
+		glm::vec3(0.0f, 0.0f, 1.0f) * 0.5f,
+		glm::vec3(0.0f, 0.0f, 1.0f) * 0.5f
+	};
+
 
 	/*
 	 * Local Light setting
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-
-	CustomHelper::BlinnPhongLight_direct shadowDirLight = {
-		glm::vec3(0.1f, -1.0f, 0.3f),
-		glm::vec3(0.009f),
-		glm::vec3(0.2f),
-		glm::vec3(0.2f)
-	};
-
-	CustomHelper::BlinnPhongLight_point shadowPointLight = {
-		glm::vec3(0.0f, 0.5f, 0.0f),
-		0.0f,
-		0.0f,
-		1.0f,
-		glm::vec3(0.2f),
-		glm::vec3(0.8f),
-		glm::vec3(1.0f)
-	};
 
 	glUseProgram(0);
 
@@ -551,63 +603,48 @@ int main(void) {
 		// Render Shadow
 		//--------------------------
 
-		// Render omnidirectional shadow map
-		// Scale the view port to the size of the shadow map
-		glViewport(0, 0, CUBESHADOW_WIDTH, CUBESHADOW_HEIGHT);
+		std::function<void(Shader &)> shadowDrawFunction;
+		shadowDrawFunction = [&](Shader &shader) {
+				// Draw Boxes
+				// Avoid peter panning by cull the front faces
+				//glCullFace(GL_FRONT);
+				for (unsigned int i = 0; i < containerPos.size(); i++) {
+					model = glm::mat4(1.0f);
+					model = glm::translate(model, containerPos[i]);
+					model = glm::rotate(model, static_cast<float>(i), glm::vec3(1.0f, 2.0f, 0.5f));
+					model = glm::scale(model, glm::vec3(0.5f));
+					shader.setMat4("model", model);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, depthCubemapFBO);
-		glClear(GL_DEPTH_BUFFER_BIT);
+					glBindVertexArray(cubeVAO);
+					glDrawArrays(GL_TRIANGLES, 0, 36);
+				// Set culled faces as back faces
+				//glCullFace(GL_BACK);
 
-		// Set up transform matrix
-		float aspect = static_cast<float>(CUBESHADOW_WIDTH) / static_cast<float>(CUBESHADOW_HEIGHT);
-		float cube_near = 1.0f, cube_far = 25.0f;
-		// Create perspective projection matrix
-		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, cube_near, cube_far);
-		// Create view matrices for each faces and multiply them to create tranform matrice
-		shadowPointLight.position = glm::vec3(0.0f, 4.75f * glm::sin(glfwGetTime()), 0.0f);		// make light move with time
-		glm::vec3 shadowPointLightPos = shadowPointLight.position;
-		std::vector<glm::mat4> cubeShadowTransform = {
-			shadowProj * glm::lookAt(shadowPointLightPos, shadowPointLightPos + glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-			shadowProj * glm::lookAt(shadowPointLightPos, shadowPointLightPos + glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-			shadowProj * glm::lookAt(shadowPointLightPos, shadowPointLightPos + glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-			shadowProj * glm::lookAt(shadowPointLightPos, shadowPointLightPos + glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-			shadowProj * glm::lookAt(shadowPointLightPos, shadowPointLightPos + glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-			shadowProj * glm::lookAt(shadowPointLightPos, shadowPointLightPos + glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+				// Draw room
+				model = glm::mat4(1.0f);
+				model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+				model = glm::scale(model, glm::vec3(5.0f));
+				shader.setMat4("model", model);
+				glBindVertexArray(roomVAO);
+				glDrawArrays(GL_TRIANGLES, 0, 36);
+
+				glBindVertexArray(0);
+			}
 		};
-
-
-		cubeDepthShader.use();
-		for (unsigned int i = 0; i < 6; i++) {
-			cubeDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", cubeShadowTransform[i]);
-		}
-		cubeDepthShader.setVec3("lightPos", shadowPointLightPos);
-		cubeDepthShader.setFloat("far_plane", cube_far);
-
-		// Draw Boxes
-		// Avoid peter panning by cull the front faces
-		glCullFace(GL_FRONT);
-		for (unsigned int i = 0; i < containerPos.size(); i++) {
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, containerPos[i]);
-			model = glm::rotate(model, static_cast<float>(i), glm::vec3(1.0f, 2.0f, 0.5f));
-			model = glm::scale(model, glm::vec3(0.5f));
-			cubeDepthShader.setMat4("model", model);
-
-			glBindVertexArray(cubeVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
-		// Set culled faces as back faces
-		glCullFace(GL_BACK);
-		
-		// Draw room
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(5.0f));
-		cubeDepthShader.setMat4("model", model);
-		glBindVertexArray(roomVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		glBindVertexArray(0);
+		globalShadowLightManager.updateDirLight(shadowDirLight, 0, 10.0f, 15.0f, 5.0f, shadowDrawFunction);
+		shadowPointLight1.position = glm::vec3(0.0f, 4.5f * glm::sin(static_cast<float>(glfwGetTime())), 0.0f);
+		globalShadowLightManager.updatePointLight(shadowPointLight1, 0, 25.0f, shadowDrawFunction);
+		shadowPointLight2.position = glm::vec3(0.0f, 0.01f, 4.5f * glm::sin(static_cast<float>(glfwGetTime())));
+		globalShadowLightManager.updatePointLight(shadowPointLight2, 3, 25.0f, shadowDrawFunction);
+		shadowPointLight3.position = glm::vec3(4.5f * glm::sin(static_cast<float>(glfwGetTime())), 0.01f, 0.0f);
+		globalShadowLightManager.updatePointLight(shadowPointLight3, 3, 25.0f, shadowDrawFunction);
+		shadowPointLight4.position = glm::vec3(4.5f * glm::cos(static_cast<float>(glfwGetTime())), 0.01f, 4.5f * glm::sin(static_cast<float>(glfwGetTime())));
+		globalShadowLightManager.updatePointLight(shadowPointLight4, 3, 25.0f, shadowDrawFunction);
+		shadowSpotLight1.position = glm::vec3(4.0f * glm::sin(glfwGetTime()), 0.01f, 0.0f);
+		globalShadowLightManager.updateSpotLight(shadowSpotLight1, 0, 90.0f, 10.0f, shadowDrawFunction);
+		shadowSpotLight2.position = glm::vec3(0.0f, 0.01f, 4.0f * glm::sin(glfwGetTime()));
+		globalShadowLightManager.updateSpotLight(shadowSpotLight2, 1, 90.0f, 10.0f, shadowDrawFunction);
+		globalShadowLightManager.bindShadowMaps();
 
 
 		// Render Objects
@@ -626,27 +663,13 @@ int main(void) {
 
 
 		// Draw boxes
-		TexShader.use();
-
-		// Light setting
-		TexShader.use();
-		TexShader.setVec3("pointLight_sh.position", shadowPointLight.position);
-		TexShader.setFloat("pointLight_sh.constant", shadowPointLight.constant);
-		TexShader.setFloat("pointLight_sh.linear", shadowPointLight.linear);
-		TexShader.setFloat("pointLight_sh.quadratic", shadowPointLight.quadratic);
-		TexShader.setVec3("pointLight_sh.ambient", shadowPointLight.ambient);
-		TexShader.setVec3("pointLight_sh.diffuse", shadowPointLight.diffuse);
-		TexShader.setVec3("pointLight_sh.specular", shadowPointLight.specular);
-		TexShader.setFloat("pointLight_sh.far_plane", cube_far);
+		globalShadowTexShader.use();
 
 		// Light space transform matrix
-
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, container_diff);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, container_spec);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
 
 		for (unsigned int i = 0; i < containerPos.size(); i++) {
 			model = glm::mat4(1.0f);
@@ -654,67 +677,93 @@ int main(void) {
 			model = glm::rotate(model, static_cast<float>(i), glm::vec3(1.0f, 2.0f, 0.5f));
 			model = glm::scale(model, glm::vec3(0.5f));
 			normalMat = CustomHelper::CalculateNormalMat(model);
-			TexShader.setMat4("model", model);
-			TexShader.setMat3("normalMat", normalMat);
-			TexShader.setVec3("viewPos", camera.Position);
+			globalShadowTexShader.setMat4("model", model);
+			globalShadowTexShader.setMat3("normalMat", normalMat);
+			globalShadowTexShader.setVec3("viewPos", camera.Position);
 
 			glBindVertexArray(cubeVAO);
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
 
-
-		// Draw floor
-		repeatTexShader.use();
-
-		// Light setting
-		repeatTexShader.use();
-		repeatTexShader.setVec3("pointLight_sh.position", shadowPointLight.position);
-		repeatTexShader.setFloat("pointLight_sh.constant", shadowPointLight.constant);
-		repeatTexShader.setFloat("pointLight_sh.linear", shadowPointLight.linear);
-		repeatTexShader.setFloat("pointLight_sh.quadratic", shadowPointLight.quadratic);
-		repeatTexShader.setVec3("pointLight_sh.ambient", shadowPointLight.ambient);
-		repeatTexShader.setVec3("pointLight_sh.diffuse", shadowPointLight.diffuse);
-		repeatTexShader.setVec3("pointLight_sh.specular", shadowPointLight.specular);
-		repeatTexShader.setFloat("pointLight_sh.far_plane", cube_far);
+		// Draw room
+		globalShadowTexShader.use();
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, wood_diff);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, common_spec);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
 
-		// Draw room
 		model = glm::mat4(1.0f);
 		normalMat = glm::mat3(1.0f);
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(5.0f));
 		normalMat = CustomHelper::CalculateNormalMat(model);
-		repeatTexShader.setMat4("model", model);
-		repeatTexShader.setMat3("normalMat", normalMat);
-		repeatTexShader.setVec3("viewPos", camera.Position);
-		repeatTexShader.setInt("repeat_times", 10);
+		globalShadowTexShader.setMat4("model", model);
+		globalShadowTexShader.setMat3("normalMat", normalMat);
+		globalShadowTexShader.setVec3("viewPos", camera.Position);
 
 		glBindVertexArray(roomVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-
 
 		// Draw light cube
 		lightCubeShader.use();
 		glBindVertexArray(cubeVAO);
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, shadowPointLightPos);
-		model = glm::scale(model, glm::vec3(0.125));
+		model = glm::translate(model, shadowSpotLight1.position);
+		model = glm::scale(model, glm::vec3(0.05f));
 		lightCubeShader.setMat4("model", model);
-		lightCubeShader.setVec3("lightColor", shadowPointLight.specular * 1.2f);
-
+		lightCubeShader.setVec3("lightColor", shadowSpotLight1.specular * 1.2f);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		glBindVertexArray(cubeVAO);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, shadowSpotLight2.position);
+		model = glm::scale(model, glm::vec3(0.05f));
+		lightCubeShader.setMat4("model", model);
+		lightCubeShader.setVec3("lightColor", shadowSpotLight2.specular * 1.2f);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		glBindVertexArray(cubeVAO);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, shadowPointLight1.position);
+		model = glm::scale(model, glm::vec3(0.05f));
+		lightCubeShader.setMat4("model", model);
+		lightCubeShader.setVec3("lightColor", shadowPointLight1.specular * 1.2f);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		glBindVertexArray(cubeVAO);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, shadowPointLight2.position);
+		model = glm::scale(model, glm::vec3(0.05f));
+		lightCubeShader.setMat4("model", model);
+		lightCubeShader.setVec3("lightColor", shadowPointLight2.specular * 1.2f);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		glBindVertexArray(cubeVAO);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, shadowPointLight3.position);
+		model = glm::scale(model, glm::vec3(0.05f));
+		lightCubeShader.setMat4("model", model);
+		lightCubeShader.setVec3("lightColor", shadowPointLight3.specular * 1.2f);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		glBindVertexArray(cubeVAO);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, shadowPointLight4.position);
+		model = glm::scale(model, glm::vec3(0.05f));
+		lightCubeShader.setMat4("model", model);
+		lightCubeShader.setVec3("lightColor", shadowPointLight4.specular * 1.2f);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
+
 		glBindVertexArray(0);
 		glUseProgram(0);
+
 		// Draw light cube
 		/*
-		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.125f);
+		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.05f);
 		*/
 		// Draw floor
 		/*
@@ -765,15 +814,17 @@ int main(void) {
 		
 		screenShader.use();
 		/*
-		viewDepthShader.use();
-		viewDepthShader.setFloat("near_plane", dir_near);
-		viewDepthShader.setFloat("far_plane", dir_far);		
+		viewDepthShader_pers.use();
+		viewDepthShader_pers.setFloat("near_plane", 0.1f);
+		viewDepthShader_pers.setFloat("far_plane", 10.0f);
 		*/
+			
 
 
 		glBindVertexArray(quadVAO);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, screentexuture);
+		//glBindTexture(GL_TEXTURE_2D, globalShadowLightManager.getSpotDepthMap(0));
 
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
@@ -797,7 +848,8 @@ int main(void) {
 	repeatTexShader.clear();
 	modelShader.clear();
 	simpleDepthShader.clear();
-	viewDepthShader.clear();
+	viewDepthShader_ortho.clear();
+	viewDepthShader_pers.clear();
 	cubeDepthShader.clear();
 	glDeleteFramebuffers(1, &ms_Framebuffer);
 	glDeleteFramebuffers(1, &screenFramebuffer);
@@ -992,10 +1044,11 @@ unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsig
 
 	if (multisample)
 		glTexImage2DMultisample(texformat, samples, GL_RGB, width, height, GL_TRUE);
-	else
+	else {
 		glTexImage2D(texformat, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(texformat, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(texformat, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(texformat, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(texformat, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
 	glBindTexture(texformat, 0);
 
 	// Attach the texture to currently bound framebuffer object
@@ -1054,6 +1107,7 @@ unsigned int CreateDepthFramebuffer(unsigned int &depthTexture, const unsigned i
 	// Check whether the framebuffer is complete
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "ERROR::FRAMEBUFFER:: Shadow map framebuffer is not complete!" << std::endl;
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	return depthMapFBO;

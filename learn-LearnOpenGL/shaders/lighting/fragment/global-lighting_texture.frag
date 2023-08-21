@@ -1,9 +1,9 @@
 #version 330 core
 
 in VS_OUT {
-	vec2 texCoords;
 	vec3 fragPos;
 	vec3 normal;
+	vec2 texCoords;
 } fs_in;
 
 

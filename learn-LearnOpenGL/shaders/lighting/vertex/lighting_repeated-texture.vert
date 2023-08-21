@@ -4,9 +4,9 @@ layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec2 aTexCoords;
 
 out VS_OUT {
-	vec2 texCoords;   // Texture coordinate
 	vec3 fragPos;     // Fragment position
 	vec3 normal;      // Normal
+	vec2 texCoords;   // Texture coordinate
 } vs_out;
 
 
