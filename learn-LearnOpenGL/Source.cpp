@@ -25,7 +25,6 @@ void processInput(GLFWwindow *window);
 unsigned int LoadTexture(char const* path, bool gammaCorrection, bool flip_vertically = true);
 unsigned int LoadCubemap(std::vector<std::string> faces, bool gammaCorrection, bool flip_vertically = false);
 unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample = false, const unsigned int samples = 1);
-unsigned int CreateDepthFramebuffer(unsigned int &depthTexture, const unsigned int width, const unsigned int height);
 
 // Screen Width and Height setting
 const unsigned int SCR_WIDTH = 800;
