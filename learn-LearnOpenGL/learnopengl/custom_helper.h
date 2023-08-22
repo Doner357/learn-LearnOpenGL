@@ -962,7 +962,7 @@ namespace CustomHelper {
 		unsigned int uniform_buffer;
 		UBOBindingPoints binding_point;
 		float *far_planes;
-
+		
 		const size_t max_of_pointLight;
 
 		const GLsizeiptr pointFar_start_pos = 0;

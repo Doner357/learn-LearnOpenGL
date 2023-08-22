@@ -449,7 +449,7 @@ float SpotLightShadowCalculation(SpotLight light, vec4 fragPosLightSpace, vec3 n
 	float currentDepth = projCoords.z;
 
 	// Calculate depth bias according to the angle between light direction and surface normal
-	float bias = 0.0005;
+	float bias = 0.0002 - 0.00015 * dot(normal, lightDir);
 	
 	// Apply PCF (percentage-closer filtering)
 	float shadow = 0.0;

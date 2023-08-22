@@ -518,9 +518,9 @@ int main(void) {
 		0.0f,
 		0.0f,
 		1.0f,
-		glm::vec3(0.0f, 0.0f, 0.2f) * 0.2f,
-		glm::vec3(0.0f, 0.0f, 1.0f) * 0.5f,
-		glm::vec3(0.0f, 0.0f, 1.0f) * 0.5f
+		glm::vec3(0.2f, 0.1f, 0.2f) * 0.2f,
+		glm::vec3(1.0f, 0.5f, 1.0f) * 0.5f,
+		glm::vec3(1.0f, 0.5f, 1.0f) * 0.5f
 	};
 
 
@@ -604,12 +604,12 @@ int main(void) {
 		//--------------------------
 
 		std::function<void(Shader &)> shadowDrawFunction;
-		shadowDrawFunction = [&](Shader &shader) {
+		shadowDrawFunction = [=](Shader &shader) {
 				// Draw Boxes
 				// Avoid peter panning by cull the front faces
-				//glCullFace(GL_FRONT);
+				glCullFace(GL_FRONT);
 				for (unsigned int i = 0; i < containerPos.size(); i++) {
-					model = glm::mat4(1.0f);
+					glm::mat4 model(1.0f);
 					model = glm::translate(model, containerPos[i]);
 					model = glm::rotate(model, static_cast<float>(i), glm::vec3(1.0f, 2.0f, 0.5f));
 					model = glm::scale(model, glm::vec3(0.5f));
@@ -618,7 +618,7 @@ int main(void) {
 					glBindVertexArray(cubeVAO);
 					glDrawArrays(GL_TRIANGLES, 0, 36);
 				// Set culled faces as back faces
-				//glCullFace(GL_BACK);
+				glCullFace(GL_BACK);
 
 				// Draw room
 				model = glm::mat4(1.0f);
@@ -631,19 +631,20 @@ int main(void) {
 				glBindVertexArray(0);
 			}
 		};
-		globalShadowLightManager.updateDirLight(shadowDirLight, 0, 10.0f, 15.0f, 5.0f, shadowDrawFunction);
+		globalShadowLightManager.updateDirLight(shadowDirLight, 0, 10.0f, 20.0f, 7.0f, shadowDrawFunction);
 		shadowPointLight1.position = glm::vec3(0.0f, 4.5f * glm::sin(static_cast<float>(glfwGetTime())), 0.0f);
 		globalShadowLightManager.updatePointLight(shadowPointLight1, 0, 25.0f, shadowDrawFunction);
 		shadowPointLight2.position = glm::vec3(0.0f, 0.01f, 4.5f * glm::sin(static_cast<float>(glfwGetTime())));
-		globalShadowLightManager.updatePointLight(shadowPointLight2, 3, 25.0f, shadowDrawFunction);
-		shadowPointLight3.position = glm::vec3(4.5f * glm::sin(static_cast<float>(glfwGetTime())), 0.01f, 0.0f);
-		globalShadowLightManager.updatePointLight(shadowPointLight3, 3, 25.0f, shadowDrawFunction);
+		globalShadowLightManager.updatePointLight(shadowPointLight2, 1, 25.0f, shadowDrawFunction);
 		shadowPointLight4.position = glm::vec3(4.5f * glm::cos(static_cast<float>(glfwGetTime())), 0.01f, 4.5f * glm::sin(static_cast<float>(glfwGetTime())));
 		globalShadowLightManager.updatePointLight(shadowPointLight4, 3, 25.0f, shadowDrawFunction);
+		shadowPointLight3.position = glm::vec3(4.5f * glm::sin(static_cast<float>(glfwGetTime())), 0.01f, 0.0f);
+		globalShadowLightManager.updatePointLight(shadowPointLight3, 2, 25.0f, shadowDrawFunction);
 		shadowSpotLight1.position = glm::vec3(4.0f * glm::sin(glfwGetTime()), 0.01f, 0.0f);
-		globalShadowLightManager.updateSpotLight(shadowSpotLight1, 0, 90.0f, 10.0f, shadowDrawFunction);
+		// The fov of spot light should double the angle of outerCutOff
+		globalShadowLightManager.updateSpotLight(shadowSpotLight1, 0, 97.0f, 10.0f, shadowDrawFunction);
 		shadowSpotLight2.position = glm::vec3(0.0f, 0.01f, 4.0f * glm::sin(glfwGetTime()));
-		globalShadowLightManager.updateSpotLight(shadowSpotLight2, 1, 90.0f, 10.0f, shadowDrawFunction);
+		globalShadowLightManager.updateSpotLight(shadowSpotLight2, 1, 97.0f, 10.0f, shadowDrawFunction);
 		globalShadowLightManager.bindShadowMaps();
 
 
@@ -1082,33 +1083,4 @@ unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsig
 
 
 	return framebuffer;
-}
-
-unsigned int CreateDepthFramebuffer(unsigned int &depthTexture, const unsigned int width, const unsigned int height) {
-	// Frambuffer to render depth map
-	unsigned int depthMapFBO;
-	glGenFramebuffers(1, &depthMapFBO);
-
-	glGenTextures(1, &depthTexture);
-	glBindTexture(GL_TEXTURE_2D, depthTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	// Set the image wraping to clamp to border and set the border to 1.0 so whenever the sample outside the depth map, it always return 1.0 and the shadow value will be 0.0
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-	// Check whether the framebuffer is complete
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "ERROR::FRAMEBUFFER:: Shadow map framebuffer is not complete!" << std::endl;
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	return depthMapFBO;
 }
