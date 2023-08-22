@@ -579,11 +579,6 @@ namespace CustomHelper {
 				return return_light;
 			}
 
-			// Print the debug message
-			void debug() {
-				debuger();
-			}
-
 		private:
 			// Buffer Index
 			unsigned int unifrom_buffer;
@@ -771,72 +766,6 @@ namespace CustomHelper {
 					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::SPOTLIGHT::map unsuccessful\n";
 
 				return success;
-			}
-
-			void debuger() {
-				std::cout << "total size: " << size_of_total_light << std::endl;
-
-				std::cout << "\n";
-				std::cout << "dir_direction_pos : " << dir_direction_pos << std::endl;
-				std::cout << "dir_direction_size : " << dir_direction_size << std::endl;
-				std::cout << "dir_ambient_pos : " << dir_ambient_pos << std::endl;
-				std::cout << "dir_ambient_size : " << dir_ambient_size << std::endl;
-				std::cout << "dir_diffuse_pos : " << dir_diffuse_pos << std::endl;
-				std::cout << "dir_diffuse_size : " << dir_diffuse_size << std::endl;
-				std::cout << "dir_specular_pos : " << dir_specular_pos << std::endl;
-				std::cout << "dir_specular_size : " << dir_specular_size << std::endl;
-				std::cout << "dir_size : " << dir_size << std::endl;
-				std::cout << "dir_total_size : " << dir_total_size << std::endl;
-				std::cout << "dir_arr_start_pos : " << dir_arr_start_pos << std::endl;
-				std::cout << "dir_next_arr_bias : " << dir_next_arr_bias << std::endl;
-
-				std::cout << "\n";
-				// PointLight datas
-				std::cout << "point_position_pos : " << point_position_pos << std::endl;
-				std::cout << "point_position_size : " << point_position_size << std::endl;
-				std::cout << "point_constant_pos : " << point_constant_pos << std::endl;
-				std::cout << "point_constant_size : " << point_constant_size << std::endl;
-				std::cout << "point_linear_pos : " << point_linear_pos << std::endl;
-				std::cout << "point_linear_size : " << point_linear_size << std::endl;
-				std::cout << "point_quadratic_pos : " << point_quadratic_pos << std::endl;
-				std::cout << "point_quadratic_size : " << point_quadratic_size << std::endl;
-				std::cout << "point_ambient_pos : " << point_ambient_pos << std::endl;
-				std::cout << "point_ambient_size : " << point_ambient_size << std::endl;
-				std::cout << "point_diffuse_pos : " << point_diffuse_pos << std::endl;
-				std::cout << "point_diffuse_size : " << point_diffuse_size << std::endl;
-				std::cout << "point_specular_pos : " << point_specular_pos << std::endl;
-				std::cout << "point_specular_size : " << point_specular_size << std::endl;
-				std::cout << "point_size : " << point_size << std::endl;
-				std::cout << "point_total_size : " << point_total_size << std::endl;
-				std::cout << "point_arr_start_pos : " << point_arr_start_pos << std::endl;
-				std::cout << "point_next_arr_bias : " << point_next_arr_bias << std::endl;
-
-				std::cout << "\n";
-				// SpotLight datas
-				std::cout << "spot_position_pos : " << spot_position_pos << std::endl;
-				std::cout << "spot_position_size : " << spot_position_size << std::endl;
-				std::cout << "spot_direction_pos : " << spot_direction_pos << std::endl;
-				std::cout << "spot_direction_size : " << spot_direction_size << std::endl;
-				std::cout << "spot_innerCutOff_pos : " << spot_innerCutOff_pos << std::endl;
-				std::cout << "spot_innerCutOff_size : " << spot_innerCutOff_size << std::endl;
-				std::cout << "spot_outerCutOff_pos : " << spot_outerCutOff_pos << std::endl;
-				std::cout << "spot_outerCutOff_size : " << spot_outerCutOff_size << std::endl;
-				std::cout << "spot_constant_pos : " << spot_constant_pos << std::endl;
-				std::cout << "spot_constant_size : " << spot_constant_size << std::endl;
-				std::cout << "spot_linear_pos : " << spot_linear_pos << std::endl;
-				std::cout << "spot_linear_size : " << spot_linear_size << std::endl;
-				std::cout << "spot_quadratic_pos : " << spot_quadratic_pos << std::endl;
-				std::cout << "spot_quadratic_size : " << spot_quadratic_size << std::endl;
-				std::cout << "spot_ambient_pos : " << spot_ambient_pos << std::endl;
-				std::cout << "spot_ambient_size : " << spot_ambient_size << std::endl;
-				std::cout << "spot_diffuse_pos : " << spot_diffuse_pos << std::endl;
-				std::cout << "spot_diffuse_size : " << spot_diffuse_size << std::endl;
-				std::cout << "spot_specular_pos : " << spot_specular_pos << std::endl;
-				std::cout << "spot_specular_size : " << spot_specular_size << std::endl;
-				std::cout << "spot_arr_start_pos : " << spot_arr_start_pos << std::endl;
-				std::cout << "spot_size : " << spot_size << std::endl;
-				std::cout << "spot_total_size : " << spot_total_size << std::endl;
-				std::cout << "spot_next_arr_bias : " << spot_next_arr_bias << std::endl;
 			}
 	};
 
@@ -1099,8 +1028,13 @@ namespace CustomHelper {
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->dir_depthMaps[index], 0);
 				if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
 					glm::vec3 lightPos = light.direction * -bias;
+					// Default set the up direction of lookup matrix to positive y
+					glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+					// If the light direction is parallel to y axis, set it to positive x
+					if (glm::abs(light.direction) == glm::vec3(0.0f, 1.0f, 0.0))
+						up = glm::vec3(1.0f, 0.0f, 0.0f);
 					glm::mat4 lightProjection = glm::ortho(-view_space, view_space, -view_space, view_space, 0.1f, far_plane);
-					glm::mat4 lightView = glm::lookAt(lightPos, lightPos + light.direction, glm::vec3(0.0f, 1.0f, 0.0f));
+					glm::mat4 lightView = glm::lookAt(lightPos, lightPos + light.direction, up);
 					glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 					
 					this->lightManager.editDirLight(light, index);
@@ -1165,8 +1099,13 @@ namespace CustomHelper {
 				glBindFramebuffer(GL_FRAMEBUFFER, this->framebuffer);
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->spot_depthMaps[index], 0);
 				if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+					// Default set the up direction of lookup matrix to positive y
+					glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+					// If the light direction is parallel to y axis, set it to positive x
+					if (glm::abs(light.direction) == glm::vec3(0.0f, 1.0f, 0.0))
+						up = glm::vec3(1.0f, 0.0f, 0.0f);
 					glm::mat4 lightProjection = glm::perspective(glm::radians(angle), static_cast<float>(this->spotMapResolution) / static_cast<float>(this->spotMapResolution), 0.1f, far_plane);
-					glm::mat4 lightView = glm::lookAt(light.position, light.position + light.direction, glm::vec3(0.0f, 1.0f, 0.0f));
+					glm::mat4 lightView = glm::lookAt(light.position, light.position + light.direction, up);
 					glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 					
 					this->lightManager.editSpotLight(light, index);

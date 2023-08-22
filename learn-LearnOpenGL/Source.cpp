@@ -452,7 +452,7 @@ int main(void) {
 
 
 	CustomHelper::BlinnPhongLight_direct shadowDirLight = {
-		glm::vec3(0.1f, -1.0f, 0.3f),
+		glm::vec3(0.0f, -1.0f, 0.0f),
 		glm::vec3(0.009f),
 		glm::vec3(0.02f),
 		glm::vec3(0.02f)
@@ -607,8 +607,9 @@ int main(void) {
 				// Draw Boxes
 				// Avoid peter panning by cull the front faces
 				glCullFace(GL_FRONT);
+				glm::mat4 model(1.0f);
 				for (unsigned int i = 0; i < containerPos.size(); i++) {
-					glm::mat4 model(1.0f);
+					model = glm::mat4(1.0f);
 					model = glm::translate(model, containerPos[i]);
 					model = glm::rotate(model, static_cast<float>(i), glm::vec3(1.0f, 2.0f, 0.5f));
 					model = glm::scale(model, glm::vec3(0.5f));
@@ -616,6 +617,7 @@ int main(void) {
 
 					glBindVertexArray(cubeVAO);
 					glDrawArrays(GL_TRIANGLES, 0, 36);
+				}
 				// Set culled faces as back faces
 				glCullFace(GL_BACK);
 
@@ -628,7 +630,6 @@ int main(void) {
 				glDrawArrays(GL_TRIANGLES, 0, 36);
 
 				glBindVertexArray(0);
-			}
 		};
 		globalShadowLightManager.updateDirLight(shadowDirLight, 0, 10.0f, 20.0f, 7.0f, shadowDrawFunction);
 		shadowPointLight1.position = glm::vec3(0.0f, 4.5f * glm::sin(static_cast<float>(glfwGetTime())), 0.0f);
@@ -786,7 +787,7 @@ int main(void) {
 
 		// Bind cubemap
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, screentexuture);
 
 		glBindVertexArray(cubemapVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -818,8 +819,6 @@ int main(void) {
 		viewDepthShader_pers.setFloat("near_plane", 0.1f);
 		viewDepthShader_pers.setFloat("far_plane", 10.0f);
 		*/
-			
-
 
 		glBindVertexArray(quadVAO);
 		glActiveTexture(GL_TEXTURE0);
