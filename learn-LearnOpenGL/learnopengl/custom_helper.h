@@ -1023,11 +1023,11 @@ namespace CustomHelper {
 				this->cube_bake_shader = shadow_bake_shader;
 			}
 
-			void updateDirLight(BlinnPhongLight_direct &light, const size_t index, const float view_space, const float far_plane, const float bias, std::function<void(Shader &)> shadow_bake_function) {
+			void updateDirLight(BlinnPhongLight_direct &light, const size_t index, const float view_space, const float far_plane, const float line_bias, const glm::vec3 pos_bias, std::function<void(Shader &)> shadow_bake_function) {
 				glBindFramebuffer(GL_FRAMEBUFFER, this->framebuffer);
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->dir_depthMaps[index], 0);
 				if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
-					glm::vec3 lightPos = light.direction * -bias;
+					glm::vec3 lightPos = light.direction * -line_bias + pos_bias;
 					// Default set the up direction of lookup matrix to positive y
 					glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 					// If the light direction is parallel to y axis, set it to positive x

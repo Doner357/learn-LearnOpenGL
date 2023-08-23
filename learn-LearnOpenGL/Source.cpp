@@ -631,7 +631,7 @@ int main(void) {
 
 				glBindVertexArray(0);
 		};
-		globalShadowLightManager.updateDirLight(shadowDirLight, 0, 10.0f, 20.0f, 7.0f, shadowDrawFunction);
+		globalShadowLightManager.updateDirLight(shadowDirLight, 0, 20.0f, 20.0f, 7.0f, camera.Position, shadowDrawFunction);
 		shadowPointLight1.position = glm::vec3(0.0f, 4.5f * glm::sin(static_cast<float>(glfwGetTime())), 0.0f);
 		globalShadowLightManager.updatePointLight(shadowPointLight1, 0, 25.0f, shadowDrawFunction);
 		shadowPointLight2.position = glm::vec3(0.0f, 0.01f, 4.5f * glm::sin(static_cast<float>(glfwGetTime())));
@@ -787,7 +787,7 @@ int main(void) {
 
 		// Bind cubemap
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, screentexuture);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
 
 		glBindVertexArray(cubemapVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
