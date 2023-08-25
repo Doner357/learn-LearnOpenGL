@@ -271,6 +271,9 @@
     <None Include="shaders\bake\depth_map\vertex\cube-depth_map.vert">
       <Filter>Resource Files\shaders\bake\depth_map\vertex</Filter>
     </None>
+    <None Include="shaders\shadow-lighting\fragment\global-shadow-lighting_normal-texture.frag">
+      <Filter>Resource Files\shaders\shadow-lighting\fragment</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">

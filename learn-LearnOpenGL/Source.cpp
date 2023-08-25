@@ -239,11 +239,9 @@ int main(void) {
 	 * Texture loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	unsigned int wood_diff = LoadTexture("textures/wood.jpg", true);
-	unsigned int common_spec = LoadTexture("textures/common_spec.jpg", false);
-
-	unsigned int container_diff = LoadTexture("textures/container2/container2.png", true);
-	unsigned int container_spec = LoadTexture("textures/container2/container2_specular.png", false);
+	unsigned int brickwall_diff = LoadTexture("textures/brickwall/brickwall.jpg", true);
+	unsigned int brickwall_spec = LoadTexture("textures/brickwall/brickwall_spec.jpg", false);
+	unsigned int brickwall_norm = LoadTexture("textures/brickwall/brickwall_normal.jpg", false);
 
 
 
@@ -251,6 +249,7 @@ int main(void) {
 	 * Cubemap loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
+
 	const std::string folder_path = "cubemaps/skybox/";
 	std::vector<std::string> faces = {
 		folder_path + "right.png",
@@ -271,16 +270,11 @@ int main(void) {
 	*/
 
 	Shader screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/regular_screen.frag");
-	Shader viewDepthShader_ortho("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/ortho_depth-map.frag");
-	Shader viewDepthShader_pers("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/perspect_depth-map.frag");
 	Shader skyboxShader("shaders/others/vertex/skybox.vert", "shaders/others/fragment/skybox.frag");
 	Shader lightCubeShader("shaders/others/vertex/light_cube.vert", "shaders/others/fragment/light_cube.frag");
-	Shader TexShader("shaders/shadow-lighting/vertex/lighting_point-shadow_texture.vert", "shaders/shadow-lighting/fragment/local-lighting_point-shadow_texture.frag");
-	Shader repeatTexShader("shaders/shadow-lighting/vertex/lighting_point-shadow_repeated-texture.vert", "shaders/shadow-lighting/fragment/local-lighting_point-shadow_texture.frag");
-	Shader modelShader("shaders/lighting/vertex/lighting_model.vert", "shaders/lighting/fragment/global-lighting_model.frag");
-	Shader simpleDepthShader("shaders/bake/depth_map/vertex/dir-depth_map.vert", "shaders/bake/depth_map/fragment/dir-depth_map.frag");
+	Shader dirDepthShader("shaders/bake/depth_map/vertex/dir-depth_map.vert", "shaders/bake/depth_map/fragment/dir-depth_map.frag");
 	Shader cubeDepthShader("shaders/bake/depth_map/vertex/cube-depth_map.vert", "shaders/bake/depth_map/fragment/cube-depth_map.frag", "shaders/bake/depth_map/geometry/cube-depth_map.geom");
-	Shader globalShadowTexShader("shaders/shadow-lighting/vertex/global-shadow-lighting_texture.vert", "shaders/shadow-lighting/fragment/global-shadow-lighting_texture.frag");
+	Shader globalShadowTexShader("shaders/shadow-lighting/vertex/global-shadow-lighting_texture.vert", "shaders/shadow-lighting/fragment/global-shadow-lighting_normal-texture.frag");
 
 
 
@@ -297,32 +291,11 @@ int main(void) {
 	screenShader.setInt("screenTexture", 0);
 
 
-	viewDepthShader_ortho.use();
-	viewDepthShader_ortho.setInt("screenTexture", 0);
-
-
-	viewDepthShader_pers.use();
-	viewDepthShader_pers.setInt("screenTexture", 0);
-
-
-	repeatTexShader.use();
-	repeatTexShader.setInt("material.diffuse", 0);
-	repeatTexShader.setInt("material.specular", 1);
-	repeatTexShader.setInt("pointLight_sh.shadowMap", 2);
-	repeatTexShader.setFloat("material.shininess", 1024);
-
-
-	TexShader.use();
-	TexShader.setInt("material.diffuse", 0);
-	TexShader.setInt("material.specular", 1);
-	TexShader.setInt("pointLight_sh.shadowMap", 2);
-	TexShader.setFloat("material.shininess", 2048.0f);
-
-
 	globalShadowTexShader.use();
-	globalShadowTexShader.setInt("material.diffuse", 0);
-	globalShadowTexShader.setInt("material.specular", 1);
-	globalShadowTexShader.setFloat("material.shininess", 2048.0f);
+	globalShadowTexShader.setInt("material.diffuse", CustomHelper::SAMPLER_DIFFUSE);
+	globalShadowTexShader.setInt("material.specular", CustomHelper::SAMPLER_SPECULAR);
+	globalShadowTexShader.setInt("material.normal", CustomHelper::SAMPLER_NORMAL);
+	globalShadowTexShader.setFloat("material.shininess", 256.0f);
 
 
 	glUseProgram(0);
@@ -338,16 +311,12 @@ int main(void) {
 	CustomHelper::CameraMatricesManager cameraMatManager(CustomHelper::UBOPOINT_NAME_CAMERA_MATRICES, CustomHelper::UBOPOINT_CAMERA_MATRICES);
 	cameraMatManager.registerShader(skyboxShader);
 	cameraMatManager.registerShader(lightCubeShader);
-	cameraMatManager.registerShader(TexShader);
-	cameraMatManager.registerShader(repeatTexShader);
-	cameraMatManager.registerShader(modelShader);
 	cameraMatManager.registerShader(globalShadowTexShader);
 
 	// Global light uniform block
 	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING, CustomHelper::UBOPOINT_BLINPHONG_LIGHTING, CustomHelper::MAX_NUM_DIRECTIONALLIGHT, CustomHelper::MAX_NUM_POINTLIGHT, CustomHelper::MAX_NUM_SPOTLIGHT);
 	//globalLightManager.registerShader(TexShader);
 	//globalLightManager.registerShader(repeatTexShader);
-	globalLightManager.registerShader(modelShader);
 	globalLightManager.registerShader(globalShadowTexShader);
 
 	// Global light with shadow uniform block
@@ -370,9 +339,6 @@ int main(void) {
 	// Gamma Correction uniform block
 	CustomHelper::GammaManager gammaManager(CustomHelper::UBOPOINT_NAME_GAMMA_CORRECTION, CustomHelper::UBOPOINT_GAMMA_CORRECTION);
 	gammaManager.registerShader(lightCubeShader);
-	gammaManager.registerShader(TexShader);
-	gammaManager.registerShader(repeatTexShader);
-	gammaManager.registerShader(modelShader);
 	gammaManager.registerShader(globalShadowTexShader);
 
 
@@ -390,25 +356,9 @@ int main(void) {
 
 
 	/*
-	 * Depth map creating
-	 * --------------------------------------------------------------------------------------------------------------------
-	 */
-
-
-
-	/*
 	 * Others data calculation
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	std::vector<glm::vec3> containerPos = {
-		glm::vec3(0.0f, -2.0f, -2.0f),
-		glm::vec3(1.0f, 1.0f, 3.0f),
-		glm::vec3(0.0f, 3.0f, -4.0f),
-		glm::vec3(-4.0f, -1.5f, 0.0f),
-		glm::vec3(3.0f, 4.0f, 0.0f),
-		glm::vec3(-4.0f, 4.0f, 4.0f),
-		glm::vec3( 2.0f, 0.0f, 0.0f)
-	};
 
 
 
@@ -427,7 +377,16 @@ int main(void) {
 	unsigned int num_of_spotLight = 0;
 
 	// Manual setting part
-
+	pointLight = {
+		glm::vec3(0.0f, 0.001f, 0.0f),
+		0.0f,
+		0.0f,
+		1.0f,
+		glm::vec3(0.2f),
+		glm::vec3(0.8f),
+		glm::vec3(1.0f)
+	};
+	globalLightManager.updatePointLight(pointLight, num_of_pointLight++);
 
 	// Random generate part
 	unsigned int num_of_random_dirLight = 0;
@@ -439,88 +398,17 @@ int main(void) {
 	float appear_hieght = 4.0f;
 	for (unsigned int i = 0; i < num_of_random_dirLight; i++) {
 		dirLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_dirLight(glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(0.5f), glm::vec3(0.5f));
-		globalLightManager.editDirLight(dirLight, num_of_dirLight++);
+		globalLightManager.updateDirLight(dirLight, num_of_dirLight++);
 	}
 	for (unsigned int i = 0; i < num_of_random_pointLight; i++) {
 		pointLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_pointLight(glm::vec3(-appear_area, 1.0f, -appear_area), glm::vec3(appear_area, appear_hieght, appear_area));
-		globalLightManager.editPointLight(pointLight, num_of_pointLight++);
+		globalLightManager.updatePointLight(pointLight, num_of_pointLight++);
 	}
 	for (unsigned int i = 0; i < num_of_random_spotLight; i++) {
 		spotLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_spotLight(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(-appear_area, 5.0f, -appear_area), glm::vec3(appear_area, 5.0f, appear_area), 12.5f, 90.0f);
-		globalLightManager.editSpotLight(spotLight, num_of_spotLight++);
+		globalLightManager.updateSpotLight(spotLight, num_of_spotLight++);
 	}
 
-
-	CustomHelper::BlinnPhongLight_direct shadowDirLight = {
-		glm::vec3(0.0f, -1.0f, 0.0f),
-		glm::vec3(0.009f),
-		glm::vec3(0.02f),
-		glm::vec3(0.02f)
-	};
-
-	CustomHelper::BlinnPhongLight_point shadowPointLight1 = {
-		glm::vec3(0.0f, 0.5f, 0.0f),
-		0.0f,
-		0.0f,
-		1.0f,
-		glm::vec3(0.2f) * 0.2f,
-		glm::vec3(0.8f) * 0.5f,
-		glm::vec3(1.0f) * 0.5f
-	};
-	CustomHelper::BlinnPhongLight_point shadowPointLight2 = {
-		glm::vec3(0.0f, 0.5f, 0.0f),
-		0.0f,
-		0.0f,
-		1.0f,
-		glm::vec3(0.0f, 0.2f, 0.2f) * 0.2f,
-		glm::vec3(0.0f, 1.0f, 1.0f) * 0.5f,
-		glm::vec3(0.0f, 1.0f, 1.0f) * 0.5f
-	};
-	CustomHelper::BlinnPhongLight_point shadowPointLight3 = {
-		glm::vec3(0.0f, 0.5f, 0.0f),
-		0.0f,
-		0.0f,
-		1.0f,
-		glm::vec3(0.2f, 0.0f, 0.2f) * 0.2f,
-		glm::vec3(1.0f, 0.0f, 1.0f) * 0.5f,
-		glm::vec3(1.0f, 0.0f, 1.0f) * 0.5f
-	};
-
-	CustomHelper::BlinnPhongLight_point shadowPointLight4 = {
-		glm::vec3(0.0f, 0.5f, 0.0f),
-		0.0f,
-		0.0f,
-		1.0f,
-		glm::vec3(0.2f, 0.2f, 0.0f) * 0.2f,
-		glm::vec3(1.0f, 1.0f, 0.0f) * 0.5f,
-		glm::vec3(1.0f, 1.0f, 0.0f) * 0.5f
-	};
-
-	CustomHelper::BlinnPhongLight_spot shadowSpotLight1 = {
-		glm::vec3(1.0f, 0.0f, 0.0f),
-		glm::vec3(-4.0f, -0.3f, 0.0f),
-		glm::cos(glm::radians(45.5f)),
-		glm::cos(glm::radians(48.5f)),
-		0.0f,
-		0.0f,
-		1.0f,
-		glm::vec3(0.2f, 0.0f, 0.0f) * 0.2f,
-		glm::vec3(1.0f, 0.0f, 0.0f) * 0.5f,
-		glm::vec3(1.0f, 0.0f, 0.0f) * 0.5f
-	};
-
-	CustomHelper::BlinnPhongLight_spot shadowSpotLight2 = {
-		glm::vec3(0.0f, 0.0f, 1.0f),
-		glm::vec3(-4.0f, -0.3f, 0.0f),
-		glm::cos(glm::radians(45.5f)),
-		glm::cos(glm::radians(48.5f)),
-		0.0f,
-		0.0f,
-		1.0f,
-		glm::vec3(0.2f, 0.1f, 0.2f) * 0.2f,
-		glm::vec3(1.0f, 0.5f, 1.0f) * 0.5f,
-		glm::vec3(1.0f, 0.5f, 1.0f) * 0.5f
-	};
 
 
 	/*
@@ -603,48 +491,7 @@ int main(void) {
 		//--------------------------
 
 		std::function<void(Shader &)> shadowDrawFunction;
-		shadowDrawFunction = [=](Shader &shader) {
-				// Draw Boxes
-				// Avoid peter panning by cull the front faces
-				glCullFace(GL_FRONT);
-				glm::mat4 model(1.0f);
-				for (unsigned int i = 0; i < containerPos.size(); i++) {
-					model = glm::mat4(1.0f);
-					model = glm::translate(model, containerPos[i]);
-					model = glm::rotate(model, static_cast<float>(i), glm::vec3(1.0f, 2.0f, 0.5f));
-					model = glm::scale(model, glm::vec3(0.5f));
-					shader.setMat4("model", model);
-
-					glBindVertexArray(cubeVAO);
-					glDrawArrays(GL_TRIANGLES, 0, 36);
-				}
-				// Set culled faces as back faces
-				glCullFace(GL_BACK);
-
-				// Draw room
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-				model = glm::scale(model, glm::vec3(5.0f));
-				shader.setMat4("model", model);
-				glBindVertexArray(roomVAO);
-				glDrawArrays(GL_TRIANGLES, 0, 36);
-
-				glBindVertexArray(0);
-		};
-		globalShadowLightManager.updateDirLight(shadowDirLight, 0, 20.0f, 20.0f, 7.0f, camera.Position, shadowDrawFunction);
-		shadowPointLight1.position = glm::vec3(0.0f, 4.5f * glm::sin(static_cast<float>(glfwGetTime())), 0.0f);
-		globalShadowLightManager.updatePointLight(shadowPointLight1, 0, 25.0f, shadowDrawFunction);
-		shadowPointLight2.position = glm::vec3(0.0f, 0.01f, 4.5f * glm::sin(static_cast<float>(glfwGetTime())));
-		globalShadowLightManager.updatePointLight(shadowPointLight2, 1, 25.0f, shadowDrawFunction);
-		shadowPointLight4.position = glm::vec3(4.5f * glm::cos(static_cast<float>(glfwGetTime())), 0.01f, 4.5f * glm::sin(static_cast<float>(glfwGetTime())));
-		globalShadowLightManager.updatePointLight(shadowPointLight4, 3, 25.0f, shadowDrawFunction);
-		shadowPointLight3.position = glm::vec3(4.5f * glm::sin(static_cast<float>(glfwGetTime())), 0.01f, 0.0f);
-		globalShadowLightManager.updatePointLight(shadowPointLight3, 2, 25.0f, shadowDrawFunction);
-		shadowSpotLight1.position = glm::vec3(4.0f * glm::sin(glfwGetTime()), 0.01f, 0.0f);
-		// The fov of spot light should double the angle of outerCutOff
-		globalShadowLightManager.updateSpotLight(shadowSpotLight1, 0, 97.0f, 10.0f, shadowDrawFunction);
-		shadowSpotLight2.position = glm::vec3(0.0f, 0.01f, 4.0f * glm::sin(glfwGetTime()));
-		globalShadowLightManager.updateSpotLight(shadowSpotLight2, 1, 97.0f, 10.0f, shadowDrawFunction);
+		shadowDrawFunction = [=](Shader &shader) {};
 		globalShadowLightManager.bindShadowMaps();
 
 
@@ -663,117 +510,39 @@ int main(void) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-		// Draw boxes
 		globalShadowTexShader.use();
-
-		// Light space transform matrix
+		// Vertical wall
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, container_diff);
+		glBindTexture(GL_TEXTURE_2D, brickwall_diff);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, container_spec);
-
-		for (unsigned int i = 0; i < containerPos.size(); i++) {
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, containerPos[i]);
-			model = glm::rotate(model, static_cast<float>(i), glm::vec3(1.0f, 2.0f, 0.5f));
-			model = glm::scale(model, glm::vec3(0.5f));
-			normalMat = CustomHelper::CalculateNormalMat(model);
-			globalShadowTexShader.setMat4("model", model);
-			globalShadowTexShader.setMat3("normalMat", normalMat);
-			globalShadowTexShader.setVec3("viewPos", camera.Position);
-
-			glBindVertexArray(cubeVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
-
-		// Draw room
-		globalShadowTexShader.use();
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, wood_diff);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, common_spec);
-
+		glBindTexture(GL_TEXTURE_2D, brickwall_spec);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, brickwall_norm);
 		model = glm::mat4(1.0f);
-		normalMat = glm::mat3(1.0f);
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(5.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, -1.0f));
 		normalMat = CustomHelper::CalculateNormalMat(model);
 		globalShadowTexShader.setMat4("model", model);
 		globalShadowTexShader.setMat3("normalMat", normalMat);
 		globalShadowTexShader.setVec3("viewPos", camera.Position);
-
-		glBindVertexArray(roomVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// Draw light cube
-		lightCubeShader.use();
-		glBindVertexArray(cubeVAO);
+		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		// Level ground
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, shadowSpotLight1.position);
-		model = glm::scale(model, glm::vec3(0.05f));
-		lightCubeShader.setMat4("model", model);
-		lightCubeShader.setVec3("lightColor", shadowSpotLight1.specular * 1.2f);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		glBindVertexArray(cubeVAO);
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, shadowSpotLight2.position);
-		model = glm::scale(model, glm::vec3(0.05f));
-		lightCubeShader.setMat4("model", model);
-		lightCubeShader.setVec3("lightColor", shadowSpotLight2.specular * 1.2f);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		glBindVertexArray(cubeVAO);
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, shadowPointLight1.position);
-		model = glm::scale(model, glm::vec3(0.05f));
-		lightCubeShader.setMat4("model", model);
-		lightCubeShader.setVec3("lightColor", shadowPointLight1.specular * 1.2f);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		glBindVertexArray(cubeVAO);
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, shadowPointLight2.position);
-		model = glm::scale(model, glm::vec3(0.05f));
-		lightCubeShader.setMat4("model", model);
-		lightCubeShader.setVec3("lightColor", shadowPointLight2.specular * 1.2f);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		glBindVertexArray(cubeVAO);
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, shadowPointLight3.position);
-		model = glm::scale(model, glm::vec3(0.05f));
-		lightCubeShader.setMat4("model", model);
-		lightCubeShader.setVec3("lightColor", shadowPointLight3.specular * 1.2f);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		glBindVertexArray(cubeVAO);
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, shadowPointLight4.position);
-		model = glm::scale(model, glm::vec3(0.05f));
-		lightCubeShader.setMat4("model", model);
-		lightCubeShader.setVec3("lightColor", shadowPointLight4.specular * 1.2f);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		normalMat = CustomHelper::CalculateNormalMat(model);
+		globalShadowTexShader.setMat4("model", model);
+		globalShadowTexShader.setMat3("normalMat", normalMat);
+		globalShadowTexShader.setVec3("viewPos", camera.Position);
+		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
 
-		glBindVertexArray(0);
-		glUseProgram(0);
-
-		// Draw light cube
-		/*
 		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.05f);
-		*/
-		// Draw floor
-		/*
-		CustomHelper::DrawTexFloor(quadVAO, repeatTexShader, camera.Position, wood_diff, common_spec, 1024.0f, glm::vec3(0.0f, -1.0f, 0.0f), 30.0f, 10);
-		*/
 
 		glBindVertexArray(0);
 		glUseProgram(0);
-
 
 
 		// skybox
@@ -814,16 +583,10 @@ int main(void) {
 		//-------------------------
 		
 		screenShader.use();
-		/*
-		viewDepthShader_pers.use();
-		viewDepthShader_pers.setFloat("near_plane", 0.1f);
-		viewDepthShader_pers.setFloat("far_plane", 10.0f);
-		*/
 
 		glBindVertexArray(quadVAO);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, screentexuture);
-		//glBindTexture(GL_TEXTURE_2D, globalShadowLightManager.getSpotDepthMap(0));
 
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
@@ -843,12 +606,7 @@ int main(void) {
 	vaoManager.clean();
 	screenShader.clear();
 	skyboxShader.clear();
-	TexShader.clear();
-	repeatTexShader.clear();
-	modelShader.clear();
-	simpleDepthShader.clear();
-	viewDepthShader_ortho.clear();
-	viewDepthShader_pers.clear();
+	dirDepthShader.clear();
 	cubeDepthShader.clear();
 	glDeleteFramebuffers(1, &ms_Framebuffer);
 	glDeleteFramebuffers(1, &screenFramebuffer);

@@ -61,6 +61,7 @@ namespace CustomHelper {
 	enum ShaderSamplerNum {
 		SAMPLER_DIFFUSE = 0,
 		SAMPLER_SPECULAR = 1,
+		SAMPLER_NORMAL = 2,
 		SAMPLER_DIRSHADOW0 = 5,
 		SAMPLER_POINTSHADOW0 = 6,
 		SAMPLER_POINTSHADOW1 = 7,
@@ -512,10 +513,10 @@ namespace CustomHelper {
 			}
 
 			// edit three type of lights : directional light
-			bool editDirLight(BlinnPhongLight_direct &light_data, const size_t index) {
+			bool updateDirLight(BlinnPhongLight_direct &light_data, const size_t index) {
 				bool success = false;
 				if (index < max_of_dirLight) {
-					if (updateDirLight(light_data, index)) {
+					if (editDirLight(light_data, index)) {
 						dirLights[index] = light_data;
 						success = true;
 					}
@@ -528,10 +529,10 @@ namespace CustomHelper {
 			}
 
 			// edit three type of lights : point light
-			bool editPointLight(BlinnPhongLight_point &light_data, const size_t index) {
+			bool updatePointLight(BlinnPhongLight_point &light_data, const size_t index) {
 				bool success = false;
 				if (index < max_of_pointLight) {
-					if (updatePointLight(light_data, index)) {
+					if (editPointLight(light_data, index)) {
 						pointLights[index] = light_data;
 						success = true;
 					}
@@ -544,10 +545,10 @@ namespace CustomHelper {
 			}
 
 			// edit three type of lights : spot light
-			bool editSpotLight(BlinnPhongLight_spot &light_data, const size_t index) {
+			bool updateSpotLight(BlinnPhongLight_spot &light_data, const size_t index) {
 				bool success = false;
 				if (index < max_of_spotLight) {
-					if (updateSpotLight(light_data, index)) {
+					if (editSpotLight(light_data, index)) {
 							spotLights[index] = light_data;
 							success = true;
 					}
@@ -673,7 +674,7 @@ namespace CustomHelper {
 			}
 			
 			// Update the directional light data
-			bool updateDirLight(BlinnPhongLight_direct &light_data, const size_t index) {
+			bool editDirLight(BlinnPhongLight_direct &light_data, const size_t index) {
 				bool success = false;
 
 				// Map the uniform buffer and get its address
@@ -702,7 +703,7 @@ namespace CustomHelper {
 			}
 
 			// Update the point light data
-			bool updatePointLight(BlinnPhongLight_point &light_data, const size_t index) {
+			bool editPointLight(BlinnPhongLight_point &light_data, const size_t index) {
 				bool success = false;
 
 				// Map the uniform buffer and get its address
@@ -734,7 +735,7 @@ namespace CustomHelper {
 			}
 
 			// Update the spot light data
-			bool updateSpotLight(BlinnPhongLight_spot &light_data, const size_t index) {
+			bool editSpotLight(BlinnPhongLight_spot &light_data, const size_t index) {
 				bool success = false;
 
 				// Map the uniform buffer and get its address
@@ -1037,7 +1038,7 @@ namespace CustomHelper {
 					glm::mat4 lightView = glm::lookAt(lightPos, lightPos + light.direction, up);
 					glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 					
-					this->lightManager.editDirLight(light, index);
+					this->lightManager.updateDirLight(light, index);
 					this->matricesManager.updateDirLightMat(lightSpaceMatrix, index);
 
 					glViewport(0, 0, this->dirMapResolution, this->dirMapResolution);
@@ -1072,7 +1073,7 @@ namespace CustomHelper {
 						lightProjection * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
 					};
 
-					this->lightManager.editPointLight(light, index);
+					this->lightManager.updatePointLight(light, index);
 					this->farPlaneManager.updateFarPlane(far_plane, index);
 
 					glViewport(0, 0, this->pointMapResolution, this->pointMapResolution);
@@ -1108,7 +1109,7 @@ namespace CustomHelper {
 					glm::mat4 lightView = glm::lookAt(light.position, light.position + light.direction, up);
 					glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 					
-					this->lightManager.editSpotLight(light, index);
+					this->lightManager.updateSpotLight(light, index);
 					this->matricesManager.updateSpotLightMat(lightSpaceMatrix, index);
 
 					glViewport(0, 0, this->spotMapResolution, this->spotMapResolution);
