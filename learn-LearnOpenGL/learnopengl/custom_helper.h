@@ -164,14 +164,14 @@ namespace CustomHelper {
 	};
 
 	const float quadVertices[] = {
-		// postions		 // normal				// texture Coords
-		 1.0f,  1.0f,	 0.0f,  0.0f,  1.0f,	1.0f,  1.0f,
-		-1.0f,  1.0f,	 0.0f,  0.0f,  1.0f,	0.0f,  1.0f,
-		-1.0f, -1.0f,	 0.0f,  0.0f,  1.0f,	0.0f,  0.0f,
+		// positions			// normal				// texture Coords
+		 1.0f,  1.0f,  0.0f,	 0.0f,  0.0f,  1.0f,	1.0f,  1.0f,
+		-1.0f,  1.0f,  0.0f,	 0.0f,  0.0f,  1.0f,	0.0f,  1.0f,
+		-1.0f, -1.0f,  0.0f,	 0.0f,  0.0f,  1.0f,	0.0f,  0.0f,
 
-		 1.0f, -1.0f,	 0.0f,  0.0f,  1.0f,	1.0f,  0.0f,
-		 1.0f,  1.0f,	 0.0f,  0.0f,  1.0f,	1.0f,  1.0f,
-		-1.0f, -1.0f,	 0.0f,  0.0f,  1.0f,	0.0f,  0.0f
+		 1.0f, -1.0f,  0.0f,	 0.0f,  0.0f,  1.0f,	1.0f,  0.0f,
+		 1.0f,  1.0f,  0.0f,	 0.0f,  0.0f,  1.0f,	1.0f,  1.0f,
+		-1.0f, -1.0f,  0.0f,	 0.0f,  0.0f,  1.0f,	0.0f,  0.0f
 	};
 
 	const float skyboxVertices[] = {
@@ -310,11 +310,11 @@ namespace CustomHelper {
 				glBindBuffer(GL_ARRAY_BUFFER, VBO);
 				glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices[0], GL_STATIC_DRAW);
 				glEnableVertexAttribArray(0);
-				glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
+				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 				glEnableVertexAttribArray(1);
-				glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(2 * sizeof(float)));
+				glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 				glEnableVertexAttribArray(2);
-				glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(5 * sizeof(float)));
+				glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 				glBindVertexArray(0);
 				glBindBuffer(GL_ARRAY_BUFFER, 0);
 				glDeleteBuffers(1, &VBO);

@@ -6,6 +6,7 @@ in VS_OUT {
 	vec2 texCoords;
 	vec4 dirLightSpacePos[1];
 	vec4 spotLightSpacePos[2];
+	mat3 TBN;
 } fs_in;
 
 out vec4 FragColor;
@@ -129,6 +130,7 @@ void main() {
 	// Properties
 	vec3 normal = texture(material.normal, fs_in.texCoords).rgb;
 	normal = normalize(normal * 2.0 - 1.0);
+	normal = normalize(fs_in.TBN * normal);
 	vec3 viewDir = normalize(viewPos - fs_in.fragPos);
 	vec3 result = vec3(0.0);
 
