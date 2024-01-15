@@ -155,6 +155,8 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\lighting\vertex\lighting_normal-texture.vert" />
+    <None Include="shaders\lighting\fragment\local-lighting_normal-texture.frag" />
     <None Include="shaders\shadow-lighting\vertex\global-shadow-lighting_normal-texture.vert" />
     <None Include="shaders\shadow-lighting\fragment\global-shadow-lighting_normal-texture.frag" />
     <None Include="shaders\shadow-lighting\fragment\global-shadow-lighting_texture.frag" />

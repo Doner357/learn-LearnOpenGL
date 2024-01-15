@@ -98,6 +98,9 @@ private:
 				vector.z = mesh->mNormals[i].z;
 				vertex.Normal = vector;
 			}
+			else {
+				vertex.Normal = glm::vec3(0.0f, 0.0f, 0.0f);
+			}
 
 			// Load texture coords
 			if (mesh->mTextureCoords[0]) {
@@ -106,8 +109,9 @@ private:
 				vec.y = mesh->mTextureCoords[0][i].y;
 				vertex.TexCoords = vec;
 			}
-			else
+			else {
 				vertex.TexCoords = glm::vec2(0.0f, 0.0f);
+			}
 
 			if (mesh->HasTangentsAndBitangents()) {
 				// tangent
