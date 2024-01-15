@@ -368,8 +368,6 @@ int main(void) {
 	Shader cubeDepthShader("shaders/bake/depth_map/vertex/cube-depth_map.vert", "shaders/bake/depth_map/fragment/cube-depth_map.frag", "shaders/bake/depth_map/geometry/cube-depth_map.geom");
 	// The shader transfer tangent space normal to world space normal
 	Shader globalShadowTexShader("shaders/shadow-lighting/vertex/global-shadow-lighting_normal-texture.vert", "shaders/shadow-lighting/fragment/global-shadow-lighting_normal-texture.frag");
-	// The shader transfer view position, light position, fragment position...ect to tangent space
-	Shader localNormalTexShader("shaders/lighting/vertex/lighting_normal-texture.vert", "shaders/lighting/fragment/local-lighting_normal-texture.frag");
 
 
 	/*
@@ -390,15 +388,6 @@ int main(void) {
 	globalShadowTexShader.setInt("material.normal", CustomHelper::SAMPLER_NORMAL);
 	globalShadowTexShader.setFloat("material.shininess", 256.0f);
 
-	localNormalTexShader.use();
-	localNormalTexShader.setInt("material.diffuse", CustomHelper::SAMPLER_DIFFUSE);
-	localNormalTexShader.setInt("material.specular", CustomHelper::SAMPLER_SPECULAR);
-	localNormalTexShader.setInt("material.normal", CustomHelper::SAMPLER_NORMAL);
-	localNormalTexShader.setFloat("material.shininess", 256.0f);
-	localNormalTexShader.setVec3("pointlight.ambient", glm::vec3(0.2f));
-	localNormalTexShader.setVec3("pointlight.diffuse", glm::vec3(0.8f));
-	localNormalTexShader.setVec3("pointlight.specular", glm::vec3(1.0f));
-
 
 
 	glUseProgram(0);
@@ -415,7 +404,6 @@ int main(void) {
 	cameraMatManager.registerShader(skyboxShader);
 	cameraMatManager.registerShader(lightCubeShader);
 	cameraMatManager.registerShader(globalShadowTexShader);
-	cameraMatManager.registerShader(localNormalTexShader);
 
 	// Global light uniform block
 	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING, CustomHelper::UBOPOINT_BLINPHONG_LIGHTING, CustomHelper::MAX_NUM_DIRECTIONALLIGHT, CustomHelper::MAX_NUM_POINTLIGHT, CustomHelper::MAX_NUM_SPOTLIGHT);
@@ -444,7 +432,6 @@ int main(void) {
 	CustomHelper::GammaManager gammaManager(CustomHelper::UBOPOINT_NAME_GAMMA_CORRECTION, CustomHelper::UBOPOINT_GAMMA_CORRECTION);
 	gammaManager.registerShader(lightCubeShader);
 	gammaManager.registerShader(globalShadowTexShader);
-	gammaManager.registerShader(localNormalTexShader);
 
 
 
@@ -482,16 +469,8 @@ int main(void) {
 	unsigned int num_of_spotLight = 0;
 
 	// Manual setting part
-	pointLight = {
-		glm::vec3(0.0f, 0.001f, 0.0f),
-		0.0f,
-		0.0f,
-		1.0f,
-		glm::vec3(0.2f),
-		glm::vec3(0.8f),
-		glm::vec3(1.0f)
-	};
-	globalLightManager.updatePointLight(pointLight, num_of_pointLight++);
+
+
 
 	// Random generate part
 	unsigned int num_of_random_dirLight = 0;
@@ -633,70 +612,6 @@ int main(void) {
 		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		if (tangent_to_world_shader) {
-			globalShadowTexShader.use();
-
-			// Vertical wall
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, brickwall_diff);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, brickwall_spec);
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, brickwall_norm);
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(0.0f, 0.0f, -1.0f));
-			normalMat = CustomHelper::CalculateNormalMat(model);
-			globalShadowTexShader.setMat4("model", model);
-			globalShadowTexShader.setMat3("normalMat", normalMat);
-			globalShadowTexShader.setVec3("viewPos", camera.Position);
-			glBindVertexArray(normQuadVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-			// Level ground
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
-			model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-			normalMat = CustomHelper::CalculateNormalMat(model);
-			globalShadowTexShader.setMat4("model", model);
-			globalShadowTexShader.setMat3("normalMat", normalMat);
-			globalShadowTexShader.setVec3("viewPos", camera.Position);
-			glBindVertexArray(normQuadVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-		}
-		else {
-			localNormalTexShader.use();
-
-			// Set light position
-			localNormalTexShader.setVec3("lightPos", glm::vec3(0.0f, 0.001f, 0.0f));
-
-			// Vertical wall
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, brickwall_diff);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, brickwall_spec);
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, brickwall_norm);
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(0.0f, 0.0f, -1.0f));
-			normalMat = CustomHelper::CalculateNormalMat(model);
-			localNormalTexShader.setMat4("model", model);
-			localNormalTexShader.setMat3("normalMat", normalMat);
-			localNormalTexShader.setVec3("viewPos", camera.Position);
-			glBindVertexArray(normQuadVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-			// Level ground
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
-			model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-			normalMat = CustomHelper::CalculateNormalMat(model);
-			localNormalTexShader.setMat4("model", model);
-			localNormalTexShader.setMat3("normalMat", normalMat);
-			localNormalTexShader.setVec3("viewPos", camera.Position);
-			glBindVertexArray(normQuadVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-		}
-
-
-		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.05f);
 
 		glBindVertexArray(0);
 		glUseProgram(0);
@@ -802,14 +717,6 @@ void processInput(GLFWwindow *window) {
 		camera.ProcessKeyboard(CAMERA_UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
-		tangent_to_world_shader = true;
-		std::cout << "Transfer normal from tangent space to world space" << std::endl;
-	}
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
-		tangent_to_world_shader = false;
-		std::cout << "Transfer lighting datas from world space to tangent space" << std::endl;
-	}
 }
 
 // glfw: whenever the mouse moves, this callback is called
