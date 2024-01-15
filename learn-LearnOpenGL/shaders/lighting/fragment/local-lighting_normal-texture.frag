@@ -57,7 +57,7 @@ void main() {
 }
 
 vec3 CalcLight(Light pointlight, vec3 lightDir, vec3 viewDir, vec3 norm) {
-    vec3 halfwayDir = normalize(viewDir + norm);
+    vec3 halfwayDir = normalize(viewDir + lightDir);
 
     // ambient
     vec3 ambient = pointlight.ambient * texture(material.diffuse, fs_in.texCoords).rgb;
@@ -68,7 +68,7 @@ vec3 CalcLight(Light pointlight, vec3 lightDir, vec3 viewDir, vec3 norm) {
 
     // specular
     vec3 reflectDir = reflect(-lightDir, norm);
-    float spec = pow(max(dot(halfwayDir, reflectDir), 0.0), material.shininess);
+    float spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
     spec = diff != 0.0 ? spec : 0.0;
     vec3 specular = pointlight.specular * spec * texture(material.specular, fs_in.texCoords).rgb;
 
