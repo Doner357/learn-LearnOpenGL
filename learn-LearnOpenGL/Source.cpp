@@ -217,6 +217,7 @@ int main(void) {
 	 * Model loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
+	Model backpack("models/backpack/backpack.obj", true);
 
 
 
@@ -368,6 +369,8 @@ int main(void) {
 	Shader cubeDepthShader("shaders/bake/depth_map/vertex/cube-depth_map.vert", "shaders/bake/depth_map/fragment/cube-depth_map.frag", "shaders/bake/depth_map/geometry/cube-depth_map.geom");
 	// The shader transfer tangent space normal to world space normal
 	Shader globalShadowTexShader("shaders/shadow-lighting/vertex/global-shadow-lighting_normal-texture.vert", "shaders/shadow-lighting/fragment/global-shadow-lighting_normal-texture.frag");
+	// Model normal mapping shader
+	Shader globalShadowModelShader("shaders/shadow-lighting/vertex/global-shadow-lighting_ipv-normal-model.vert", "shaders/shadow-lighting/fragment/global-shadow-lighting_normal-model.frag");
 
 
 	/*
@@ -404,12 +407,14 @@ int main(void) {
 	cameraMatManager.registerShader(skyboxShader);
 	cameraMatManager.registerShader(lightCubeShader);
 	cameraMatManager.registerShader(globalShadowTexShader);
+	cameraMatManager.registerShader(globalShadowModelShader);
 
 	// Global light uniform block
 	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING, CustomHelper::UBOPOINT_BLINPHONG_LIGHTING, CustomHelper::MAX_NUM_DIRECTIONALLIGHT, CustomHelper::MAX_NUM_POINTLIGHT, CustomHelper::MAX_NUM_SPOTLIGHT);
 	//globalLightManager.registerShader(TexShader);
 	//globalLightManager.registerShader(repeatTexShader);
 	globalLightManager.registerShader(globalShadowTexShader);
+	globalLightManager.registerShader(globalShadowModelShader);
 
 	// Global light with shadow uniform block
 	CustomHelper::GlobalBlinnPongShadowLightManager globalShadowLightManager(
@@ -427,11 +432,13 @@ int main(void) {
 		1024
 	);
 	globalShadowLightManager.registerShader(globalShadowTexShader);
+	globalShadowLightManager.registerShader(globalShadowModelShader);
 
 	// Gamma Correction uniform block
 	CustomHelper::GammaManager gammaManager(CustomHelper::UBOPOINT_NAME_GAMMA_CORRECTION, CustomHelper::UBOPOINT_GAMMA_CORRECTION);
 	gammaManager.registerShader(lightCubeShader);
 	gammaManager.registerShader(globalShadowTexShader);
+	gammaManager.registerShader(globalShadowModelShader);
 
 
 
@@ -460,16 +467,21 @@ int main(void) {
 	 */
 
 	// Setting global light data
-	CustomHelper::BlinnPhongLight_direct dirLight;
-	CustomHelper::BlinnPhongLight_point pointLight;
-	CustomHelper::BlinnPhongLight_spot spotLight;
+	CustomHelper::BlinnPhongLight_direct dirLight = {};
+	CustomHelper::BlinnPhongLight_point pointLight = {};
+	CustomHelper::BlinnPhongLight_spot spotLight = {};
 	// Number of each type light
 	unsigned int num_of_dirLight = 0;
 	unsigned int num_of_pointLight = 0;
 	unsigned int num_of_spotLight = 0;
 
 	// Manual setting part
-
+	pointLight.ambient = glm::vec3(0.2f);
+	pointLight.diffuse = glm::vec3(0.8f);
+	pointLight.specular = glm::vec3(1.0f);
+	pointLight.quadratic = 1.0f;
+	pointLight.position = glm::vec3(1.0f, 0.1f, 0.0f);
+	globalLightManager.updatePointLight(pointLight, 0);
 
 
 	// Random generate part
@@ -590,6 +602,15 @@ int main(void) {
 
 		glEnable(GL_DEPTH_TEST);
 
+
+		// Update global lighting
+		//--------------------------
+		float time = static_cast<float>(glfwGetTime());
+		pointLight.position = glm::vec3(1 * glm::cos(time), 0.0f, 1 * glm::sin(time));
+		globalLightManager.updatePointLight(pointLight, 0);
+		
+
+
 		// Render Shadow
 		//--------------------------
 
@@ -612,6 +633,18 @@ int main(void) {
 		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		globalShadowModelShader.use();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.5f));
+		normalMat = CustomHelper::CalculateNormalMat(model);
+		globalShadowModelShader.setMat4("model", model);
+		globalShadowModelShader.setMat3("normalMat", normalMat);
+		globalShadowModelShader.setVec3("viewPos", camera.Position);
+		
+		backpack.Draw(globalShadowModelShader);
+
+		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.05f);
 
 		glBindVertexArray(0);
 		glUseProgram(0);

@@ -283,6 +283,21 @@
     <None Include="shaders\lighting\fragment\local-lighting_normal-texture.frag">
       <Filter>Resource Files\shaders\lighting\fragment</Filter>
     </None>
+    <None Include="shaders\shadow-lighting\fragment\global-shadow-lighting_model.frag">
+      <Filter>Resource Files\shaders\shadow-lighting\fragment</Filter>
+    </None>
+    <None Include="shaders\shadow-lighting\vertex\global-shadow-lighting_model.vert">
+      <Filter>Resource Files\shaders\shadow-lighting\vertex</Filter>
+    </None>
+    <None Include="shaders\shadow-lighting\fragment\global-shadow-lighting_normal-model.frag">
+      <Filter>Resource Files\shaders\shadow-lighting\fragment</Filter>
+    </None>
+    <None Include="shaders\shadow-lighting\vertex\global-shadow-lighting_normal-model.vert">
+      <Filter>Resource Files\shaders\shadow-lighting\vertex</Filter>
+    </None>
+    <None Include="shaders\shadow-lighting\vertex\global-shadow-lighting_ipv-normal-model.vert">
+      <Filter>Resource Files\shaders\shadow-lighting\vertex</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">
