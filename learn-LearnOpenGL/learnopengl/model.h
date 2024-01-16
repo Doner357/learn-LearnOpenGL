@@ -54,7 +54,7 @@ private:
 			flipUVmask = aiPostProcessSteps::aiProcess_FlipUVs;
 		// Load model into the assimp scene
 		Assimp::Importer importer;
-		const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | flipUVmask);
+		const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_CalcTangentSpace | flipUVmask);
 		
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
 			std::cout << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
@@ -155,6 +155,9 @@ private:
 			textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
 			// 4. height maps
 			std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_height");
+			textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+			// 5. emission maps
+			std::vector<Texture> emissionMaps = loadMaterialTextures(material, aiTextureType_EMISSION_COLOR, "texture_emission");
 			textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 		}
 		//aiGetMaterialFloat(scene->mMaterials[mesh->mMaterialIndex], AI_MATKEY_SHININESS, &shininess

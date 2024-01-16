@@ -51,6 +51,7 @@ public:
 		unsigned int specularNr = 1;
 		unsigned int normalNr   = 1;
 		unsigned int heightNr   = 1;
+		unsigned int emissionNr = 1;
 		for (unsigned int i = 0; i < textures.size(); i++) {
 			glActiveTexture(GL_TEXTURE0 + i);
 			// Retrieve texture number (the n diffuse_textureN)
@@ -64,6 +65,8 @@ public:
 				number = std::to_string(normalNr++);
 			else if (name == "texture_height")
 				number = std::to_string(heightNr++);
+			else if (name == "texture_emission")
+				number = std::to_string(emissionNr++);
 
 			// Now set the sampler to the correct texture unit
 			shader.setInt(("material." + name + number).c_str(), i);
