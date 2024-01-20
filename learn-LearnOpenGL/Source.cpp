@@ -28,8 +28,8 @@ unsigned int LoadCubemap(std::vector<std::string> faces, bool gammaCorrection, b
 unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample = false, const unsigned int samples = 1);
 
 // Screen Width and Height setting
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1920;
+const unsigned int SCR_HEIGHT = 1080;
 
 // Gamma value
 float gamma = 2.2f;
@@ -217,7 +217,7 @@ int main(void) {
 	 * Model loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	Model backpack("models/backpack/backpack.obj", true);
+	Model sponza("models/sponza/sponza.obj", true, true);
 
 
 
@@ -476,12 +476,7 @@ int main(void) {
 	unsigned int num_of_spotLight = 0;
 
 	// Manual setting part
-	pointLight.ambient = glm::vec3(0.2f);
-	pointLight.diffuse = glm::vec3(0.8f);
-	pointLight.specular = glm::vec3(1.0f);
-	pointLight.quadratic = 1.0f;
-	pointLight.position = glm::vec3(1.0f, 0.1f, 0.0f);
-	globalLightManager.updatePointLight(pointLight, 0);
+	//globalLightManager.updatePointLight(pointLight, 0);
 
 
 	// Random generate part
@@ -489,7 +484,7 @@ int main(void) {
 	unsigned int num_of_random_pointLight = 0;
 	unsigned int num_of_random_spotLight = 0;
 	// Appear area(x, z) = (-area, -area) ~ (area, area)
-	float appear_area = 30.0f;
+	float appear_area = 10.0f;
 	// Appear height(y) = (0) ~ (height)
 	float appear_hieght = 4.0f;
 	for (unsigned int i = 0; i < num_of_random_dirLight; i++) {
@@ -602,12 +597,6 @@ int main(void) {
 
 		glEnable(GL_DEPTH_TEST);
 
-
-		// Update global lighting
-		//--------------------------
-		float time = static_cast<float>(glfwGetTime());
-		pointLight.position = glm::vec3(1 * glm::cos(time), 0.0f, 1 * glm::sin(time));
-		globalLightManager.updatePointLight(pointLight, 0);
 		
 
 
@@ -615,8 +604,44 @@ int main(void) {
 		//--------------------------
 
 		std::function<void(Shader &)> shadowDrawFunction;
-		shadowDrawFunction = [=](Shader &shader) {};
-		globalShadowLightManager.bindShadowMaps();
+		shadowDrawFunction = [&](Shader &shader) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, glm::vec3(0.5f, 0.0f, 0.5f));
+			model = glm::scale(model, glm::vec3(0.01f));
+			shader.setMat4("model", model);
+			sponza.Draw(shader);
+		};
+		//globalShadowLightManager.bindShadowMaps();
+
+
+		// Update global lighting
+		//--------------------------
+		float time = static_cast<float>(glfwGetTime()) * 0.1f;
+		pointLight.position = glm::vec3(12 * glm::cos(time), 1.0f, 5.0f * glm::sin(time));
+		float r = (glm::sin(time * 5) + 1) / 2;
+		float g = (glm::sin(time * 5 * 0.3) + 1) / 2;
+		float b = (glm::sin(time * 5 * 0.7) + 1) / 2;
+		pointLight.ambient = glm::vec3(r, g, b) * glm::vec3(0.2f);
+		pointLight.diffuse = glm::vec3(r, g, b) * glm::vec3(0.8f);
+		pointLight.specular = glm::vec3(r, g, b) * glm::vec3(1.0f);
+		pointLight.quadratic = 1.0f;
+		globalShadowLightManager.updatePointLight(pointLight, 0, 50.0f, shadowDrawFunction);
+
+		CustomHelper::BlinnPhongLight_point pointLight2 = {};
+		pointLight2.position = glm::vec3(12.0f * glm::sin(time * 10), 2.0f, 0.0f);
+		pointLight2.ambient = glm::vec3(0.2f);
+		pointLight2.diffuse = glm::vec3(0.8f);
+		pointLight2.specular = glm::vec3(1.0f);
+		pointLight2.quadratic = 1.0f;
+		globalShadowLightManager.updatePointLight(pointLight2, 1, 50.0f, shadowDrawFunction);
+
+		CustomHelper::BlinnPhongLight_point pointLight3 = {};
+		pointLight3.position = glm::vec3(0.0f, 2.0f, 0.0f);
+		pointLight3.ambient = glm::vec3(0.2f);
+		pointLight3.diffuse = glm::vec3(0.8f);
+		pointLight3.specular = glm::vec3(1.0f);
+		pointLight3.quadratic = 1.0f;
+		globalShadowLightManager.updatePointLight(pointLight3, 2, 50.0f, shadowDrawFunction);
 
 
 		// Render Objects
@@ -635,19 +660,48 @@ int main(void) {
 
 		globalShadowModelShader.use();
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.5f));
+		model = glm::translate(model, glm::vec3(0.5f, 0.0f, 0.5f));
+		model = glm::scale(model, glm::vec3(0.01f));
 		normalMat = CustomHelper::CalculateNormalMat(model);
 		globalShadowModelShader.setMat4("model", model);
 		globalShadowModelShader.setMat3("normalMat", normalMat);
 		globalShadowModelShader.setVec3("viewPos", camera.Position);
 		
-		backpack.Draw(globalShadowModelShader);
+		globalShadowLightManager.bindShadowMaps();
+		sponza.Draw(globalShadowModelShader);
 
 		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.05f);
 
 		glBindVertexArray(0);
 		glUseProgram(0);
+
+
+		// Light cube
+		lightCubeShader.use();
+		
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, pointLight.position);
+		model = glm::scale(model, glm::vec3(0.05f));
+		lightCubeShader.setMat4("model", model);
+		lightCubeShader.setVec3("lightColor", pointLight.specular);
+		glBindVertexArray(cubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, pointLight2.position);
+		model = glm::scale(model, glm::vec3(0.05f));
+		lightCubeShader.setMat4("model", model);
+		lightCubeShader.setVec3("lightColor", pointLight2.specular);
+		glBindVertexArray(cubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, pointLight3.position);
+		model = glm::scale(model, glm::vec3(0.05f));
+		lightCubeShader.setMat4("model", model);
+		lightCubeShader.setVec3("lightColor", pointLight3.specular);
+		glBindVertexArray(cubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
 		// skybox
@@ -667,7 +721,7 @@ int main(void) {
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		// Set the depth function and culling face to default
 		glDepthFunc(GL_LESS);
-		glCullFace(GL_BACK);		
+		glCullFace(GL_BACK);
 		
 
 

@@ -127,9 +127,15 @@ layout (std140) uniform GammaCorrection {
 
 void main() {
 	// Properties
-	vec3 normal = texture(material.texture_normal1, fs_in.texCoords).rgb;
-	normal = normalize(normal * 2.0 - 1.0);
-	normal = normalize(fs_in.TBN * normal);
+	vec3 normal;
+	if (gl_FragCoord.x > 960) {
+		normal = texture(material.texture_normal1, fs_in.texCoords).rgb;
+		normal = normalize(normal * 2.0 - 1.0);
+		normal = normalize(fs_in.TBN * normal);
+	}
+	else {
+		normal = normalize(fs_in.normal);
+	}
 	vec3 viewDir = normalize(viewPos - fs_in.fragPos);
 	vec3 result = vec3(0.0);
 
