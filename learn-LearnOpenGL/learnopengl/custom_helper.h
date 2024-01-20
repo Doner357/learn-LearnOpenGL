@@ -10,6 +10,7 @@
 #include "shader_m.h"
 #include "camera_plus.h"
 
+#include <iostream>
 #include <random>
 #include <ctime>
 #include <cstdint>
@@ -451,39 +452,39 @@ namespace CustomHelper {
 
 
 	struct BlinnPhongLight_direct {
-		glm::vec3 direction;
+		alignas(16) glm::vec3 direction;
 
-		glm::vec3 ambient;
-		glm::vec3 diffuse;
-		glm::vec3 specular;
+		alignas(16) glm::vec3 ambient;
+		alignas(16) glm::vec3 diffuse;
+		alignas(16) glm::vec3 specular;
 	};
 
 	struct BlinnPhongLight_point {
-		glm::vec3 position;
+		alignas(16) glm::vec3 position;
 
-		float constant;
-		float linear;
-		float quadratic;
+		alignas(4) float constant;
+		alignas(4) float linear;
+		alignas(4) float quadratic;
 
-		glm::vec3 ambient;
-		glm::vec3 diffuse;
-		glm::vec3 specular;
+		alignas(16) glm::vec3 ambient;
+		alignas(16) glm::vec3 diffuse;
+		alignas(16) glm::vec3 specular;
 	};
 
 	struct BlinnPhongLight_spot {
-		glm::vec3 direction;
-		glm::vec3 position;
+		alignas(16) glm::vec3 direction;
+		alignas(16) glm::vec3 position;
 
-		float innerCutOff;
-		float outerCutOff;
+		alignas(4)  float innerCutOff;
+		alignas(4)  float outerCutOff;
 
-		float constant;
-		float linear;
-		float quadratic;
+		alignas(4)  float constant;
+		alignas(4)  float linear;
+		alignas(4)  float quadratic;
 
-		glm::vec3 ambient;
-		glm::vec3 diffuse;
-		glm::vec3 specular;
+		alignas(16) glm::vec3 ambient;
+		alignas(16) glm::vec3 diffuse;
+		alignas(16) glm::vec3 specular;
 	};
 	
 	class GlobalBlinnPongLightManager {
@@ -496,6 +497,11 @@ namespace CustomHelper {
 				spotLights = new BlinnPhongLight_spot[max_of_spotLight]();
 				// Initialize the unifrom block buffer
 				bindUniformBlockBuffer();
+				/*
+				std::cout << "Dir size:" << sizeof(BlinnPhongLight_direct) << std::endl;
+				std::cout << "point size:" << sizeof(BlinnPhongLight_point) << std::endl;
+				std::cout << "spot size:" << sizeof(BlinnPhongLight_spot) << std::endl;
+				*/
 			}
 
 			// Delete all the sources which use dynamic memory and VRAM
@@ -513,51 +519,58 @@ namespace CustomHelper {
 			}
 
 			// edit three type of lights : directional light
-			bool updateDirLight(BlinnPhongLight_direct &light_data, const size_t index) {
-				bool success = false;
+			void updateDirLight(BlinnPhongLight_direct &light_data, const size_t index) {
 				if (index < max_of_dirLight) {
-					if (editDirLight(light_data, index)) {
-						dirLights[index] = light_data;
-						success = true;
-					}
+					dirLights[index] = light_data;
+					glBindBuffer(GL_UNIFORM_BUFFER, this->unifrom_buffer);
+
+					glBufferSubData(GL_UNIFORM_BUFFER,
+						static_cast<GLintptr>((&dirLights[index] - dirLights) * sizeof(BlinnPhongLight_direct)),
+						static_cast<GLsizeiptr>(sizeof(BlinnPhongLight_direct)),
+						&light_data);
+
+					glBindBuffer(GL_UNIFORM_BUFFER, 0);
 				}
 				else {
 					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::excess the max number of dirLight. (Index: " << index << ")\n";
 				}
-
-				return success;
 			}
 
 			// edit three type of lights : point light
-			bool updatePointLight(BlinnPhongLight_point &light_data, const size_t index) {
-				bool success = false;
+			void updatePointLight(BlinnPhongLight_point &light_data, const size_t index) {
 				if (index < max_of_pointLight) {
-					if (editPointLight(light_data, index)) {
-						pointLights[index] = light_data;
-						success = true;
-					}
+					pointLights[index] = light_data;
+					glBindBuffer(GL_UNIFORM_BUFFER, this->unifrom_buffer);
+
+					glBufferSubData(GL_UNIFORM_BUFFER,
+						            static_cast<GLintptr>(max_of_dirLight * sizeof(BlinnPhongLight_direct) + (&pointLights[index] - pointLights) * sizeof(BlinnPhongLight_point)),
+					                static_cast < GLsizeiptr>(sizeof(BlinnPhongLight_point)),
+						            &light_data);
+
+					glBindBuffer(GL_UNIFORM_BUFFER, 0);
 				}
 				else {
 					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::excess the max number of pointLight. (Index: " << index << ")\n";
 				}
-
-				return success;
 			}
 
 			// edit three type of lights : spot light
-			bool updateSpotLight(BlinnPhongLight_spot &light_data, const size_t index) {
-				bool success = false;
+			void updateSpotLight(BlinnPhongLight_spot &light_data, const size_t index) {
 				if (index < max_of_spotLight) {
-					if (editSpotLight(light_data, index)) {
-							spotLights[index] = light_data;
-							success = true;
-					}
+					spotLights[index] = light_data;
+					glBindBuffer(GL_UNIFORM_BUFFER, this->unifrom_buffer);
+					
+					glBufferSubData(GL_UNIFORM_BUFFER,
+						            static_cast<GLintptr>(max_of_dirLight * sizeof(BlinnPhongLight_direct) + max_of_pointLight * sizeof(BlinnPhongLight_point) +
+									(&spotLights[index] - spotLights) * sizeof(BlinnPhongLight_spot)),
+						            static_cast<GLsizeiptr>(sizeof(BlinnPhongLight_spot)),
+						            &light_data);
+
+					glBindBuffer(GL_UNIFORM_BUFFER, 0);
 				}
 				else {
 					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::excess the max number of spotLight. (Index: " << index << ")\n";
 				}
-
-				return success;
 			}
 
 			// Return the index light data
@@ -597,71 +610,13 @@ namespace CustomHelper {
 			size_t max_of_pointLight;
 			size_t max_of_spotLight;
 
-			// DirLight datas
-			const GLsizeiptr dir_direction_pos = 0;
-			const GLsizeiptr dir_direction_size = 3 * sizeof(float);
-			const GLsizeiptr dir_ambient_pos = dir_direction_size + 4;
-			const GLsizeiptr dir_ambient_size = 3 * sizeof(float);
-			const GLsizeiptr dir_diffuse_pos = dir_ambient_pos + dir_ambient_size + 4;
-			const GLsizeiptr dir_diffuse_size = 3 * sizeof(float);
-			const GLsizeiptr dir_specular_pos = dir_diffuse_pos + dir_diffuse_size + 4;
-			const GLsizeiptr dir_specular_size = 3 * sizeof(float);
-			const GLsizeiptr dir_size = 64;
-			const GLsizeiptr dir_total_size = dir_size * max_of_dirLight;
-			const GLsizeiptr dir_arr_start_pos = 0;
-			const GLsizeiptr dir_next_arr_bias = 0;
-
-			// PointLight datas
-			const GLsizeiptr point_position_pos = 0;
-			const GLsizeiptr point_position_size = 3 * sizeof(float);
-			const GLsizeiptr point_constant_pos = point_position_pos + point_position_size;
-			const GLsizeiptr point_constant_size = sizeof(float);
-			const GLsizeiptr point_linear_pos = point_constant_pos + point_constant_size;
-			const GLsizeiptr point_linear_size = sizeof(float);
-			const GLsizeiptr point_quadratic_pos = point_linear_pos + point_linear_size;
-			const GLsizeiptr point_quadratic_size = sizeof(float);
-			const GLsizeiptr point_ambient_pos = point_quadratic_pos + point_quadratic_size + 8;
-			const GLsizeiptr point_ambient_size = 3 * sizeof(float);
-			const GLsizeiptr point_diffuse_pos = point_ambient_pos + point_ambient_size + 4;
-			const GLsizeiptr point_diffuse_size = 3 * sizeof(float);
-			const GLsizeiptr point_specular_pos = point_diffuse_pos + point_diffuse_size + 4;
-			const GLsizeiptr point_specular_size = 3 * sizeof(float);
-			const GLsizeiptr point_size = 80;
-			const GLsizeiptr point_total_size = point_size * max_of_pointLight;
-			const GLsizeiptr point_arr_start_pos = dir_arr_start_pos + dir_total_size + dir_next_arr_bias;
-			const GLsizeiptr point_next_arr_bias = 0;
-
-			// SpotLight datas
-			const GLsizeiptr spot_position_pos = 0;
-			const GLsizeiptr spot_position_size = 3 * sizeof(float);
-			const GLsizeiptr spot_direction_pos = spot_position_pos + spot_position_size + 4;
-			const GLsizeiptr spot_direction_size = 3 * sizeof(float);
-			const GLsizeiptr spot_innerCutOff_pos = spot_direction_pos + spot_direction_size;
-			const GLsizeiptr spot_innerCutOff_size = sizeof(float);
-			const GLsizeiptr spot_outerCutOff_pos = spot_innerCutOff_pos + spot_innerCutOff_size;
-			const GLsizeiptr spot_outerCutOff_size = sizeof(float);
-			const GLsizeiptr spot_constant_pos = spot_outerCutOff_pos + spot_outerCutOff_size;
-			const GLsizeiptr spot_constant_size = sizeof(float);
-			const GLsizeiptr spot_linear_pos = spot_constant_pos + spot_constant_size;
-			const GLsizeiptr spot_linear_size = sizeof(float);
-			const GLsizeiptr spot_quadratic_pos = spot_linear_pos + spot_linear_size;
-			const GLsizeiptr spot_quadratic_size = sizeof(float);
-			const GLsizeiptr spot_ambient_pos = spot_quadratic_pos + spot_quadratic_size;
-			const GLsizeiptr spot_ambient_size = 3 * sizeof(float);
-			const GLsizeiptr spot_diffuse_pos = spot_ambient_pos + spot_ambient_size + 4;
-			const GLsizeiptr spot_diffuse_size = 3 * sizeof(float);
-			const GLsizeiptr spot_specular_pos = spot_diffuse_pos + spot_diffuse_size + 4;
-			const GLsizeiptr spot_specular_size = 3 * sizeof(float);
-			const GLsizeiptr spot_arr_start_pos = point_arr_start_pos + point_total_size + point_next_arr_bias;
-			const GLsizeiptr spot_size = 96;
-			const GLsizeiptr spot_total_size = spot_size * max_of_spotLight;
-			const GLsizeiptr spot_next_arr_bias = 0;
 
 			// Unifrom block size constant
 			// uniform total size
-			const GLsizeiptr size_of_total_light = dir_total_size + dir_next_arr_bias
-				+ point_total_size + point_next_arr_bias
-				+ spot_total_size + spot_next_arr_bias;
+			const GLsizeiptr size_of_total_light = (max_of_dirLight   * sizeof(BlinnPhongLight_direct)) +
+				                                   (max_of_pointLight * sizeof(BlinnPhongLight_point )) +
+				                                   (max_of_spotLight  * sizeof(BlinnPhongLight_spot  ));
+
 
 			// Create a buffer to sotred lights data
 			void bindUniformBlockBuffer() {
@@ -671,102 +626,6 @@ namespace CustomHelper {
 				glBufferData(GL_UNIFORM_BUFFER, size_of_total_light, NULL, GL_DYNAMIC_DRAW);
 				glBindBufferBase(GL_UNIFORM_BUFFER, this->binding_point, (this->unifrom_buffer));
 				glBindBuffer(GL_UNIFORM_BUFFER, 0);
-			}
-			
-			// Update the directional light data
-			bool editDirLight(BlinnPhongLight_direct &light_data, const size_t index) {
-				bool success = false;
-
-				// Map the uniform buffer and get its address
-				glBindBuffer(GL_UNIFORM_BUFFER, unifrom_buffer);
-				GLubyte * const startPos = static_cast<GLubyte *>(glMapBufferRange(GL_UNIFORM_BUFFER, dir_arr_start_pos + (index * dir_size), dir_size, GL_MAP_WRITE_BIT));
-
-				if (startPos) {
-					memcpy(startPos + dir_direction_pos, glm::value_ptr(light_data.direction), sizeof(light_data.direction));
-					memcpy(startPos + dir_ambient_pos, glm::value_ptr(light_data.ambient), sizeof(light_data.ambient));
-					memcpy(startPos + dir_diffuse_pos, glm::value_ptr(light_data.diffuse), sizeof(light_data.diffuse));
-					memcpy(startPos + dir_specular_pos, glm::value_ptr(light_data.specular), sizeof(light_data.specular));
-				}
-				else {
-					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::DIRLIGHT::fail to map the light uniform buffer\n";
-				}
-
-				GLenum map_success = glUnmapBuffer(GL_UNIFORM_BUFFER);
-				glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-				if (map_success == GL_TRUE)
-					success = true;
-				else
-					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::DIRLIGHT::map unsuccessful\n";
-
-				return success;
-			}
-
-			// Update the point light data
-			bool editPointLight(BlinnPhongLight_point &light_data, const size_t index) {
-				bool success = false;
-
-				// Map the uniform buffer and get its address
-				glBindBuffer(GL_UNIFORM_BUFFER, unifrom_buffer);
-				GLubyte *const startPos = static_cast<GLubyte *>(glMapBufferRange(GL_UNIFORM_BUFFER, point_arr_start_pos + (index * point_size), point_size, GL_MAP_WRITE_BIT));
-
-				if (startPos) {
-					memcpy(startPos + point_position_pos, glm::value_ptr(light_data.position), sizeof(light_data.position));
-					memcpy(startPos + point_constant_pos, &light_data.constant, sizeof(light_data.constant));
-					memcpy(startPos + point_linear_pos, &light_data.linear, sizeof(light_data.linear));
-					memcpy(startPos + point_quadratic_pos, &light_data.quadratic, sizeof(light_data.quadratic));
-					memcpy(startPos + point_ambient_pos, &light_data.ambient, sizeof(light_data.ambient));
-					memcpy(startPos + point_diffuse_pos, &light_data.diffuse, sizeof(light_data.diffuse));
-					memcpy(startPos + point_specular_pos, &light_data.specular, sizeof(light_data.specular));
-				}
-				else {
-					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::POINTLIGHT::fail to map the light uniform buffer\n";
-				}
-
-				GLenum map_success = glUnmapBuffer(GL_UNIFORM_BUFFER);
-				glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-				if (map_success == GL_TRUE)
-					success = true;
-				else
-					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::POINTLIGHT::map unsuccessful\n";
-
-				return success;
-			}
-
-			// Update the spot light data
-			bool editSpotLight(BlinnPhongLight_spot &light_data, const size_t index) {
-				bool success = false;
-
-				// Map the uniform buffer and get its address
-				glBindBuffer(GL_UNIFORM_BUFFER, unifrom_buffer);
-				GLubyte *const startPos = static_cast<GLubyte *>(glMapBufferRange(GL_UNIFORM_BUFFER, spot_arr_start_pos + (index * spot_size), spot_size, GL_MAP_WRITE_BIT));
-
-				if (startPos) {
-					memcpy(startPos + spot_direction_pos, glm::value_ptr(light_data.direction), sizeof(light_data.direction));
-					memcpy(startPos + spot_position_pos, glm::value_ptr(light_data.position), sizeof(light_data.position));
-					memcpy(startPos + spot_innerCutOff_pos, &light_data.innerCutOff, sizeof(light_data.innerCutOff));
-					memcpy(startPos + spot_outerCutOff_pos, &light_data.outerCutOff, sizeof(light_data.outerCutOff));
-					memcpy(startPos + spot_constant_pos, &light_data.constant, sizeof(light_data.constant));
-					memcpy(startPos + spot_linear_pos, &light_data.linear, sizeof(light_data.linear));
-					memcpy(startPos + spot_quadratic_pos, &light_data.quadratic, sizeof(light_data.quadratic));
-					memcpy(startPos + spot_ambient_pos, &light_data.ambient, sizeof(light_data.ambient));
-					memcpy(startPos + spot_diffuse_pos, &light_data.diffuse, sizeof(light_data.diffuse));
-					memcpy(startPos + spot_specular_pos, &light_data.specular, sizeof(light_data.specular));
-				}
-				else {
-					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::SPOTLIGHT::fail to map the light uniform buffer\n";
-				}
-
-				GLenum map_success = glUnmapBuffer(GL_UNIFORM_BUFFER);
-				glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-				if (map_success == GL_TRUE)
-					success = true;
-				else
-					std::cerr << "ERROR::CUSTOMHELPER::LIGHTMANAGER::SPOTLIGHT::map unsuccessful\n";
-
-				return success;
 			}
 	};
 
