@@ -597,7 +597,6 @@ int main(void) {
 
 		glEnable(GL_DEPTH_TEST);
 
-		
 
 
 		// Render Shadow
@@ -669,6 +668,7 @@ int main(void) {
 		
 		globalShadowLightManager.bindShadowMaps();
 		sponza.Draw(globalShadowModelShader);
+
 
 		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.05f);
 
@@ -917,7 +917,7 @@ unsigned int LoadCubemap(std::vector<std::string> faces, bool gammaCorrection, b
 				internalFormat = (gammaCorrection ? GL_SRGB_ALPHA : GL_RGBA);
 				dataFormat = GL_RGBA;
 			}
-
+			
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
 			stbi_image_free(data);
 		}
