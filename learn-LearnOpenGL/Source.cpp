@@ -331,9 +331,9 @@ int main(void) {
 	 * Texture loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	unsigned int brickwall_diff = LoadTexture("textures/brickwall/brickwall.jpg", true);
-	unsigned int brickwall_spec = LoadTexture("textures/brickwall/brickwall_spec.jpg", false);
-	unsigned int brickwall_norm = LoadTexture("textures/brickwall/brickwall_normal.jpg", false);
+	unsigned int brickwall_diff = LoadTexture("textures/brickwall/brickwall.jpg", true, false);
+	unsigned int brickwall_spec = LoadTexture("textures/brickwall/brickwall_spec.jpg", false, false);
+	unsigned int brickwall_norm = LoadTexture("textures/brickwall/brickwall_normal.jpg", false, false);
 
 
 
