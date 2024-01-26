@@ -41,11 +41,10 @@ float lastY = (float)SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
 // Timing
-float deltaTime = 0.0f;   // Time between current frame and last frame
-float lastFrame = 0.0f;   // Time of last frame
+float deltaTime = 0.0f;    // Time between current frame and last frame
+float lastFrame = 0.0f;    // Time of last frame
 
-
-bool tangent_to_world_shader = true;
+float height_scale = 0.0f; // Controa the height mapping scale
 
 
 int main(void) {
@@ -217,7 +216,6 @@ int main(void) {
 	 * Model loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	Model sponza("models/sponza/sponza.obj", true, true);
 
 
 
@@ -298,11 +296,11 @@ int main(void) {
 		pos4.x, pos4.y, pos4.z,    nm.x, nm.y, nm.z,    uv4.x, uv4.y,    tangent2.x, tangent2.y, tangent2.z,    bitangent2.x, bitangent2.y, bitangent2.z,
 	};
 
-	unsigned int normQuadVAO, normQuadVBO;
-	glGenVertexArrays(1, &normQuadVAO);
-	glGenBuffers(1, &normQuadVBO);
-	glBindVertexArray(normQuadVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, normQuadVBO);
+	unsigned int tangentQuadVAO, tangentQuadVBO;
+	glGenVertexArrays(1, &tangentQuadVAO);
+	glGenBuffers(1, &tangentQuadVBO);
+	glBindVertexArray(tangentQuadVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, tangentQuadVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(normQuadVertices), &normQuadVertices[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void *)0);
@@ -316,7 +314,7 @@ int main(void) {
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void *)(11 * sizeof(float)));
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glDeleteBuffers(1, &normQuadVBO);
+	glDeleteBuffers(1, &tangentQuadVBO);
 	
 
 
@@ -332,9 +330,17 @@ int main(void) {
 	 * Texture loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	unsigned int brickwall_diff = LoadTexture("textures/brickwall/brickwall.jpg", true);
-	unsigned int brickwall_spec = LoadTexture("textures/brickwall/brickwall_spec.jpg", false);
-	unsigned int brickwall_norm = LoadTexture("textures/brickwall/brickwall_normal.jpg", false);
+	// Bricks
+	unsigned int brickwall_diff = LoadTexture("textures/bricks2/bricks2.jpg"       , true , false);
+	unsigned int brickwall_spec = LoadTexture("textures/common_nonspec.jpg"        , false, false);
+	unsigned int brickwall_norm = LoadTexture("textures/bricks2/bricks2_normal.jpg", false, false);
+	unsigned int brickwall_disp = LoadTexture("textures/bricks2/bricks2_disp.jpg"  , false, false);
+
+	// Toy box
+	unsigned int toy_box_diff = LoadTexture("textures/toy_box/toy_box_diff.png"    , true , false);
+	unsigned int toy_box_spec = LoadTexture("textures/common_nonspec.jpg"          , false, false);
+	unsigned int toy_box_norm = LoadTexture("textures/toy_box/toy_box_normal.png"  , false, false);
+	unsigned int toy_box_disp = LoadTexture("textures/toy_box/toy_box_disp.png"    , false, false);
 
 
 
@@ -367,10 +373,9 @@ int main(void) {
 	Shader lightCubeShader("shaders/others/vertex/light_cube.vert", "shaders/others/fragment/light_cube.frag");
 	Shader dirDepthShader("shaders/bake/depth_map/vertex/dir-depth_map.vert", "shaders/bake/depth_map/fragment/dir-depth_map.frag");
 	Shader cubeDepthShader("shaders/bake/depth_map/vertex/cube-depth_map.vert", "shaders/bake/depth_map/fragment/cube-depth_map.frag", "shaders/bake/depth_map/geometry/cube-depth_map.geom");
-	// The shader transfer tangent space normal to world space normal
-	Shader globalShadowTexShader("shaders/shadow-lighting/vertex/global-shadow-lighting_normal-texture.vert", "shaders/shadow-lighting/fragment/global-shadow-lighting_normal-texture.frag");
-	// Model normal mapping shader
-	Shader globalShadowModelShader("shaders/shadow-lighting/vertex/global-shadow-lighting_ipv-normal-model.vert", "shaders/shadow-lighting/fragment/global-shadow-lighting_normal-model.frag");
+
+	// Shader for parallex mapping in this chapter
+	Shader global_heightMapingShader("shaders/shadow-lighting/vertex/global-shadow-lighting_height-texture.vert", "shaders/shadow-lighting/fragment/global-shadow-lighting_height-texture.frag");
 
 
 	/*
@@ -385,12 +390,14 @@ int main(void) {
 	screenShader.use();
 	screenShader.setInt("screenTexture", 0);
 
-	globalShadowTexShader.use();
-	globalShadowTexShader.setInt("material.diffuse", CustomHelper::SAMPLER_DIFFUSE);
-	globalShadowTexShader.setInt("material.specular", CustomHelper::SAMPLER_SPECULAR);
-	globalShadowTexShader.setInt("material.normal", CustomHelper::SAMPLER_NORMAL);
-	globalShadowTexShader.setFloat("material.shininess", 256.0f);
 
+	global_heightMapingShader.use();
+	global_heightMapingShader.setInt("material.diffuse", CustomHelper::SAMPLER_DIFFUSE);
+	global_heightMapingShader.setInt("material.specular", CustomHelper::SAMPLER_SPECULAR);
+	global_heightMapingShader.setInt("material.normal", CustomHelper::SAMPLER_NORMAL);
+	global_heightMapingShader.setInt("material.height", CustomHelper::SAMPLER_HEIGHT);
+	global_heightMapingShader.setFloat("material.shininess", 32.0f);
+	global_heightMapingShader.setFloat("height_scale", height_scale);
 
 
 	glUseProgram(0);
@@ -406,15 +413,11 @@ int main(void) {
 	CustomHelper::CameraMatricesManager cameraMatManager(CustomHelper::UBOPOINT_NAME_CAMERA_MATRICES, CustomHelper::UBOPOINT_CAMERA_MATRICES);
 	cameraMatManager.registerShader(skyboxShader);
 	cameraMatManager.registerShader(lightCubeShader);
-	cameraMatManager.registerShader(globalShadowTexShader);
-	cameraMatManager.registerShader(globalShadowModelShader);
+	cameraMatManager.registerShader(global_heightMapingShader);
 
 	// Global light uniform block
 	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING, CustomHelper::UBOPOINT_BLINPHONG_LIGHTING, CustomHelper::MAX_NUM_DIRECTIONALLIGHT, CustomHelper::MAX_NUM_POINTLIGHT, CustomHelper::MAX_NUM_SPOTLIGHT);
-	//globalLightManager.registerShader(TexShader);
-	//globalLightManager.registerShader(repeatTexShader);
-	globalLightManager.registerShader(globalShadowTexShader);
-	globalLightManager.registerShader(globalShadowModelShader);
+	globalLightManager.registerShader(global_heightMapingShader);
 
 	// Global light with shadow uniform block
 	CustomHelper::GlobalBlinnPongShadowLightManager globalShadowLightManager(
@@ -431,14 +434,12 @@ int main(void) {
 		1024,
 		1024
 	);
-	globalShadowLightManager.registerShader(globalShadowTexShader);
-	globalShadowLightManager.registerShader(globalShadowModelShader);
+	globalShadowLightManager.registerShader(global_heightMapingShader);
 
 	// Gamma Correction uniform block
 	CustomHelper::GammaManager gammaManager(CustomHelper::UBOPOINT_NAME_GAMMA_CORRECTION, CustomHelper::UBOPOINT_GAMMA_CORRECTION);
 	gammaManager.registerShader(lightCubeShader);
-	gammaManager.registerShader(globalShadowTexShader);
-	gammaManager.registerShader(globalShadowModelShader);
+	gammaManager.registerShader(global_heightMapingShader);
 
 
 
@@ -476,7 +477,12 @@ int main(void) {
 	unsigned int num_of_spotLight = 0;
 
 	// Manual setting part
-	//globalLightManager.updatePointLight(pointLight, 0);
+	pointLight.position  = glm::vec3(0.0f, 0.0001f, 0.0f);
+	pointLight.ambient   = glm::vec3(0.1f);
+	pointLight.diffuse   = glm::vec3(1.0f);
+	pointLight.specular  = glm::vec3(1.0f);
+	pointLight.quadratic = 1.0f;
+	globalLightManager.updatePointLight(pointLight, 0);
 
 
 	// Random generate part
@@ -603,44 +609,14 @@ int main(void) {
 		//--------------------------
 
 		std::function<void(Shader &)> shadowDrawFunction;
-		shadowDrawFunction = [&](Shader &shader) {
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(0.5f, 0.0f, 0.5f));
-			model = glm::scale(model, glm::vec3(0.01f));
-			shader.setMat4("model", model);
-			sponza.Draw(shader);
-		};
-		//globalShadowLightManager.bindShadowMaps();
+		shadowDrawFunction = [&](Shader &shader) {};
+		globalShadowLightManager.bindShadowMaps();
 
 
 		// Update global lighting
 		//--------------------------
-		float time = static_cast<float>(glfwGetTime()) * 0.1f;
-		pointLight.position = glm::vec3(12 * glm::cos(time), 1.0f, 5.0f * glm::sin(time));
-		float r = (glm::sin(time * 5) + 1) / 2;
-		float g = (glm::sin(time * 5 * 0.3) + 1) / 2;
-		float b = (glm::sin(time * 5 * 0.7) + 1) / 2;
-		pointLight.ambient = glm::vec3(r, g, b) * glm::vec3(0.2f);
-		pointLight.diffuse = glm::vec3(r, g, b) * glm::vec3(0.8f);
-		pointLight.specular = glm::vec3(r, g, b) * glm::vec3(1.0f);
-		pointLight.quadratic = 1.0f;
-		globalShadowLightManager.updatePointLight(pointLight, 0, 50.0f, shadowDrawFunction);
-
-		CustomHelper::BlinnPhongLight_point pointLight2 = {};
-		pointLight2.position = glm::vec3(12.0f * glm::sin(time * 10), 2.0f, 0.0f);
-		pointLight2.ambient = glm::vec3(0.2f);
-		pointLight2.diffuse = glm::vec3(0.8f);
-		pointLight2.specular = glm::vec3(1.0f);
-		pointLight2.quadratic = 1.0f;
-		globalShadowLightManager.updatePointLight(pointLight2, 1, 50.0f, shadowDrawFunction);
-
-		CustomHelper::BlinnPhongLight_point pointLight3 = {};
-		pointLight3.position = glm::vec3(0.0f, 2.0f, 0.0f);
-		pointLight3.ambient = glm::vec3(0.2f);
-		pointLight3.diffuse = glm::vec3(0.8f);
-		pointLight3.specular = glm::vec3(1.0f);
-		pointLight3.quadratic = 1.0f;
-		globalShadowLightManager.updatePointLight(pointLight3, 2, 50.0f, shadowDrawFunction);
+		pointLight.position = glm::vec3(0.0f, glm::sin(static_cast<float>(glfwGetTime())) * 2.0f, 1.0f);
+		globalLightManager.updatePointLight(pointLight, 0);
 
 
 		// Render Objects
@@ -657,52 +633,59 @@ int main(void) {
 		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		globalShadowModelShader.use();
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.5f, 0.0f, 0.5f));
-		model = glm::scale(model, glm::vec3(0.01f));
-		normalMat = CustomHelper::CalculateNormalMat(model);
-		globalShadowModelShader.setMat4("model", model);
-		globalShadowModelShader.setMat3("normalMat", normalMat);
-		globalShadowModelShader.setVec3("viewPos", camera.Position);
-		
-		globalShadowLightManager.bindShadowMaps();
-		sponza.Draw(globalShadowModelShader);
+		// Render bricks
+		//--------------
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, brickwall_diff);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, brickwall_spec);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, brickwall_norm);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, brickwall_disp);
 
+		global_heightMapingShader.use();
+		// Translation
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(1.0f, 0.0f, -1.0f));
+		normalMat = CustomHelper::CalculateNormalMat(model);
+		global_heightMapingShader.setMat4("model", model);
+		global_heightMapingShader.setMat3("normalMat", normalMat);
+		global_heightMapingShader.setVec3("viewPos", camera.Position);
+		// Adjust height scale with Q and E keys
+		global_heightMapingShader.setFloat("height_scale", height_scale);
+
+		glBindVertexArray(tangentQuadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+		// Render bricks
+		//--------------
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, toy_box_diff);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, toy_box_spec);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, toy_box_norm);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, toy_box_disp);
+
+		global_heightMapingShader.use();
+		// Translation
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
+		normalMat = CustomHelper::CalculateNormalMat(model);
+		global_heightMapingShader.setMat4("model", model);
+		global_heightMapingShader.setMat3("normalMat", normalMat);
+		global_heightMapingShader.setVec3("viewPos", camera.Position);
+		// Adjust height scale with Q and E keys
+		global_heightMapingShader.setFloat("height_scale", height_scale);
+
+		glBindVertexArray(tangentQuadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		
 
 		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.05f);
-
-		glBindVertexArray(0);
-		glUseProgram(0);
-
-
-		// Light cube
-		lightCubeShader.use();
-		
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, pointLight.position);
-		model = glm::scale(model, glm::vec3(0.05f));
-		lightCubeShader.setMat4("model", model);
-		lightCubeShader.setVec3("lightColor", pointLight.specular);
-		glBindVertexArray(cubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, pointLight2.position);
-		model = glm::scale(model, glm::vec3(0.05f));
-		lightCubeShader.setMat4("model", model);
-		lightCubeShader.setVec3("lightColor", pointLight2.specular);
-		glBindVertexArray(cubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, pointLight3.position);
-		model = glm::scale(model, glm::vec3(0.05f));
-		lightCubeShader.setMat4("model", model);
-		lightCubeShader.setVec3("lightColor", pointLight3.specular);
-		glBindVertexArray(cubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
 
 		// skybox
 		//---------------
@@ -804,6 +787,24 @@ void processInput(GLFWwindow *window) {
 		camera.ProcessKeyboard(CAMERA_UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
+
+	// Adjust height scale
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+		if (height_scale > 0.0f) {
+			height_scale -= 0.002f;
+		}
+		else {
+			height_scale = 0.0f;
+		}
+	}
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+		if (height_scale < 1.0f) {
+			height_scale += 0.002f;
+		}
+		else {
+			height_scale = 1.0f;
+		}
+	}
 }
 
 // glfw: whenever the mouse moves, this callback is called
@@ -881,7 +882,7 @@ unsigned int LoadTexture(char const *path, bool gammaCorrection, bool flip_verti
 		stbi_image_free(data);
 	}
 	else {
-		std::cout << "Texture failed to load at path" << path << std::endl;
+		std::cout << "Texture failed to load at path: " << path << std::endl;
 		stbi_image_free(data);
 	}
 	// Set whether flip vertically to false

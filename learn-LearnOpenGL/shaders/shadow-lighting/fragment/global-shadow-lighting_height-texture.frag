@@ -6,7 +6,7 @@ in VS_OUT {
 	vec2 texCoords;
 	vec4 dirLightSpacePos[1];
 	vec4 spotLightSpacePos[2];
-	mat3 TBN;
+	mat3 inverse_TBN;
 } fs_in;
 
 out vec4 FragColor;
@@ -16,9 +16,11 @@ out vec4 FragColor;
 //------------------------------
 // --material--
 struct Material {
-	sampler2D texture_diffuse1;
-	sampler2D texture_specular1;
-	sampler2D texture_normal1;
+	//vec3 ambient;
+	sampler2D diffuse;
+	sampler2D specular;
+	sampler2D normal;
+	sampler2D height;
 	float shininess;
 };
 
@@ -87,20 +89,27 @@ float DirLightShadowCalculation(DirLight light, vec4 fragPosLightSpace, vec3 nor
 float PointLightShadowCalculation(PointLight light, vec3 fragPos, vec3 normal, int shadow_id);
 float SpotLightShadowCalculation(SpotLight light, vec4 fragPosLightSpace, vec3 normal, vec3 lightDir, int shadow_id);
 
+// Parallax mapping function
+//------------------------------
+vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir);
+
 // Lighting calculation function
 //------------------------------
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
-vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
-vec3 CalcShadowDirLight(DirLight light, vec3 normal, vec3 viewDir, int shadow_id);
-vec3 CalcShadowPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, int shadow_id);
-vec3 CalcShadowSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir, int shadow_id);
+vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec2 texCoords);
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 texCoords);
+vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 texCoords);
+vec3 CalcShadowDirLight(DirLight light, vec3 normal, vec3 viewDir, vec2 texCoords, int shadow_id);
+vec3 CalcShadowPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 texCoords, int shadow_id);
+vec3 CalcShadowSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 texCoords, int shadow_id);
 
 
 // Uniform
 //------------------------------
 uniform Material material;
 uniform vec3 viewPos;
+
+// Value to control the height scale
+uniform float height_scale;
 
 layout (std140) uniform GlobalLights {               // size      ali
 	DirLight dirLights[NUM_OF_DIRLIGHTS];            //  256        0
@@ -127,85 +136,102 @@ layout (std140) uniform GammaCorrection {
 
 void main() {
 	// Properties
-	vec3 normal = texture(material.texture_normal1, fs_in.texCoords).rgb;
+	vec3 normal = texture(material.normal, fs_in.texCoords).rgb;
 	normal = normalize(normal * 2.0 - 1.0);
-	normal = normalize(fs_in.TBN * normal);
 	vec3 viewDir = normalize(viewPos - fs_in.fragPos);
+	// Transfer view direction to tangent sapce
+	viewDir = normalize(fs_in.inverse_TBN * viewDir);
+	
+	// Displace the texture coordinate
+	vec2 texCoords = ParallaxMapping(fs_in.texCoords, viewDir);
+	// If sample outside [0, 1] range, discard the pixel
+	if (texCoords.x > 1.0 || texCoords.y > 1.0 || texCoords.x < 0.0 || texCoords.y < 0.0)
+		discard;
+
+	// Initialize the result color
 	vec3 result = vec3(0.0);
 
 	// Light wiht no shadow
 	for(int i = 0; i < NUM_OF_DIRLIGHTS; i++)
-		result += dirLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcDirLight(dirLights[i], normal, viewDir);
+		result += dirLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcDirLight(dirLights[i], normal, viewDir, texCoords);
 	for(int i = 0; i < NUM_OF_POINTLIGHTS; i++)
-		result += pointLights[i].position == NO_LIGHT ? vec3(0.0) : CalcPointLight(pointLights[i], normal, fs_in.fragPos, viewDir);
+		result += pointLights[i].position == NO_LIGHT ? vec3(0.0) : CalcPointLight(pointLights[i], normal, fs_in.fragPos, viewDir, texCoords);
 	for(int i = 0; i < NUM_OF_SPOTLIGHTS; i++)
-		result += spotLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcSpotLight(spotLights[i], normal, fs_in.fragPos, viewDir);
+		result += spotLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcSpotLight(spotLights[i], normal, fs_in.fragPos, viewDir, texCoords);
 
 	// Light with shadow
 	for (int i = 0; i < NUM_OF_SHADOWDIRLIGHTS; i++)
-		result += shadowDirLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcShadowDirLight(shadowDirLights[i], normal, viewDir, i);
+		result += shadowDirLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcShadowDirLight(shadowDirLights[i], normal, viewDir, texCoords, i);
 	for (int i = 0; i < NUM_OF_SHADOWPOINTLIGHTS; i++)
-		result += shadowPointLights[i].position == NO_LIGHT ? vec3(0.0) : CalcShadowPointLight(shadowPointLights[i], normal, fs_in.fragPos, viewDir, i);
+		result += shadowPointLights[i].position == NO_LIGHT ? vec3(0.0) : CalcShadowPointLight(shadowPointLights[i], normal, fs_in.fragPos, viewDir, texCoords, i);
 	for (int i = 0; i < NUM_OF_SHADOWSPOTLIGHTS; i++)
-		result += shadowSpotLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcShadowSpotLight(shadowSpotLights[i], normal, fs_in.fragPos, viewDir, i);
+		result += shadowSpotLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcShadowSpotLight(shadowSpotLights[i], normal, fs_in.fragPos, viewDir, texCoords, i);
 		
 	// Gamma correction
 	float gam = gamma == 0.0 ? 1.0 : gamma;    // Avoid the 0 exponent
 	result = pow(result, vec3(1.0 / gam));
 
-	float alpha = texture(material.texture_diffuse1, fs_in.texCoords).a;
+	float alpha = texture(material.diffuse, fs_in.texCoords).a;
 	FragColor = vec4(result, alpha);
 }
 
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir) {
+vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
+	float height = texture(material.height, texCoords).r;
+	vec2 p = viewDir.xy / viewDir.z * (height * height_scale);
+	return texCoords - p;
+}
+
+vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec2 texCoords) {
 
 	// Basic data calculation
 	//--------------------------
-	vec3 lightDir = normalize(-light.direction);   // light's direction
+	// Transfer lighit direction to tangent space for proper lighting calculation
+	vec3 lightDir = normalize(fs_in.inverse_TBN * -light.direction);   // light's direction
 	// Blinn-Phong halfway direction factor
 	vec3 halfwayDir = normalize(viewDir + lightDir);
 
 	// Lighting Calculation
 	//--------------------------
 	// --ambient--
-	vec3 ambient = light.ambient * texture(material.texture_diffuse1, fs_in.texCoords).rgb;
+	vec3 ambient = light.ambient * texture(material.diffuse, texCoords).rgb;
 
 	// --diffuse--
 	float diff = max(dot(normal, lightDir), 0.0);
-	vec3 diffuse = light.diffuse * diff * texture(material.texture_diffuse1, fs_in.texCoords).rgb;
+	vec3 diffuse = light.diffuse * diff * texture(material.diffuse, texCoords).rgb;
 
 	// --specular--
 	vec3 reflectDir = reflect(-lightDir, normal);
 	float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);     // Measure the angle between normal and halfway instead of view direction and refection direction
 	spec = diff != 0.0 ? spec : 0.0;                                             // Avoid some light specular light error when the light is below the surface
-	vec3 specular = light.specular * spec * texture(material.texture_specular1, fs_in.texCoords).rgb;
+	vec3 specular = light.specular * spec * texture(material.specular, texCoords).rgb;
 
 	// Result
 	//--------------------------
 	return ambient + diffuse + specular;
 }
 
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 texCoords) {
 	// Basic data calculation
 	//--------------------------
-	vec3 lightDir = normalize(light.position - fragPos);   // light direction
+	// Transfer lighit direction to tangent space for proper lighting calculation
+	vec3 lightDir = normalize(fs_in.inverse_TBN *(light.position - fragPos));   // light direction
 	// Blinn-Phong halfway direction factor
 	vec3 halfwayDir = normalize(viewDir + lightDir);
 
 	// Lighting Calculation
 	//--------------------------
 	// --ambient--
-	vec3 ambient = light.ambient * texture(material.texture_diffuse1, fs_in.texCoords).rgb;
+	vec3 ambient = light.ambient * texture(material.diffuse, texCoords).rgb;
 
 	// --diffuse--
 	float diff = max(dot(normal, lightDir), 0.0);
-	vec3 diffuse = light.diffuse * diff * texture(material.texture_diffuse1, fs_in.texCoords).rgb;
+	vec3 diffuse = light.diffuse * diff * texture(material.diffuse, texCoords).rgb;
 
 	// --specular--
 	vec3 reflectDir = reflect(-lightDir, normal);
 	float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);     // Measure the angle between normal and halfway instead of view direction and refection direction
 	spec = diff != 0.0 ? spec : 0.0;                                             // Avoid some light specular light error when the light is below the surface
-	vec3 specular = light.specular * spec * texture(material.texture_specular1, fs_in.texCoords).rgb;
+	vec3 specular = light.specular * spec * texture(material.specular, texCoords).rgb;
 
 	// --attenuation--
 	float distance = length(light.position - fragPos);
@@ -219,10 +245,11 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 	return ambient + diffuse + specular;
 }
 
-vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
+vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 texCoords) {
 	// Basic data calculation
 	//--------------------------
-	vec3 lightDir = normalize(light.position - fragPos);        // light direction
+	// Transfer lighit direction to tangent space for proper lighting calculation
+	vec3 lightDir = normalize(fs_in.inverse_TBN * (light.position - fragPos));        // light direction
 	// Blinn-Phong halfway direction factor
 	vec3 halfwayDir = normalize(viewDir + lightDir);
 
@@ -230,17 +257,17 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 	// Lighting Calculation
 	//--------------------------
 	// --ambient--
-	vec3 ambient = light.ambient * texture(material.texture_diffuse1, fs_in.texCoords).rgb;
+	vec3 ambient = light.ambient * texture(material.diffuse, texCoords).rgb;
 
 	// --diffuse--
 	float diff = max(dot(normal, lightDir), 0.0);
-	vec3 diffuse = light.diffuse * diff * texture(material.texture_diffuse1, fs_in.texCoords).rgb;
+	vec3 diffuse = light.diffuse * diff * texture(material.diffuse, texCoords).rgb;
 
 	// --specular--
 	vec3 reflectDir = reflect(-lightDir, normal);
 	float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);     // Measure the angle between normal and halfway instead of view direction and refection direction
 	spec = diff != 0.0 ? spec : 0.0;                                             // Avoid some light specular light error when the light is below the surface
-	vec3 specular = light.specular * spec * texture(material.texture_specular1, fs_in.texCoords).rgb;
+	vec3 specular = light.specular * spec * texture(material.specular, texCoords).rgb;
 
 	// --attenuation--
 	float distance = length(light.position - fragPos);
@@ -261,28 +288,29 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 	return ambient + diffuse + specular;
 }
 
-vec3 CalcShadowDirLight(DirLight light, vec3 normal, vec3 viewDir, int shadow_id) {
+vec3 CalcShadowDirLight(DirLight light, vec3 normal, vec3 viewDir, vec2 texCoords, int shadow_id) {
 
 	// Basic data calculation
 	//--------------------------
-	vec3 lightDir = normalize(-light.direction);   // light's direction
+	// Transfer lighit direction to tangent space for proper lighting calculation
+	vec3 lightDir = normalize(fs_in.inverse_TBN * -light.direction);   // light's direction
 	// Blinn-Phong halfway direction factor
 	vec3 halfwayDir = normalize(viewDir + lightDir);
 
 	// Lighting Calculation
 	//--------------------------
 	// --ambient--
-	vec3 ambient = light.ambient * texture(material.texture_diffuse1, fs_in.texCoords).rgb;
+	vec3 ambient = light.ambient * texture(material.diffuse, texCoords).rgb;
 
 	// --diffuse--
 	float diff = max(dot(normal, lightDir), 0.0);
-	vec3 diffuse = light.diffuse * diff * texture(material.texture_diffuse1, fs_in.texCoords).rgb;
+	vec3 diffuse = light.diffuse * diff * texture(material.diffuse, texCoords).rgb;
 
 	// --specular--
 	vec3 reflectDir = reflect(-lightDir, normal);
 	float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);     // Measure the angle between normal and halfway instead of view direction and refection direction
 	spec = diff != 0.0 ? spec : 0.0;                                             // Avoid some light specular light error when the light is below the surface
-	vec3 specular = light.specular * spec * texture(material.texture_specular1, fs_in.texCoords).rgb;
+	vec3 specular = light.specular * spec * texture(material.specular, texCoords).rgb;
 
 	// --shadow--
 	float shadow = DirLightShadowCalculation(light, fs_in.dirLightSpacePos[shadow_id], normal, lightDir, shadow_id);
@@ -292,28 +320,29 @@ vec3 CalcShadowDirLight(DirLight light, vec3 normal, vec3 viewDir, int shadow_id
 	return ambient + (1 - shadow) * (diffuse + specular);	
 }
 
-vec3 CalcShadowPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, int shadow_id) {
+vec3 CalcShadowPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 texCoords, int shadow_id) {
 
 	// Basic data calculation
 	//--------------------------
-	vec3 lightDir = normalize(light.position - fragPos);   // light's direction
+	// Transfer lighit direction to tangent space for proper lighting calculation
+	vec3 lightDir = normalize(fs_in.inverse_TBN * (light.position - fragPos));   // light's direction
 	// Blinn-Phong halfway direction factor
 	vec3 halfwayDir = normalize(viewDir + lightDir);
 
 	// Lighting Calculation
 	//--------------------------
 	// --ambient--
-	vec3 ambient = light.ambient * texture(material.texture_diffuse1, fs_in.texCoords).rgb;
+	vec3 ambient = light.ambient * texture(material.diffuse, texCoords).rgb;
 
 	// --diffuse--
 	float diff = max(dot(normal, lightDir), 0.0);
-	vec3 diffuse = light.diffuse * diff * texture(material.texture_diffuse1, fs_in.texCoords).rgb;
+	vec3 diffuse = light.diffuse * diff * texture(material.diffuse, texCoords).rgb;
 
 	// --specular--
 	vec3 reflectDir = reflect(-lightDir, normal);
 	float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);     // Measure the angle between normal and halfway instead of view direction and refection direction
 	spec = diff != 0.0 ? spec : 0.0;                                             // Avoid some light specular light error when the light is below the surface
-	vec3 specular = light.specular * spec * texture(material.texture_specular1, fs_in.texCoords).rgb;
+	vec3 specular = light.specular * spec * texture(material.specular, texCoords).rgb;
 	
 	// --attenuation--
 	float distance = length(light.position - fragPos);
@@ -333,10 +362,11 @@ vec3 CalcShadowPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 view
 	return ambient + (1.0 - shadow) * (diffuse + specular);	
 }
 
-vec3 CalcShadowSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir, int shadow_id) {
+vec3 CalcShadowSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 texCoords, int shadow_id) {
 	// Basic data calculation
 	//--------------------------
-	vec3 lightDir = normalize(light.position - fragPos);        // light direction
+	// Transfer lighit direction to tangent space for proper lighting calculation
+	vec3 lightDir = normalize(fs_in.inverse_TBN * (light.position - fragPos));        // light direction
 	// Blinn-Phong halfway direction factor
 	vec3 halfwayDir = normalize(viewDir + lightDir);
 
@@ -344,17 +374,17 @@ vec3 CalcShadowSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDi
 	// Lighting Calculation
 	//--------------------------
 	// --ambient--
-	vec3 ambient = light.ambient * texture(material.texture_diffuse1, fs_in.texCoords).rgb;
+	vec3 ambient = light.ambient * texture(material.diffuse, texCoords).rgb;
 
 	// --diffuse--
 	float diff = max(dot(normal, lightDir), 0.0);
-	vec3 diffuse = light.diffuse * diff * texture(material.texture_diffuse1, fs_in.texCoords).rgb;
+	vec3 diffuse = light.diffuse * diff * texture(material.diffuse, texCoords).rgb;
 
 	// --specular--
 	vec3 reflectDir = reflect(-lightDir, normal);
 	float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);     // Measure the angle between normal and halfway instead of view direction and refection direction
 	spec = diff != 0.0 ? spec : 0.0;                                             // Avoid some light specular light error when the light is below the surface
-	vec3 specular = light.specular * spec * texture(material.texture_specular1, fs_in.texCoords).rgb;
+	vec3 specular = light.specular * spec * texture(material.specular, texCoords).rgb;
 
 	// --attenuation--
 	float distance = length(light.position - fragPos);

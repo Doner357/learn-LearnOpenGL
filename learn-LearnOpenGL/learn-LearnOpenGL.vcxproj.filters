@@ -298,6 +298,12 @@
     <None Include="shaders\shadow-lighting\vertex\global-shadow-lighting_ipv-normal-model.vert">
       <Filter>Resource Files\shaders\shadow-lighting\vertex</Filter>
     </None>
+    <None Include="shaders\shadow-lighting\fragment\global-shadow-lighting_height-texture.frag">
+      <Filter>Resource Files\shaders\shadow-lighting\fragment</Filter>
+    </None>
+    <None Include="shaders\shadow-lighting\vertex\global-shadow-lighting_height-texture.vert">
+      <Filter>Resource Files\shaders\shadow-lighting\vertex</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">
