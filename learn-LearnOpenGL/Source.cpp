@@ -28,8 +28,8 @@ unsigned int LoadCubemap(std::vector<std::string> faces, bool gammaCorrection, b
 unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample = false, const unsigned int samples = 1);
 
 // Screen Width and Height setting
-const unsigned int SCR_WIDTH = 1920;
-const unsigned int SCR_HEIGHT = 1080;
+const unsigned int SCR_WIDTH = 800;
+const unsigned int SCR_HEIGHT = 600;
 
 // Gamma value
 float gamma = 2.2f;
