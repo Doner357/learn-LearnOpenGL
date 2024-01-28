@@ -174,7 +174,6 @@ void main() {
 	result = pow(result, vec3(1.0 / gam));
 
 	float alpha = texture(material.diffuse, fs_in.texCoords).a;
-	//FragColor = vec4(texture(material.height, fs_in.texCoords).rgb, alpha);
 	FragColor = vec4(result, alpha);
 }
 
