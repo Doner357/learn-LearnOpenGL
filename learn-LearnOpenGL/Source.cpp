@@ -541,6 +541,9 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
+	/* Disable v-sync */
+	// glfwSwapInterval(0);
+
 	// FPS time record
 	double fps_previous_time = glfwGetTime(), fps_current_time, fps_delta_time = 0;
 	// Record how many frames has passed

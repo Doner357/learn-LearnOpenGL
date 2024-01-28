@@ -91,7 +91,7 @@ float SpotLightShadowCalculation(SpotLight light, vec4 fragPosLightSpace, vec3 n
 
 // Steep Parallax mapping function
 //------------------------------
-vec2 SteepParallaxMapping(vec2 texCoords, vec3 viewDir);
+vec2 ParallaxOcclusionMapping(vec2 texCoords, vec3 viewDir);
 
 // Lighting calculation function
 //------------------------------
@@ -141,7 +141,7 @@ void main() {
 	viewDir = normalize(fs_in.inverse_TBN * viewDir);
 	
 	// Displace the texture coordinate
-	vec2 texCoords = SteepParallaxMapping(fs_in.texCoords, viewDir);
+	vec2 texCoords = ParallaxOcclusionMapping(fs_in.texCoords, viewDir);
 	// If sample outside [0, 1] range, discard the pixel
 	if (texCoords.x > 1.0 || texCoords.y > 1.0 || texCoords.x < 0.0 || texCoords.y < 0.0)
 		discard;
@@ -177,7 +177,7 @@ void main() {
 	FragColor = vec4(result, alpha);
 }
 
-vec2 SteepParallaxMapping(vec2 texCoords, vec3 viewDir) {
+vec2 ParallaxOcclusionMapping(vec2 texCoords, vec3 viewDir) {
 	// Number of layer
 	const float kMinLayers = 8.0;
 	const float kMaxLayers = 32.0;
@@ -207,7 +207,24 @@ vec2 SteepParallaxMapping(vec2 texCoords, vec3 viewDir) {
 		current_layer_depth += layer_depth;
 	}
 
-	return current_texture_coords;
+
+	/*
+		Do parallax occlusion mapping
+	*/
+	// Get previous texture coordinate
+	vec2 prev_texuture_coords = current_texture_coords + delta_texture_coords;
+
+	// Get depth after and before collision for linear interpolation
+	float after_depth = current_depth_map_value - current_layer_depth;
+	float before_depth = texture(material.height, prev_texuture_coords).r - current_layer_depth + layer_depth;
+
+	// Calculate the weight
+	float weight = after_depth / (after_depth - before_depth);
+
+	// Calculate the final texture coordinate
+	vec2 final_texture_coords = (prev_texuture_coords * weight) + (current_texture_coords * (1.0 - weight));
+
+	return final_texture_coords;
 }
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec2 texCoords) {
