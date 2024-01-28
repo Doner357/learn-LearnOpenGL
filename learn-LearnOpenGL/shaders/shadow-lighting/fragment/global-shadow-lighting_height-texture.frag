@@ -89,9 +89,9 @@ float DirLightShadowCalculation(DirLight light, vec4 fragPosLightSpace, vec3 nor
 float PointLightShadowCalculation(PointLight light, vec3 fragPos, vec3 normal, int shadow_id);
 float SpotLightShadowCalculation(SpotLight light, vec4 fragPosLightSpace, vec3 normal, vec3 lightDir, int shadow_id);
 
-// Parallax mapping function
+// Steep Parallax mapping function
 //------------------------------
-vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir);
+vec2 SteepParallaxMapping(vec2 texCoords, vec3 viewDir);
 
 // Lighting calculation function
 //------------------------------
@@ -135,18 +135,20 @@ layout (std140) uniform GammaCorrection {
 };
 
 void main() {
-	// Properties
-	vec3 normal = texture(material.normal, fs_in.texCoords).rgb;
-	normal = normalize(normal * 2.0 - 1.0);
+	// View direction
 	vec3 viewDir = normalize(viewPos - fs_in.fragPos);
 	// Transfer view direction to tangent sapce
 	viewDir = normalize(fs_in.inverse_TBN * viewDir);
 	
 	// Displace the texture coordinate
-	vec2 texCoords = ParallaxMapping(fs_in.texCoords, viewDir);
+	vec2 texCoords = SteepParallaxMapping(fs_in.texCoords, viewDir);
 	// If sample outside [0, 1] range, discard the pixel
 	if (texCoords.x > 1.0 || texCoords.y > 1.0 || texCoords.x < 0.0 || texCoords.y < 0.0)
 		discard;
+	
+	// Get normal vector
+	vec3 normal = texture(material.normal, texCoords).rgb;
+	normal = normalize(normal * 2.0 - 1.0);
 
 	// Initialize the result color
 	vec3 result = vec3(0.0);
@@ -172,13 +174,41 @@ void main() {
 	result = pow(result, vec3(1.0 / gam));
 
 	float alpha = texture(material.diffuse, fs_in.texCoords).a;
+	//FragColor = vec4(texture(material.height, fs_in.texCoords).rgb, alpha);
 	FragColor = vec4(result, alpha);
 }
 
-vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
-	float height = texture(material.height, texCoords).r;
-	vec2 p = viewDir.xy / viewDir.z * (height * height_scale);
-	return texCoords - p;
+vec2 SteepParallaxMapping(vec2 texCoords, vec3 viewDir) {
+	// Number of layer
+	const float kMinLayers = 8.0;
+	const float kMaxLayers = 32.0;
+	// Taking less samples when looking straight at a surface and more samples when looking at an angle
+	// Note that the normal vector is equal to z-axis in tangent space
+	float kNumOfLayers = mix(kMaxLayers, kMinLayers, min(dot(vec3(0.0, 0.0, 1.0), viewDir), 0.0));
+
+	// Calculate the size of each layer
+	float layer_depth = 1.0 / kNumOfLayers;
+	// depth of current layer
+	float current_layer_depth = 0.0;
+	// The amount to shift the texture coordinates per layer (from vector p)
+	vec2 p = viewDir.xy * height_scale;
+	vec2 delta_texture_coords = p / kNumOfLayers;
+
+	// Get initial values
+	vec2 current_texture_coords = texCoords;
+	float current_depth_map_value = texture(material.height, current_texture_coords).r;
+	
+	// Iterate until the sample depth value is less than current depth value
+	while (current_layer_depth < current_depth_map_value) {
+		// Shift texture coordinates along direction of p
+		current_texture_coords -= delta_texture_coords;
+		// Get depthmap value at current texture coordinates
+		current_depth_map_value = texture(material.height, current_texture_coords).r;
+		// Get depth of next layer
+		current_layer_depth += layer_depth;
+	}
+
+	return current_texture_coords;
 }
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec2 texCoords) {
