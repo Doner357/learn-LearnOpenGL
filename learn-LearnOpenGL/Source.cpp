@@ -33,7 +33,8 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 // Gamma value
-float gamma = 2.2f;
+// We will do gamma correction later
+float gamma = 1.0f;
 
 // Camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -331,7 +332,7 @@ int main(void) {
 	 * Texture loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	unsigned int wood_diff = LoadTexture("textures/wood.jpg", true);
+	unsigned int wood_diff = LoadTexture("textures/wood.jpg", false);
 	unsigned int wood_spec = LoadTexture("textures/common_nonspec.jpg", false);
 
 
@@ -474,32 +475,25 @@ int main(void) {
 	const size_t kNumOfLights = 4;
 
 	std::vector<glm::vec3> light_positions = {
-		glm::vec3( 0.0f, 0.0f, -4.0f),
-		glm::vec3(-0.5f, 0.0f,  1.0f),
-		glm::vec3( 0.5f, 0.0f,  2.0f),
-		glm::vec3( 0.0f, 0.0f,  4.0f)
+		glm::vec3(0.0f,  0.0f, 49.5f),
+		glm::vec3(-1.4f, -1.9f, 9.0f),
+		glm::vec3(0.0f, -1.8f, 4.0f),
+		glm::vec3(0.8f, -1.7f, 6.0f)
 	};
 
 	std::vector<glm::vec3> light_color = {
 		glm::vec3(200.0f),
-		glm::vec3(0.5f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 0.5f, 0.0f),
-		glm::vec3(0.0f, 0.0f, 0.5f)
+		glm::vec3(0.1f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 0.0f, 0.2f),
+		glm::vec3(0.0f, 0.1f, 0.0f)
 	};
-
-	pointLight.position  = glm::vec3(0.0f, 0.0001f, 0.0f);
-	pointLight.ambient   = glm::vec3(0.1f);
-	pointLight.diffuse   = glm::vec3(1.0f);
-	pointLight.specular  = glm::vec3(1.0f);
-	pointLight.quadratic = 1.0f;
-	globalLightManager.updatePointLight(pointLight, 0);
 
 	for (size_t i = 0; i < kNumOfLights; i++) {
 		pointLight.position = light_positions[i];
 		pointLight.ambient = light_color[i] * glm::vec3(0.1f);
 		pointLight.diffuse = light_color[i] * glm::vec3(0.8f);
 		pointLight.specular = light_color[i] * glm::vec3(1.0f);
-		pointLight.quadratic = 1.0f;
+		pointLight.linear = 1.0f;
 		globalLightManager.updatePointLight(pointLight, i);
 	}
 
@@ -663,7 +657,8 @@ int main(void) {
 
 		textureShader.use();
 		model = glm::mat4(1.0f);
-		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 5.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 25.0));
+		model = glm::scale(model, glm::vec3(2.5f, 2.5f, 27.5f));
 		normalMat = CustomHelper::CalculateNormalMat(model);
 		textureShader.setMat4("model", model);
 		textureShader.setMat3("normalMat", normalMat);
@@ -948,9 +943,9 @@ unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsig
 	GLenum texture_color_format = (hdr) ? GL_RGB16F : GL_RGB;
 
 	if (multisample)
-		glTexImage2DMultisample(texformat, samples, GL_RGB, width, height, GL_TRUE);
+		glTexImage2DMultisample(texformat, samples, texture_color_format, width, height, GL_TRUE);
 	else {
-		glTexImage2D(texformat, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(texformat, 0, texture_color_format, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 		glTexParameteri(texformat, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(texformat, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
