@@ -46,7 +46,7 @@ bool firstMouse = true;
 float deltaTime = 0.0f;    // Time between current frame and last frame
 float lastFrame = 0.0f;    // Time of last frame
 
-float height_scale = 0.0f; // Controa the height mapping scale
+float exposure = 1.0f;     // Control the exposure value
 
 
 int main(void) {
@@ -367,8 +367,10 @@ int main(void) {
 	Shader dirDepthShader("shaders/bake/depth_map/vertex/dir-depth_map.vert", "shaders/bake/depth_map/fragment/dir-depth_map.frag");
 	Shader cubeDepthShader("shaders/bake/depth_map/vertex/cube-depth_map.vert", "shaders/bake/depth_map/fragment/cube-depth_map.frag", "shaders/bake/depth_map/geometry/cube-depth_map.geom");
 
-	// HDR screen shader for this chapter
-	Shader hdr_screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/hdr_screen.frag");
+	// HDR screen shader using Reinhard tone mapping
+	Shader hdr_reinhard_screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/hdr_reinhard_screen.frag");
+	// HDR screen shader using Exposure tone mapping
+	Shader hdr_exposure_screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/hdr_exposure_screen.frag");
 	// Draw shader for this chapter
 	Shader textureShader("shaders/lighting/vertex/lighting_texture.vert", "shaders/lighting/fragment/global-lighting_texture.frag");
 
@@ -386,8 +388,12 @@ int main(void) {
 	screenShader.setInt("screenTexture", 0);
 
 
-	hdr_screenShader.use();
-	hdr_screenShader.setInt("screenTexture", 0);
+	hdr_reinhard_screenShader.use();
+	hdr_reinhard_screenShader.setInt("screenTexture", 0);
+
+
+	hdr_exposure_screenShader.use();
+	hdr_exposure_screenShader.setInt("screenTexture", 0);
 
 
 	textureShader.use();
@@ -706,7 +712,8 @@ int main(void) {
 		// Render scene
 		//-------------------------
 		
-		hdr_screenShader.use();
+		hdr_exposure_screenShader.use();
+		hdr_exposure_screenShader.setFloat("exposure", exposure);
 
 		glBindVertexArray(quadVAO);
 		glActiveTexture(GL_TEXTURE0);
@@ -769,6 +776,26 @@ void processInput(GLFWwindow *window) {
 		camera.ProcessKeyboard(CAMERA_UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
+
+	// Adjust height scale
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+		if (exposure > 0.0f) {
+			exposure -= 0.02f;
+		}
+		else {
+			exposure = 0.0f;
+		}
+		std::cout << "Exposure: " << exposure << std::endl;
+	}
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+		if (exposure < 10.0f) {
+			exposure += 0.02f;
+		}
+		else {
+			exposure = 10.0f;
+		}
+		std::cout << "Exposure: " << exposure << std::endl;
+	}
 }
 
 // glfw: whenever the mouse moves, this callback is called

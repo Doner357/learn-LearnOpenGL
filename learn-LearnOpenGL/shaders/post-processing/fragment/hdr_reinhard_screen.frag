@@ -6,7 +6,7 @@ in vec2 TexCoords;
 uniform sampler2D screenTexture;
 
 void main() {
-
+    // Define gamma constant
     const float kGamma = 2.2;
     
     // Get the hdr color from screen texture
