@@ -155,6 +155,7 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\post-processing\fragment\hdr_screen.frag" />
     <None Include="shaders\lighting\vertex\lighting_normal-texture.vert" />
     <None Include="shaders\lighting\fragment\local-lighting_normal-texture.frag" />
     <None Include="shaders\shadow-lighting\fragment\global-shadow-lighting_height-texture.frag" />

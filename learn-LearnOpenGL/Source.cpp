@@ -12,6 +12,7 @@
 #include "learnopengl/custom_helper.h"
 
 #include <iostream>
+#include <vector>
 #include <string>
 #include <cmath>
 #include <functional>
@@ -25,7 +26,7 @@ void processInput(GLFWwindow *window);
 // Custom function
 unsigned int LoadTexture(char const* path, bool gammaCorrection, bool flip_vertically = true);
 unsigned int LoadCubemap(std::vector<std::string> faces, bool gammaCorrection, bool flip_vertically = false);
-unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample = false, const unsigned int samples = 1);
+unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample, const unsigned int samples, const bool hdr = false);
 
 // Screen Width and Height setting
 const unsigned int SCR_WIDTH = 800;
@@ -330,17 +331,8 @@ int main(void) {
 	 * Texture loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	// Bricks
-	unsigned int brickwall_diff = LoadTexture("textures/bricks2/bricks2.jpg"       , true , false);
-	unsigned int brickwall_spec = LoadTexture("textures/common_nonspec.jpg"        , false, false);
-	unsigned int brickwall_norm = LoadTexture("textures/bricks2/bricks2_normal.jpg", false, false);
-	unsigned int brickwall_disp = LoadTexture("textures/bricks2/bricks2_disp.jpg"  , false, false);
-
-	// Toy box
-	unsigned int toy_box_diff = LoadTexture("textures/toy_box/toy_box_diff.png"    , true , false);
-	unsigned int toy_box_spec = LoadTexture("textures/common_nonspec.jpg"          , false, false);
-	unsigned int toy_box_norm = LoadTexture("textures/toy_box/toy_box_normal.png"  , false, false);
-	unsigned int toy_box_disp = LoadTexture("textures/toy_box/toy_box_disp.png"    , false, false);
+	unsigned int wood_diff = LoadTexture("textures/wood.jpg", true);
+	unsigned int wood_spec = LoadTexture("textures/common_nonspec.jpg", false);
 
 
 
@@ -374,8 +366,10 @@ int main(void) {
 	Shader dirDepthShader("shaders/bake/depth_map/vertex/dir-depth_map.vert", "shaders/bake/depth_map/fragment/dir-depth_map.frag");
 	Shader cubeDepthShader("shaders/bake/depth_map/vertex/cube-depth_map.vert", "shaders/bake/depth_map/fragment/cube-depth_map.frag", "shaders/bake/depth_map/geometry/cube-depth_map.geom");
 
-	// Shader for parallex mapping in this chapter
-	Shader global_heightMapingShader("shaders/shadow-lighting/vertex/global-shadow-lighting_height-texture.vert", "shaders/shadow-lighting/fragment/global-shadow-lighting_height-texture.frag");
+	// HDR screen shader for this chapter
+	Shader hdr_screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/hdr_screen.frag");
+	// Draw shader for this chapter
+	Shader textureShader("shaders/lighting/vertex/lighting_texture.vert", "shaders/lighting/fragment/global-lighting_texture.frag");
 
 
 	/*
@@ -391,13 +385,14 @@ int main(void) {
 	screenShader.setInt("screenTexture", 0);
 
 
-	global_heightMapingShader.use();
-	global_heightMapingShader.setInt("material.diffuse", CustomHelper::SAMPLER_DIFFUSE);
-	global_heightMapingShader.setInt("material.specular", CustomHelper::SAMPLER_SPECULAR);
-	global_heightMapingShader.setInt("material.normal", CustomHelper::SAMPLER_NORMAL);
-	global_heightMapingShader.setInt("material.height", CustomHelper::SAMPLER_HEIGHT);
-	global_heightMapingShader.setFloat("material.shininess", 32.0f);
-	global_heightMapingShader.setFloat("height_scale", height_scale);
+	hdr_screenShader.use();
+	hdr_screenShader.setInt("screenTexture", 0);
+
+
+	textureShader.use();
+	textureShader.setInt("material.diffuse", CustomHelper::SAMPLER_DIFFUSE);
+	textureShader.setInt("material.specular", CustomHelper::SAMPLER_SPECULAR);
+	textureShader.setFloat("material.shininess", 32);
 
 
 	glUseProgram(0);
@@ -413,11 +408,11 @@ int main(void) {
 	CustomHelper::CameraMatricesManager cameraMatManager(CustomHelper::UBOPOINT_NAME_CAMERA_MATRICES, CustomHelper::UBOPOINT_CAMERA_MATRICES);
 	cameraMatManager.registerShader(skyboxShader);
 	cameraMatManager.registerShader(lightCubeShader);
-	cameraMatManager.registerShader(global_heightMapingShader);
+	cameraMatManager.registerShader(textureShader);
 
 	// Global light uniform block
 	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING, CustomHelper::UBOPOINT_BLINPHONG_LIGHTING, CustomHelper::MAX_NUM_DIRECTIONALLIGHT, CustomHelper::MAX_NUM_POINTLIGHT, CustomHelper::MAX_NUM_SPOTLIGHT);
-	globalLightManager.registerShader(global_heightMapingShader);
+	globalLightManager.registerShader(textureShader);
 
 	// Global light with shadow uniform block
 	CustomHelper::GlobalBlinnPongShadowLightManager globalShadowLightManager(
@@ -434,12 +429,11 @@ int main(void) {
 		1024,
 		1024
 	);
-	globalShadowLightManager.registerShader(global_heightMapingShader);
 
 	// Gamma Correction uniform block
 	CustomHelper::GammaManager gammaManager(CustomHelper::UBOPOINT_NAME_GAMMA_CORRECTION, CustomHelper::UBOPOINT_GAMMA_CORRECTION);
 	gammaManager.registerShader(lightCubeShader);
-	gammaManager.registerShader(global_heightMapingShader);
+	gammaManager.registerShader(textureShader);
 
 
 
@@ -450,8 +444,8 @@ int main(void) {
 
 	unsigned int ms_Frametexture;
 	unsigned int screentexuture;
-	unsigned int ms_Framebuffer = CreateColorFramebuffer(ms_Frametexture, SCR_WIDTH, SCR_HEIGHT, true, 4);
-	unsigned int screenFramebuffer = CreateColorFramebuffer(screentexuture, SCR_WIDTH, SCR_HEIGHT);
+	unsigned int ms_Framebuffer = CreateColorFramebuffer(ms_Frametexture, SCR_WIDTH, SCR_HEIGHT, true, 4, true);     // Choose floating point color buffer this time
+	unsigned int screenFramebuffer = CreateColorFramebuffer(screentexuture, SCR_WIDTH, SCR_HEIGHT, false, 0, true);  // Choose floating point color buffer this time
 
 
 
@@ -477,12 +471,37 @@ int main(void) {
 	unsigned int num_of_spotLight = 0;
 
 	// Manual setting part
+	const size_t kNumOfLights = 4;
+
+	std::vector<glm::vec3> light_positions = {
+		glm::vec3( 0.0f, 0.0f, -4.0f),
+		glm::vec3(-0.5f, 0.0f,  1.0f),
+		glm::vec3( 0.5f, 0.0f,  2.0f),
+		glm::vec3( 0.0f, 0.0f,  4.0f)
+	};
+
+	std::vector<glm::vec3> light_color = {
+		glm::vec3(200.0f),
+		glm::vec3(0.5f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 0.5f, 0.0f),
+		glm::vec3(0.0f, 0.0f, 0.5f)
+	};
+
 	pointLight.position  = glm::vec3(0.0f, 0.0001f, 0.0f);
 	pointLight.ambient   = glm::vec3(0.1f);
 	pointLight.diffuse   = glm::vec3(1.0f);
 	pointLight.specular  = glm::vec3(1.0f);
 	pointLight.quadratic = 1.0f;
 	globalLightManager.updatePointLight(pointLight, 0);
+
+	for (size_t i = 0; i < kNumOfLights; i++) {
+		pointLight.position = light_positions[i];
+		pointLight.ambient = light_color[i] * glm::vec3(0.1f);
+		pointLight.diffuse = light_color[i] * glm::vec3(0.8f);
+		pointLight.specular = light_color[i] * glm::vec3(1.0f);
+		pointLight.quadratic = 1.0f;
+		globalLightManager.updatePointLight(pointLight, i);
+	}
 
 
 	// Random generate part
@@ -613,13 +632,12 @@ int main(void) {
 
 		std::function<void(Shader &)> shadowDrawFunction;
 		shadowDrawFunction = [&](Shader &shader) {};
-		globalShadowLightManager.bindShadowMaps();
+		//globalShadowLightManager.bindShadowMaps();
 
 
 		// Update global lighting
 		//--------------------------
-		pointLight.position = glm::vec3(0.0f, glm::sin(static_cast<float>(glfwGetTime())) * 2.0f, 1.0f);
-		globalLightManager.updatePointLight(pointLight, 0);
+
 
 
 		// Render Objects
@@ -636,57 +654,23 @@ int main(void) {
 		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Render bricks
-		//--------------
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, brickwall_diff);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, brickwall_spec);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, brickwall_norm);
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, brickwall_disp);
-
-		global_heightMapingShader.use();
-		// Translation
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(1.0f, 0.0f, -1.0f));
-		normalMat = CustomHelper::CalculateNormalMat(model);
-		global_heightMapingShader.setMat4("model", model);
-		global_heightMapingShader.setMat3("normalMat", normalMat);
-		global_heightMapingShader.setVec3("viewPos", camera.Position);
-		// Adjust height scale with Q and E keys
-		global_heightMapingShader.setFloat("height_scale", height_scale);
-
-		glBindVertexArray(tangentQuadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-
-		// Render bricks
-		//--------------
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, toy_box_diff);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, toy_box_spec);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, toy_box_norm);
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, toy_box_disp);
-
-		global_heightMapingShader.use();
-		// Translation
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
-		normalMat = CustomHelper::CalculateNormalMat(model);
-		global_heightMapingShader.setMat4("model", model);
-		global_heightMapingShader.setMat3("normalMat", normalMat);
-		global_heightMapingShader.setVec3("viewPos", camera.Position);
-		// Adjust height scale with Q and E keys
-		global_heightMapingShader.setFloat("height_scale", height_scale);
-
-		glBindVertexArray(tangentQuadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
 		
+		// Binding texture
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, wood_diff);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, wood_spec);
+
+		textureShader.use();
+		model = glm::mat4(1.0f);
+		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 5.0f));
+		normalMat = CustomHelper::CalculateNormalMat(model);
+		textureShader.setMat4("model", model);
+		textureShader.setMat3("normalMat", normalMat);
+		textureShader.setVec3("viewPos", camera.Position);
+
+		glBindVertexArray(roomVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.05f);
 
@@ -727,7 +711,7 @@ int main(void) {
 		// Render scene
 		//-------------------------
 		
-		screenShader.use();
+		hdr_screenShader.use();
 
 		glBindVertexArray(quadVAO);
 		glActiveTexture(GL_TEXTURE0);
@@ -943,7 +927,7 @@ unsigned int LoadCubemap(std::vector<std::string> faces, bool gammaCorrection, b
 }
 
 // Generate a framebuffer attach the given texture as the color attachment.
-unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample, const unsigned int samples) {
+unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample, const unsigned int samples, const bool hdr) {
 
 	unsigned int framebuffer;
 	// Generate a framebuffer and get its ID
@@ -957,10 +941,11 @@ unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsig
 	glGenTextures(1, &frameColortexture);
 
 	// Determine whether use the multisampling texture
-	GLenum texformat = GL_TEXTURE_2D;
-	if (multisample)
-		texformat = GL_TEXTURE_2D_MULTISAMPLE;
+	GLenum texformat = (multisample) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
 	glBindTexture(texformat, frameColortexture);
+
+	// Determine whether use the float color attachment
+	GLenum texture_color_format = (hdr) ? GL_RGB16F : GL_RGB;
 
 	if (multisample)
 		glTexImage2DMultisample(texformat, samples, GL_RGB, width, height, GL_TRUE);

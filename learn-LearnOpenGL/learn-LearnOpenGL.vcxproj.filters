@@ -304,6 +304,9 @@
     <None Include="shaders\shadow-lighting\vertex\global-shadow-lighting_height-texture.vert">
       <Filter>Resource Files\shaders\shadow-lighting\vertex</Filter>
     </None>
+    <None Include="shaders\post-processing\fragment\hdr_screen.frag">
+      <Filter>Resource Files\shaders\post-processing\fragment</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">
