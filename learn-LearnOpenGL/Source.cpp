@@ -33,7 +33,8 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 // Gamma value
-float gamma = 2.2f;
+// This time we do gamma correction in screen post-processing shader
+float gamma = 1.0f;
 
 // Camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -351,7 +352,7 @@ int main(void) {
 		folder_path + "back.png"
 	};
 
-	unsigned int skyboxTexture = LoadCubemap(faces, false);
+	unsigned int skyboxTexture = LoadCubemap(faces, true);
 
 
 
@@ -474,25 +475,18 @@ int main(void) {
 	const size_t kNumOfLights = 4;
 
 	std::vector<glm::vec3> light_positions = {
-		glm::vec3( 0.0f, 0.0f, -4.0f),
-		glm::vec3(-0.5f, 0.0f,  1.0f),
-		glm::vec3( 0.5f, 0.0f,  2.0f),
-		glm::vec3( 0.0f, 0.0f,  4.0f)
+		glm::vec3( 0.0f,  0.0f, 49.5f),
+		glm::vec3(-1.4f, -1.9f, 9.0f),
+		glm::vec3( 0.0f, -1.8f, 4.0f),
+		glm::vec3( 0.8f, -1.7f, 6.0f)
 	};
 
 	std::vector<glm::vec3> light_color = {
 		glm::vec3(200.0f),
-		glm::vec3(0.5f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 0.5f, 0.0f),
-		glm::vec3(0.0f, 0.0f, 0.5f)
+		glm::vec3(0.1f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 0.0f, 0.2f),
+		glm::vec3(0.0f, 0.1f, 0.0f)
 	};
-
-	pointLight.position  = glm::vec3(0.0f, 0.0001f, 0.0f);
-	pointLight.ambient   = glm::vec3(0.1f);
-	pointLight.diffuse   = glm::vec3(1.0f);
-	pointLight.specular  = glm::vec3(1.0f);
-	pointLight.quadratic = 1.0f;
-	globalLightManager.updatePointLight(pointLight, 0);
 
 	for (size_t i = 0; i < kNumOfLights; i++) {
 		pointLight.position = light_positions[i];
@@ -663,7 +657,8 @@ int main(void) {
 
 		textureShader.use();
 		model = glm::mat4(1.0f);
-		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 5.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 25.0f));
+		model = glm::scale(model, glm::vec3(2.5f, 2.5f, 27.5f));
 		normalMat = CustomHelper::CalculateNormalMat(model);
 		textureShader.setMat4("model", model);
 		textureShader.setMat3("normalMat", normalMat);
@@ -774,24 +769,6 @@ void processInput(GLFWwindow *window) {
 		camera.ProcessKeyboard(CAMERA_UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
-
-	// Adjust height scale
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-		if (height_scale > 0.0f) {
-			height_scale -= 0.002f;
-		}
-		else {
-			height_scale = 0.0f;
-		}
-	}
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-		if (height_scale < 1.0f) {
-			height_scale += 0.002f;
-		}
-		else {
-			height_scale = 1.0f;
-		}
-	}
 }
 
 // glfw: whenever the mouse moves, this callback is called
@@ -948,9 +925,9 @@ unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsig
 	GLenum texture_color_format = (hdr) ? GL_RGB16F : GL_RGB;
 
 	if (multisample)
-		glTexImage2DMultisample(texformat, samples, GL_RGB, width, height, GL_TRUE);
+		glTexImage2DMultisample(texformat, samples, texture_color_format, width, height, GL_TRUE);
 	else {
-		glTexImage2D(texformat, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(texformat, 0, texture_color_format, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 		glTexParameteri(texformat, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(texformat, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
