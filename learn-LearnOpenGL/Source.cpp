@@ -34,19 +34,27 @@ const unsigned int SCR_HEIGHT = 600;
 
 // Gamma value
 // This time we do gamma correction in screen post-processing shader
-float gamma = 1.0f;
+float gamma = 2.2f;
 
 // Camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float lastX = (float)SCR_WIDTH / 2.0f;
 float lastY = (float)SCR_HEIGHT / 2.0f;
-bool firstMouse = true;
+bool firstMouse = false;
 
 // Timing
 float deltaTime = 0.0f;    // Time between current frame and last frame
 float lastFrame = 0.0f;    // Time of last frame
 
-float exposure = 1.0f;     // Control the exposure value
+// Tone mapping options
+bool  isEyeAdaptionEnable = true;   // Determine whether do the eye adaption for tone mapping
+const float kMaxLuminance = 3.0f;
+const float kMinLuminance = 0.3f;
+const float kExposureAdjustSpeed = 30.0f;
+const float kAverageLuminance = 0.5f;
+float current_luminance = 0.3f;
+float last_luminance = 0.3f;
+float exposure = 1.0f;              // Control the exposure value
 
 
 int main(void) {
@@ -439,8 +447,9 @@ int main(void) {
 
 	// Gamma Correction uniform block
 	CustomHelper::GammaManager gammaManager(CustomHelper::UBOPOINT_NAME_GAMMA_CORRECTION, CustomHelper::UBOPOINT_GAMMA_CORRECTION);
-	gammaManager.registerShader(lightCubeShader);
-	gammaManager.registerShader(textureShader);
+	// Move gamma correction to post-processing part
+	gammaManager.registerShader(hdr_reinhard_screenShader);
+	gammaManager.registerShader(hdr_exposure_screenShader);
 
 
 
@@ -450,9 +459,9 @@ int main(void) {
 	*/
 
 	unsigned int ms_Frametexture;
-	unsigned int screentexuture;
-	unsigned int ms_Framebuffer = CreateColorFramebuffer(ms_Frametexture, SCR_WIDTH, SCR_HEIGHT, true, 4, true);     // Choose floating point color buffer this time
-	unsigned int screenFramebuffer = CreateColorFramebuffer(screentexuture, SCR_WIDTH, SCR_HEIGHT, false, 0, true);  // Choose floating point color buffer this time
+	unsigned int hdr_screentexuture;
+	unsigned int ms_Framebuffer = CreateColorFramebuffer(ms_Frametexture, SCR_WIDTH, SCR_HEIGHT, true, 4, true);
+	unsigned int hdr_screenFramebuffer = CreateColorFramebuffer(hdr_screentexuture, SCR_WIDTH, SCR_HEIGHT, false, 0, true);
 
 
 
@@ -561,12 +570,13 @@ int main(void) {
 	 */
 
 	/* Disable v-sync */
-	// glfwSwapInterval(0);
+	//glfwSwapInterval(0);
 
 	// FPS time record
 	double fps_previous_time = glfwGetTime(), fps_current_time, fps_delta_time = 0;
 	// Record how many frames has passed
 	unsigned int fps_passframe_count = 0;
+	unsigned int fps = 0;
 
 	while (!glfwWindowShouldClose(window)) {
 
@@ -578,7 +588,8 @@ int main(void) {
 		fps_passframe_count++;
 		// Update the fps presentation
 		if (fps_delta_time >= 1.0) {
-			glfwSetWindowTitle(window, ("LearnOpenGL FPS:" + std::to_string(fps_passframe_count)).c_str());
+			fps = fps_passframe_count;
+			glfwSetWindowTitle(window, ("LearnOpenGL FPS:" + std::to_string(fps)).c_str());
 			fps_previous_time = fps_current_time;
 			fps_passframe_count = 0;
 		}
@@ -699,28 +710,67 @@ int main(void) {
 		// **SECOND PASS**
 		//----------------------------------------------------------------------
 		
+		// Transfer the color from multisamples framebuffer to normal framebuffer
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, ms_Framebuffer);
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, screenFramebuffer);
-		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);		
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdr_screenFramebuffer);
+		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
+
+
+		// Render scene
+		//-------------------------
+
+		// Tone mapping
+		//--------------------
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glDisable(GL_DEPTH_TEST);
-		
-		// Render scene
-		//-------------------------
-		
-		hdr_exposure_screenShader.use();
-		hdr_exposure_screenShader.setFloat("exposure", exposure);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, hdr_screentexuture);
+
+		// Determine whether to do automatic exposure adjustment. Using Reinhard tone mapping if not
+		if (isEyeAdaptionEnable) {
+
+			hdr_exposure_screenShader.use();
+
+			// Generate mipmap
+			glGenerateMipmap(GL_TEXTURE_2D);
+			// Get maximum texture mipmap level
+			size_t max_mipmap_level = static_cast<size_t>(std::log2(std::max(SCR_WIDTH, SCR_HEIGHT)));
+
+			/*
+			* The automatic exposure algorithm is from https://blog.csdn.net/coldkaweh/article/details/62893076
+			* And the average luminace is based on lowest mipmap level generate by OpenGL itself, so it is very inefficient
+			*/
+			// Get average color by get lowest mipmap level pixel color
+			glm::vec3 average_color;
+			glGetTexImage(GL_TEXTURE_2D, max_mipmap_level, GL_RGB, GL_FLOAT, &average_color);
+			// Calculate the real luminance in the scene
+			const float real_luminance = 0.2126f * average_color.r + 0.7152 * average_color.g + 0.0722 * average_color.b;
+
+			// Calculate adapted luminance
+			float adapted_luminance = last_luminance + (real_luminance - last_luminance) * (1.0 - std::pow(0.98f, kExposureAdjustSpeed * (1.0f / fps)));
+			// Clamp the luminance
+			adapted_luminance = (adapted_luminance >= kMaxLuminance) ? kMaxLuminance : ((adapted_luminance <= kMinLuminance) ? kMinLuminance : adapted_luminance);
+
+			// Record the adpated luminance to last luminace
+			last_luminance = adapted_luminance;
+
+			// Calculate the exposure
+			exposure = kAverageLuminance / adapted_luminance;
+			// Transfer exposure value to shader
+			hdr_exposure_screenShader.setFloat("exposure", exposure);
+		}
+		else {
+			// Transfer exposure value to shader
+			hdr_reinhard_screenShader.use();
+		}
 
 		glBindVertexArray(quadVAO);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, screentexuture);
-
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-
 
 		// Unbind VAO
 		glBindVertexArray(0);
@@ -740,7 +790,7 @@ int main(void) {
 	dirDepthShader.clear();
 	cubeDepthShader.clear();
 	glDeleteFramebuffers(1, &ms_Framebuffer);
-	glDeleteFramebuffers(1, &screenFramebuffer);
+	glDeleteFramebuffers(1, &hdr_screenFramebuffer);
 
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
@@ -776,26 +826,6 @@ void processInput(GLFWwindow *window) {
 		camera.ProcessKeyboard(CAMERA_UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
-
-	// Adjust height scale
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-		if (exposure > 0.0f) {
-			exposure -= 0.02f;
-		}
-		else {
-			exposure = 0.0f;
-		}
-		std::cout << "Exposure: " << exposure << std::endl;
-	}
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-		if (exposure < 10.0f) {
-			exposure += 0.02f;
-		}
-		else {
-			exposure = 10.0f;
-		}
-		std::cout << "Exposure: " << exposure << std::endl;
-	}
 }
 
 // glfw: whenever the mouse moves, this callback is called

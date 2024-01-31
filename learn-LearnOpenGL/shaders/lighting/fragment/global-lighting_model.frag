@@ -69,10 +69,6 @@ layout (std140) uniform GlobalLights {               // size      ali
 	SpotLight spotLights[NUM_OF_SPOTLIGHTS];         //  768     2816
 }; // total 3584
 
-// Used for gamma correction
-layout (std140) uniform GammaCorrection {
-	float gamma;    // 4 bytes
-};
 
 void main() {
 	vec3 normal = normalize(fs_in.normal);
@@ -85,10 +81,6 @@ void main() {
 		result += pointLights[i].position == NO_LIGHT ? vec3(0.0) : CalcPointLight(pointLights[i], normal, fs_in.fragPos, viewDir);
 	for(int i = 0; i < NUM_OF_SPOTLIGHTS; i++)
 		result += spotLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcSpotLight(spotLights[i], normal, fs_in.fragPos, viewDir);
-		
-	// Gamma correction
-	float gam = gamma == 0.0 ? 1.0 : gamma;    // Avoid the 0 exponent
-	result = pow(result, vec3(1.0 / gam));
 	
 	float alpha = texture(material.texture_diffuse1, fs_in.texCoords).a;
 	FragColor = vec4(result, alpha);

@@ -5,10 +5,12 @@ in vec2 TexCoords;
 
 uniform sampler2D screenTexture;
 
+// Used for gamma correction
+layout (std140) uniform GammaCorrection {
+	float gamma;    // 4 bytes
+};
+
 void main() {
-    // Define gamma constant
-    const float kGamma = 2.2;
-    
     // Get the hdr color from screen texture
     vec3 hdr_color = texture(screenTexture, TexCoords).rgb;
 
@@ -16,7 +18,7 @@ void main() {
     vec3 mapped = hdr_color / (hdr_color + vec3(1.0));
 
     // Gamma correction
-    mapped = pow(mapped, vec3(1.0 / kGamma));
+    mapped = pow(mapped, vec3(1.0 / gamma));
 
     FragColor = vec4(mapped, 1.0);
 }

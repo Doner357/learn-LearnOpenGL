@@ -65,10 +65,6 @@ uniform DirLight dirLights[NUM_OF_DIRLIGHTS];
 uniform PointLight pointLights[NUM_OF_POINTLIGHTS];
 uniform SpotLight spotLights[NUM_OF_SPOTLIGHTS];
 
-// Used for gamma correction
-layout (std140) uniform GammaCorrection {
-	float gamma;    // 4 bytes
-};
 
 void main() {
 	vec3 normal = normalize(Normal);
@@ -81,10 +77,6 @@ void main() {
 		result += pointLights[i].position == NO_LIGHT ? vec3(0.0) : CalcPointLight(pointLights[i], normal, FragPos, viewDir);
 	for(int i = 0; i < NUM_OF_SPOTLIGHTS; i++)
 		result += spotLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcSpotLight(spotLights[i], normal, FragPos, viewDir);
-		
-	// Gamma correction
-	float gam = gamma == 0.0 ? 1.0 : gamma;    // Avoid the 0 exponent
-	result = pow(result, vec3(1.0 / gam));
 
 	FragColor = vec4(result, 1.0);
 }

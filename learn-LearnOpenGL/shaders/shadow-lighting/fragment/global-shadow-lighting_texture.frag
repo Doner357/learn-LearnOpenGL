@@ -119,10 +119,6 @@ layout (std140) uniform GlobalShadowLights {                        // size     
 }; // total 576
 uniform ShadowMaps shadowMaps;
 
-// Used for gamma correction
-layout (std140) uniform GammaCorrection {
-	float gamma;    // 4 bytes
-};
 
 void main() {
 	// Properties
@@ -145,10 +141,6 @@ void main() {
 		result += shadowPointLights[i].position == NO_LIGHT ? vec3(0.0) : CalcShadowPointLight(shadowPointLights[i], normal, fs_in.fragPos, viewDir, i);
 	for (int i = 0; i < NUM_OF_SHADOWSPOTLIGHTS; i++)
 		result += shadowSpotLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcShadowSpotLight(shadowSpotLights[i], normal, fs_in.fragPos, viewDir, i);
-		
-	// Gamma correction
-	float gam = gamma == 0.0 ? 1.0 : gamma;    // Avoid the 0 exponent
-	result = pow(result, vec3(1.0 / gam));
 
 	float alpha = texture(material.diffuse, fs_in.texCoords).a;
 	FragColor = vec4(result, alpha);
