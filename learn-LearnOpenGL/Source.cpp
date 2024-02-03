@@ -26,7 +26,7 @@ void processInput(GLFWwindow *window);
 // Custom function
 unsigned int LoadTexture(char const* path, bool gammaCorrection, bool flip_vertically = true);
 unsigned int LoadCubemap(std::vector<std::string> faces, bool gammaCorrection, bool flip_vertically = false);
-unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample, const unsigned int samples, const bool hdr = false);
+unsigned int CreateColorFramebuffer(const size_t numOfColorAttachment, unsigned int *frameColortextures, const unsigned int width, const unsigned int height, const bool multisample, const unsigned int samples, const bool hdr);
 
 // Screen Width and Height setting
 const unsigned int SCR_WIDTH = 800;
@@ -50,7 +50,7 @@ float lastFrame = 0.0f;    // Time of last frame
 bool  isEyeAdaptionEnable = true;   // Determine whether do the eye adaption for tone mapping
 const float kMaxLuminance = 3.0f;
 const float kMinLuminance = 0.3f;
-const float kExposureAdjustSpeed = 30.0f;
+const float kExposureAdjustSpeed = 50.0f;
 const float kAverageLuminance = 0.5f;
 float current_luminance = 0.3f;
 float last_luminance = 0.3f;
@@ -340,8 +340,13 @@ int main(void) {
 	 * Texture loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
+	// Floor textures
 	unsigned int wood_diff = LoadTexture("textures/wood.jpg", true);
-	unsigned int wood_spec = LoadTexture("textures/common_nonspec.jpg", false);
+	unsigned int wood_spec = LoadTexture("textures/common_spec.jpg", false);
+
+	// container textures
+	unsigned int container_diff = LoadTexture("textures/container2/container2.png", true);
+	unsigned int container_spec = LoadTexture("textures/container2/container2_specular.png", false);
 
 
 
@@ -379,8 +384,11 @@ int main(void) {
 	Shader hdr_reinhard_screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/hdr_reinhard_screen.frag");
 	// HDR screen shader using Exposure tone mapping
 	Shader hdr_exposure_screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/hdr_exposure_screen.frag");
-	// Draw shader for this chapter
+	// Shader just for render texture on simple shape
 	Shader textureShader("shaders/lighting/vertex/lighting_texture.vert", "shaders/lighting/fragment/global-lighting_texture.frag");
+
+	// Shader for bloom
+	Shader hdr_bloom_screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/hdr_bloom_extract.frag");
 
 
 	/*
@@ -404,10 +412,15 @@ int main(void) {
 	hdr_exposure_screenShader.setInt("screenTexture", 0);
 
 
+	hdr_bloom_screenShader.use();
+	hdr_bloom_screenShader.setInt("screenTexture", 0);
+	
+
+
 	textureShader.use();
 	textureShader.setInt("material.diffuse", CustomHelper::SAMPLER_DIFFUSE);
 	textureShader.setInt("material.specular", CustomHelper::SAMPLER_SPECULAR);
-	textureShader.setFloat("material.shininess", 32);
+	textureShader.setFloat("material.shininess", 64.0f);
 
 
 	glUseProgram(0);
@@ -448,6 +461,7 @@ int main(void) {
 	// Gamma Correction uniform block
 	CustomHelper::GammaManager gammaManager(CustomHelper::UBOPOINT_NAME_GAMMA_CORRECTION, CustomHelper::UBOPOINT_GAMMA_CORRECTION);
 	// Move gamma correction to post-processing part
+	gammaManager.registerShader(screenShader);
 	gammaManager.registerShader(hdr_reinhard_screenShader);
 	gammaManager.registerShader(hdr_exposure_screenShader);
 
@@ -457,11 +471,26 @@ int main(void) {
 	* Frambuffers creating
 	* --------------------------------------------------------------------------------------------------------------------
 	*/
+	// Multisample framebuffer for render first scene
+	unsigned int hdr_ms_render_screen_texture;
+	unsigned int hdr_ms_render_screen_framebuffer = CreateColorFramebuffer(1, &hdr_ms_render_screen_texture, SCR_WIDTH, SCR_HEIGHT, true, 4, true);
 
-	unsigned int ms_Frametexture;
-	unsigned int hdr_screentexuture;
-	unsigned int ms_Framebuffer = CreateColorFramebuffer(ms_Frametexture, SCR_WIDTH, SCR_HEIGHT, true, 4, true);
-	unsigned int hdr_screenFramebuffer = CreateColorFramebuffer(hdr_screentexuture, SCR_WIDTH, SCR_HEIGHT, false, 0, true);
+	// Initial framebuffer for post-processing
+	unsigned int hdr_initial_screen_texture;
+	unsigned int hdr_initial_screen_framebuffer   = CreateColorFramebuffer(1, &hdr_initial_screen_texture, SCR_WIDTH, SCR_HEIGHT, false, 0, true);
+
+	// Framebuffer to store result image
+	unsigned int sdr_final_screen_texture;
+	unsigned int sdr_final_screen_framebuffer     = CreateColorFramebuffer(1, &sdr_final_screen_texture, SCR_WIDTH, SCR_HEIGHT, false, 0, true);
+
+	// Framebuffer for tone mapping
+	unsigned int hdr_tone_mapping_screen_texture;
+	unsigned int hdr_tone_mapping_screen_framebuffer = CreateColorFramebuffer(1, &hdr_tone_mapping_screen_texture, SCR_WIDTH, SCR_HEIGHT, false, 0, true);
+
+	// Framebuffer for bloom
+	unsigned int hdr_bloom_screen_textures[2];
+	unsigned int hdr_bloom_screen_framebuffer     = CreateColorFramebuffer(2, hdr_bloom_screen_textures, SCR_WIDTH, SCR_HEIGHT, false, 0, true);
+
 
 
 
@@ -469,6 +498,15 @@ int main(void) {
 	 * Others data calculation
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
+	// Positions of container
+	std::vector<glm::vec3> container_positios = {
+		glm::vec3( 0.0f,  1.5f,  0.0),
+		glm::vec3( 2.0f,  0.0f,  1.0),
+		glm::vec3(-1.0f, -1.0f,  2.0),
+		glm::vec3( 0.0f,  2.7f,  4.0),
+		glm::vec3(-2.0f,  1.0f, -3.0),
+		glm::vec3(-3.0f,  0.0f,  0.0)
+	};
 
 
 
@@ -486,30 +524,27 @@ int main(void) {
 	unsigned int num_of_pointLight = 0;
 	unsigned int num_of_spotLight = 0;
 
-	// Manual setting part
-	const size_t kNumOfLights = 4;
+	// Lights positions
+	std::vector<glm::vec3> light_positions;
+	light_positions.push_back(glm::vec3( 0.0f, 0.5f, 1.5f));
+	light_positions.push_back(glm::vec3(-4.0f, 0.5f, -3.0f));
+	light_positions.push_back(glm::vec3( 3.0f, 0.5f, 1.0f));
+	light_positions.push_back(glm::vec3(-0.8f, 2.4f, -1.0f));
+	// Lights color
+	std::vector<glm::vec3> light_colors;
+	light_colors.push_back(glm::vec3( 5.0f, 5.0f, 5.0f));
+	light_colors.push_back(glm::vec3(10.0f, 0.0f, 0.0f));
+	light_colors.push_back(glm::vec3( 0.0f, 0.0f, 15.0f));
+	light_colors.push_back(glm::vec3( 0.0f, 5.0f, 0.0f));
 
-	std::vector<glm::vec3> light_positions = {
-		glm::vec3( 0.0f,  0.0f, 49.5f),
-		glm::vec3(-1.4f, -1.9f, 9.0f),
-		glm::vec3( 0.0f, -1.8f, 4.0f),
-		glm::vec3( 0.8f, -1.7f, 6.0f)
-	};
-
-	std::vector<glm::vec3> light_color = {
-		glm::vec3(200.0f),
-		glm::vec3(0.1f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 0.0f, 0.2f),
-		glm::vec3(0.0f, 0.1f, 0.0f)
-	};
-
-	for (size_t i = 0; i < kNumOfLights; i++) {
+	for (unsigned int i = 0; i < light_positions.size(); i++) {
 		pointLight.position = light_positions[i];
-		pointLight.ambient = light_color[i] * glm::vec3(0.1f);
-		pointLight.diffuse = light_color[i] * glm::vec3(0.8f);
-		pointLight.specular = light_color[i] * glm::vec3(1.0f);
+		pointLight.ambient  = light_colors[i] * glm::vec3(0.02f);
+		pointLight.diffuse  = light_colors[i] * glm::vec3(0.8f);
+		pointLight.specular = light_colors[i] * glm::vec3(1.0f);
 		pointLight.quadratic = 1.0f;
-		globalLightManager.updatePointLight(pointLight, i);
+
+		globalLightManager.updatePointLight(pointLight, num_of_pointLight++);
 	}
 
 
@@ -521,16 +556,25 @@ int main(void) {
 	float appear_area = 10.0f;
 	// Appear height(y) = (0) ~ (height)
 	float appear_hieght = 4.0f;
+	// Minimum and maximum value of direction lights
+	glm::vec3 min_dirlights_color(1.0f);
+	glm::vec3 max_dirlights_color(200.0f);
+	// Minimum and maximum value of point lights
+	glm::vec3 min_pointlights_color(0.5f);
+	glm::vec3 max_pointlights_color(50.0f);
+	// Minimum and maximum value of spot lights
+	glm::vec3 min_spotlights_color(0.5f);
+	glm::vec3 max_spotlights_color(100.0f);
 	for (unsigned int i = 0; i < num_of_random_dirLight; i++) {
-		dirLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_dirLight(glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(0.5f), glm::vec3(0.5f));
+		dirLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_dirLight(glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(-1.0f, -0.2, 0.1f), min_dirlights_color, max_dirlights_color);
 		globalLightManager.updateDirLight(dirLight, num_of_dirLight++);
 	}
 	for (unsigned int i = 0; i < num_of_random_pointLight; i++) {
-		pointLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_pointLight(glm::vec3(-appear_area, 1.0f, -appear_area), glm::vec3(appear_area, appear_hieght, appear_area));
+		pointLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_pointLight(glm::vec3(-appear_area, 1.0f, -appear_area), glm::vec3(appear_area, appear_hieght, appear_area), min_pointlights_color, max_pointlights_color);
 		globalLightManager.updatePointLight(pointLight, num_of_pointLight++);
 	}
 	for (unsigned int i = 0; i < num_of_random_spotLight; i++) {
-		spotLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_spotLight(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(-appear_area, 5.0f, -appear_area), glm::vec3(appear_area, 5.0f, appear_area), 12.5f, 90.0f);
+		spotLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_spotLight(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(-appear_area, 5.0f, -appear_area), glm::vec3(appear_area, 5.0f, appear_area), 12.5f, 90.0f, min_spotlights_color, max_spotlights_color);
 		globalLightManager.updateSpotLight(spotLight, num_of_spotLight++);
 	}
 
@@ -657,7 +701,7 @@ int main(void) {
 		// Rescale the view port to the size of the screen
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 		// Bind framebuffer
-		glBindFramebuffer(GL_FRAMEBUFFER, ms_Framebuffer);
+		glBindFramebuffer(GL_FRAMEBUFFER, hdr_ms_render_screen_framebuffer);
 
 		// Render command
 		//---------------
@@ -665,7 +709,7 @@ int main(void) {
 		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		
+		// Draw floor
 		// Binding texture
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, wood_diff);
@@ -674,17 +718,43 @@ int main(void) {
 
 		textureShader.use();
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 25.0f));
-		model = glm::scale(model, glm::vec3(2.5f, 2.5f, 27.5f));
+		model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(10.0f));
+		model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		normalMat = CustomHelper::CalculateNormalMat(model);
 		textureShader.setMat4("model", model);
 		textureShader.setMat3("normalMat", normalMat);
 		textureShader.setVec3("viewPos", camera.Position);
 
-		glBindVertexArray(roomVAO);
+		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.05f);
+
+		// Draw containers
+		// Binding textures
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, container_diff);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, container_spec);
+
+		textureShader.use();
+		for (unsigned int i = 0; i < container_positios.size(); i++) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, container_positios[i]);
+			model = glm::scale(model, glm::vec3(0.5f));
+			model = glm::rotate(model, glm::radians(15.0f * i), glm::vec3(0.3f, 0.4f, 0.3f));
+			normalMat = CustomHelper::CalculateNormalMat(model);
+			textureShader.setMat4("model", model);
+			textureShader.setMat3("normalMat", normalMat);
+			textureShader.setVec3("viewPos", camera.Position);
+
+			glBindVertexArray(cubeVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+
+
+		// Draw light cube
+		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.25f);
 
 		// skybox
 		//---------------
@@ -711,22 +781,41 @@ int main(void) {
 		//----------------------------------------------------------------------
 		
 		// Transfer the color from multisamples framebuffer to normal framebuffer
-		glBindFramebuffer(GL_READ_FRAMEBUFFER, ms_Framebuffer);
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdr_screenFramebuffer);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, hdr_ms_render_screen_framebuffer);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdr_initial_screen_framebuffer);
 		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
 
 
-		// Render scene
+		// Post-processing scene
 		//-------------------------
+		glDisable(GL_DEPTH_TEST);
+
+
+		// Bloom
+		//--------------------
+		glBindFramebuffer(GL_FRAMEBUFFER, hdr_bloom_screen_framebuffer);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, hdr_initial_screen_texture);
+
+		hdr_bloom_screenShader.use();
+
+		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
 
 		// Tone mapping
 		//--------------------
 
+		// Not for now
+		/*
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
-		glDisable(GL_DEPTH_TEST);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, hdr_screentexuture);
@@ -741,10 +830,10 @@ int main(void) {
 			// Get maximum texture mipmap level
 			size_t max_mipmap_level = static_cast<size_t>(std::log2(std::max(SCR_WIDTH, SCR_HEIGHT)));
 
-			/*
-			* The automatic exposure algorithm is from https://blog.csdn.net/coldkaweh/article/details/62893076
-			* And the average luminace is based on lowest mipmap level generate by OpenGL itself, so it is very inefficient
-			*/
+			//
+			// The automatic exposure algorithm is from https://blog.csdn.net/coldkaweh/article/details/62893076
+			// And the average luminace is based on lowest mipmap level generate by OpenGL itself, so it is very inefficient
+			//
 			// Get average color by get lowest mipmap level pixel color
 			glm::vec3 average_color;
 			glGetTexImage(GL_TEXTURE_2D, max_mipmap_level, GL_RGB, GL_FLOAT, &average_color);
@@ -768,6 +857,20 @@ int main(void) {
 			// Transfer exposure value to shader
 			hdr_reinhard_screenShader.use();
 		}
+		*/
+
+
+
+		// Render final scene
+		//-------------------------
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, hdr_bloom_screen_textures[1]);
+
+		hdr_reinhard_screenShader.use();
 
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -789,8 +892,6 @@ int main(void) {
 	skyboxShader.clear();
 	dirDepthShader.clear();
 	cubeDepthShader.clear();
-	glDeleteFramebuffers(1, &ms_Framebuffer);
-	glDeleteFramebuffers(1, &hdr_screenFramebuffer);
 
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
@@ -961,7 +1062,7 @@ unsigned int LoadCubemap(std::vector<std::string> faces, bool gammaCorrection, b
 }
 
 // Generate a framebuffer attach the given texture as the color attachment.
-unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsigned int width, const unsigned int height, const bool multisample, const unsigned int samples, const bool hdr) {
+unsigned int CreateColorFramebuffer(const size_t numOfColorAttachment, unsigned int *frameColortextures, const unsigned int width, const unsigned int height, const bool multisample, const unsigned int samples, const bool hdr) {
 
 	unsigned int framebuffer;
 	// Generate a framebuffer and get its ID
@@ -972,26 +1073,30 @@ unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsig
 
 	// Attach texture to framebuffer
 	// Create a texture to store the scene's image
-	glGenTextures(1, &frameColortexture);
+	glGenTextures(numOfColorAttachment, frameColortextures);
 
 	// Determine whether use the multisampling texture
 	GLenum texformat = (multisample) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
-	glBindTexture(texformat, frameColortexture);
 
 	// Determine whether use the float color attachment
 	GLenum texture_color_format = (hdr) ? GL_RGB16F : GL_RGB;
 
-	if (multisample)
-		glTexImage2DMultisample(texformat, samples, texture_color_format, width, height, GL_TRUE);
-	else {
-		glTexImage2D(texformat, 0, texture_color_format, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-		glTexParameteri(texformat, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(texformat, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	}
-	glBindTexture(texformat, 0);
+	for (unsigned int i = 0; i < numOfColorAttachment; i++) {
+		glBindTexture(texformat, frameColortextures[i]);
+		if (multisample)
+			glTexImage2DMultisample(texformat, samples, texture_color_format, width, height, GL_TRUE);
+		else {
+			glTexImage2D(texformat, 0, texture_color_format, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+			glTexParameteri(texformat, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(texformat, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(texformat, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(texformat, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		}
+		glBindTexture(texformat, 0);
 
-	// Attach the texture to currently bound framebuffer object
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texformat, frameColortexture, 0);
+		// Attach the texture to currently bound framebuffer object
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, texformat, frameColortextures[i], 0);
+	}
 
 
 	// Attach Render Buffer (RBO) to framebuffer
@@ -1010,6 +1115,13 @@ unsigned int CreateColorFramebuffer(unsigned int &frameColortexture, const unsig
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	// Actually attach the renderbuffer to the framebuffer
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+
+	// Activate the number of render targets
+	std::vector<GLenum> attachments;
+	for (size_t i = 0; i < numOfColorAttachment; i++) {
+		attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
+	}
+	glDrawBuffers(numOfColorAttachment, attachments.data());
 
 
 	// Check whether the framebuffer is complete

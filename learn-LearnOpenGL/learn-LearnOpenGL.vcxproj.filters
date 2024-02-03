@@ -310,6 +310,9 @@
     <None Include="shaders\post-processing\fragment\hdr_exposure_screen.frag">
       <Filter>Resource Files\shaders\post-processing\fragment</Filter>
     </None>
+    <None Include="shaders\post-processing\fragment\hdr_bloom_extract.frag">
+      <Filter>Resource Files\shaders\post-processing\fragment</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">
