@@ -389,7 +389,7 @@ int main(void) {
 
 	// Shader for bloom
 	Shader hdr_bloom_screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/hdr_bloom_extract.frag");
-
+	Shader bloom_gaussian_blur_screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/bloom_gaussian_blur.frag");
 
 	/*
 	 * Uniform value setting
@@ -414,6 +414,10 @@ int main(void) {
 
 	hdr_bloom_screenShader.use();
 	hdr_bloom_screenShader.setInt("screenTexture", 0);
+
+
+	bloom_gaussian_blur_screenShader.use();
+	bloom_gaussian_blur_screenShader.setInt("image", 0);
 	
 
 
@@ -491,6 +495,12 @@ int main(void) {
 	unsigned int hdr_bloom_screen_textures[2];
 	unsigned int hdr_bloom_screen_framebuffer     = CreateColorFramebuffer(2, hdr_bloom_screen_textures, SCR_WIDTH, SCR_HEIGHT, false, 0, true);
 
+	// Framebuffer for gaussian blur
+	unsigned int pingpong_textures[2];
+	unsigned int pingpong_framebuffer[2];
+	for (int i = 0; i < 2; i++) {
+		pingpong_framebuffer[i] = CreateColorFramebuffer(1, &pingpong_textures[i], SCR_WIDTH, SCR_HEIGHT, false, 0, true);
+	}
 
 
 
@@ -807,6 +817,29 @@ int main(void) {
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
+		// Do gaussian blur
+		bool horizontal = true, first_iteration = true;
+		// How many times Gaussian blur to do
+		unsigned int blur_times = 5;
+		int amount = 10;
+		bloom_gaussian_blur_screenShader.use();
+		// Do two-pass Gaussian blur
+		for (unsigned int i = 0; i < blur_times * 2; i++) {
+			glBindFramebuffer(GL_FRAMEBUFFER, pingpong_framebuffer[horizontal]);
+			bloom_gaussian_blur_screenShader.setBool("horizontal", horizontal);
+			// Use previous extract image for first time blur, then swap ping pong texture each iteration
+			glBindTexture(GL_TEXTURE_2D, (first_iteration) ? hdr_bloom_screen_textures[1] : pingpong_textures[!horizontal]);
+			// Blur
+			glBindVertexArray(quadVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+			// Swap horizontal state each iteration
+			horizontal = !horizontal;
+
+			if (first_iteration) {
+				first_iteration = !first_iteration;
+			}
+		}
+
 
 		// Tone mapping
 		//--------------------
@@ -868,7 +901,7 @@ int main(void) {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, hdr_bloom_screen_textures[1]);
+		glBindTexture(GL_TEXTURE_2D, pingpong_textures[1]);
 
 		hdr_reinhard_screenShader.use();
 

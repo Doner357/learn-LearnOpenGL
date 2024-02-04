@@ -157,6 +157,7 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\post-processing\fragment\bloom_gaussian_blur.frag" />
     <None Include="shaders\post-processing\fragment\hdr_bloom_extract.frag" />
     <None Include="shaders\post-processing\fragment\hdr_exposure_screen.frag" />
     <None Include="shaders\post-processing\fragment\hdr_reinhard_screen.frag" />
