@@ -48,13 +48,19 @@ float lastFrame = 0.0f;    // Time of last frame
 
 // Tone mapping options
 bool  isEyeAdaptionEnable = true;   // Determine whether do the eye adaption for tone mapping
-const float kMaxLuminance = 3.0f;
+const float kMaxLuminance = 0.7f;
 const float kMinLuminance = 0.3f;
 const float kExposureAdjustSpeed = 50.0f;
 const float kAverageLuminance = 0.5f;
 float current_luminance = 0.3f;
 float last_luminance = 0.3f;
 float exposure = 1.0f;              // Control the exposure value
+
+
+// Determind whether activate bloom effect
+bool applyBloom = true;
+// Used to control bloom
+bool keyHasPressed = false;
 
 
 int main(void) {
@@ -342,7 +348,7 @@ int main(void) {
 	 */
 	// Floor textures
 	unsigned int wood_diff = LoadTexture("textures/wood.jpg", true);
-	unsigned int wood_spec = LoadTexture("textures/common_spec.jpg", false);
+	unsigned int wood_spec = LoadTexture("textures/common_nonspec.jpg", false);
 
 	// container textures
 	unsigned int container_diff = LoadTexture("textures/container2/container2.png", true);
@@ -390,6 +396,7 @@ int main(void) {
 	// Shader for bloom
 	Shader hdr_bloom_screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/hdr_bloom_extract.frag");
 	Shader bloom_gaussian_blur_screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/bloom_gaussian_blur.frag");
+	Shader hdr_bloom_blending_screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/hdr_bloom_blending.frag");
 
 	/*
 	 * Uniform value setting
@@ -415,9 +422,13 @@ int main(void) {
 	hdr_bloom_screenShader.use();
 	hdr_bloom_screenShader.setInt("screenTexture", 0);
 
-
+	// Bloom
 	bloom_gaussian_blur_screenShader.use();
 	bloom_gaussian_blur_screenShader.setInt("image", 0);
+	
+	hdr_bloom_blending_screenShader.use();
+	hdr_bloom_blending_screenShader.setInt("scene", 0);
+	hdr_bloom_blending_screenShader.setInt("bloom", 1);
 	
 
 
@@ -465,7 +476,6 @@ int main(void) {
 	// Gamma Correction uniform block
 	CustomHelper::GammaManager gammaManager(CustomHelper::UBOPOINT_NAME_GAMMA_CORRECTION, CustomHelper::UBOPOINT_GAMMA_CORRECTION);
 	// Move gamma correction to post-processing part
-	gammaManager.registerShader(screenShader);
 	gammaManager.registerShader(hdr_reinhard_screenShader);
 	gammaManager.registerShader(hdr_exposure_screenShader);
 
@@ -490,6 +500,10 @@ int main(void) {
 	// Framebuffer for tone mapping
 	unsigned int hdr_tone_mapping_screen_texture;
 	unsigned int hdr_tone_mapping_screen_framebuffer = CreateColorFramebuffer(1, &hdr_tone_mapping_screen_texture, SCR_WIDTH, SCR_HEIGHT, false, 0, true);
+
+	// Framebuffer for storing image after post-processing 
+	unsigned int hdr_process_screen_texture;
+	unsigned int hdr_process_screen_framebuffer = CreateColorFramebuffer(1, &hdr_process_screen_texture, SCR_WIDTH, SCR_HEIGHT, false, 0, true);
 
 	// Framebuffer for bloom
 	unsigned int hdr_bloom_screen_textures[2];
@@ -794,6 +808,9 @@ int main(void) {
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, hdr_ms_render_screen_framebuffer);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdr_initial_screen_framebuffer);
 		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+		// Also copy the image to the framebuffer used to store post-processing effects
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdr_process_screen_framebuffer);
+		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
 
 
@@ -804,54 +821,69 @@ int main(void) {
 
 		// Bloom
 		//--------------------
-		glBindFramebuffer(GL_FRAMEBUFFER, hdr_bloom_screen_framebuffer);
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		if (applyBloom) {
+			glBindFramebuffer(GL_FRAMEBUFFER, hdr_bloom_screen_framebuffer);
+			glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT);
 
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, hdr_initial_screen_texture);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, hdr_process_screen_texture);
 
-		hdr_bloom_screenShader.use();
+			hdr_bloom_screenShader.use();
 
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		// Do gaussian blur
-		bool horizontal = true, first_iteration = true;
-		// How many times Gaussian blur to do
-		unsigned int blur_times = 5;
-		int amount = 10;
-		bloom_gaussian_blur_screenShader.use();
-		// Do two-pass Gaussian blur
-		for (unsigned int i = 0; i < blur_times * 2; i++) {
-			glBindFramebuffer(GL_FRAMEBUFFER, pingpong_framebuffer[horizontal]);
-			bloom_gaussian_blur_screenShader.setBool("horizontal", horizontal);
-			// Use previous extract image for first time blur, then swap ping pong texture each iteration
-			glBindTexture(GL_TEXTURE_2D, (first_iteration) ? hdr_bloom_screen_textures[1] : pingpong_textures[!horizontal]);
-			// Blur
 			glBindVertexArray(quadVAO);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
-			// Swap horizontal state each iteration
-			horizontal = !horizontal;
 
-			if (first_iteration) {
-				first_iteration = !first_iteration;
+			// Do gaussian blur
+			bool horizontal = true, first_iteration = true;
+			// How many times Gaussian blur to do
+			unsigned int blur_times = 5;
+			bloom_gaussian_blur_screenShader.use();
+			// Do two-pass Gaussian blur
+			for (unsigned int i = 0; i < blur_times * 2; i++) {
+				glBindFramebuffer(GL_FRAMEBUFFER, pingpong_framebuffer[horizontal]);
+				bloom_gaussian_blur_screenShader.setBool("horizontal", horizontal);
+				// Use previous extract image for first time blur, then swap ping pong texture each iteration
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, (first_iteration) ? hdr_bloom_screen_textures[1] : pingpong_textures[!horizontal]);
+				// Blur
+				glBindVertexArray(quadVAO);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+				// Swap horizontal state each iteration
+				horizontal = !horizontal;
+
+				if (first_iteration) {
+					first_iteration = !first_iteration;
+				}
 			}
+
+			// Combine bloom to scene
+			glBindFramebuffer(GL_FRAMEBUFFER, hdr_process_screen_framebuffer);
+			glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT);
+
+			hdr_bloom_blending_screenShader.use();
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, hdr_bloom_screen_textures[0]);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, pingpong_textures[1]);
+			// Combine
+			glBindVertexArray(quadVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
+
 
 
 		// Tone mapping
 		//--------------------
 
-		// Not for now
-		/*
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, hdr_tone_mapping_screen_framebuffer);
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, hdr_screentexuture);
+		glBindTexture(GL_TEXTURE_2D, hdr_process_screen_texture);
 
 		// Determine whether to do automatic exposure adjustment. Using Reinhard tone mapping if not
 		if (isEyeAdaptionEnable) {
@@ -890,20 +922,36 @@ int main(void) {
 			// Transfer exposure value to shader
 			hdr_reinhard_screenShader.use();
 		}
-		*/
+
+		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+		// Transfer result to process image
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, hdr_tone_mapping_screen_framebuffer);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdr_process_screen_framebuffer);
+		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
 
 
 		// Render final scene
 		//-------------------------
+
+		// Transfer final image to sdr framebuffer
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, hdr_process_screen_framebuffer);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, sdr_final_screen_framebuffer);
+		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+
+		// Render final result to screen framebuffer
+		screenShader.use();
+
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, pingpong_textures[1]);
-
-		hdr_reinhard_screenShader.use();
+		glBindTexture(GL_TEXTURE_2D, sdr_final_screen_texture);
 
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -960,6 +1008,15 @@ void processInput(GLFWwindow *window) {
 		camera.ProcessKeyboard(CAMERA_UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
+
+	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && !keyHasPressed) {
+		applyBloom = !applyBloom;
+		keyHasPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_RELEASE) {
+		keyHasPressed = false;
+	}
+	
 }
 
 // glfw: whenever the mouse moves, this callback is called

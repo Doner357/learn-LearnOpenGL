@@ -190,9 +190,6 @@
     <None Include="shaders\post-processing\fragment\regular_screen.frag">
       <Filter>Resource Files\shaders\post-processing\fragment</Filter>
     </None>
-    <None Include="shaders\post-processing\fragment\gamma_correction.frag">
-      <Filter>Resource Files\shaders\post-processing\fragment</Filter>
-    </None>
     <None Include="shaders\post-processing\fragment\perspect_depth-map.frag">
       <Filter>Resource Files\shaders\post-processing\fragment</Filter>
     </None>
@@ -314,6 +311,12 @@
       <Filter>Resource Files\shaders\post-processing\fragment</Filter>
     </None>
     <None Include="shaders\post-processing\fragment\bloom_gaussian_blur.frag">
+      <Filter>Resource Files\shaders\post-processing\fragment</Filter>
+    </None>
+    <None Include="shaders\post-processing\fragment\hdr_bloom_blending.frag">
+      <Filter>Resource Files\shaders\post-processing\fragment</Filter>
+    </None>
+    <None Include="hdr_gamma_correction.frag">
       <Filter>Resource Files\shaders\post-processing\fragment</Filter>
     </None>
   </ItemGroup>

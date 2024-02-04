@@ -4,7 +4,11 @@ in vec2 TexCoords;
 out vec4 FragColor;
 
 uniform sampler2D screenTexture;
-uniform float gamma;
+
+// Used for gamma correction
+layout (std140) uniform GammaCorrection {
+	float gamma;    // 4 bytes
+};
 
 void main() {
 	vec3 result = texture(screenTexture, TexCoords).rgb;

@@ -157,6 +157,8 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="hdr_gamma_correction.frag" />
+    <None Include="shaders\post-processing\fragment\hdr_bloom_blending.frag" />
     <None Include="shaders\post-processing\fragment\bloom_gaussian_blur.frag" />
     <None Include="shaders\post-processing\fragment\hdr_bloom_extract.frag" />
     <None Include="shaders\post-processing\fragment\hdr_exposure_screen.frag" />
@@ -187,7 +189,6 @@
     <None Include="shaders\shadow-lighting\vertex\lighting_dir-shadow_texture.vert" />
     <None Include="shaders\post-processing\fragment\ortho_depth-map.frag" />
     <None Include="shaders\bake\depth_map\fragment\dir-depth_map.frag" />
-    <None Include="shaders\post-processing\fragment\gamma_correction.frag" />
     <None Include="shaders\lighting\vertex\lighting_repeated-texture.vert" />
     <None Include="shaders\lighting\fragment\global-lighting_texture.frag" />
     <None Include="shaders\lighting\fragment\global-lighting_model.frag" />
