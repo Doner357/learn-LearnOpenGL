@@ -46,8 +46,13 @@ bool firstMouse = true;
 float deltaTime = 0.0f;    // Time between current frame and last frame
 float lastFrame = 0.0f;    // Time of last frame
 
+// Control vertical sync
+bool needVerticalSync = true;
+bool vSyncKeyPressed  = false;
+
 // Tone mapping options
 bool  isEyeAdaptionEnable = true;   // Determine whether do the eye adaption for tone mapping
+bool  eyeAdaptionKeyPressed = false;
 const float kMaxLuminance = 0.7f;
 const float kMinLuminance = 0.3f;
 const float kExposureAdjustSpeed = 50.0f;
@@ -60,7 +65,7 @@ float exposure = 1.0f;              // Control the exposure value
 // Determind whether activate bloom effect
 bool applyBloom = true;
 // Used to control bloom
-bool keyHasPressed = false;
+bool bloomKeyPressed = false;
 
 
 int main(void) {
@@ -582,10 +587,10 @@ int main(void) {
 	float appear_hieght = 4.0f;
 	// Minimum and maximum value of direction lights
 	glm::vec3 min_dirlights_color(1.0f);
-	glm::vec3 max_dirlights_color(200.0f);
+	glm::vec3 max_dirlights_color(100.0f);
 	// Minimum and maximum value of point lights
 	glm::vec3 min_pointlights_color(0.5f);
-	glm::vec3 max_pointlights_color(50.0f);
+	glm::vec3 max_pointlights_color(15.0f);
 	// Minimum and maximum value of spot lights
 	glm::vec3 min_spotlights_color(0.5f);
 	glm::vec3 max_spotlights_color(100.0f);
@@ -1009,12 +1014,34 @@ void processInput(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
 
-	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && !keyHasPressed) {
+	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS && !vSyncKeyPressed) {
+		needVerticalSync = !needVerticalSync;
+		if (needVerticalSync) {
+			glfwSwapInterval(1);
+		}
+		else {
+			glfwSwapInterval(0);
+		}
+		vSyncKeyPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_RELEASE) {
+		vSyncKeyPressed = false;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && !eyeAdaptionKeyPressed) {
+		isEyeAdaptionEnable = !isEyeAdaptionEnable;
+		eyeAdaptionKeyPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_RELEASE) {
+		eyeAdaptionKeyPressed = false;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && !bloomKeyPressed) {
 		applyBloom = !applyBloom;
-		keyHasPressed = true;
+		bloomKeyPressed = true;
 	}
 	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_RELEASE) {
-		keyHasPressed = false;
+		bloomKeyPressed = false;
 	}
 	
 }
