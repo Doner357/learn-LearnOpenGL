@@ -158,6 +158,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="hdr_gamma_correction.frag" />
+    <None Include="shaders\deferred_shading\g-buffer\fragment\normal_model_geometry.frag" />
+    <None Include="shaders\deferred_shading\g-buffer\vertex\model.vert" />
+    <None Include="shaders\deferred_shading\g-buffer\fragment\normal_height_model_geometry.frag" />
     <None Include="shaders\post-processing\fragment\hdr_bloom_blending.frag" />
     <None Include="shaders\post-processing\fragment\bloom_gaussian_blur.frag" />
     <None Include="shaders\post-processing\fragment\hdr_bloom_extract.frag" />

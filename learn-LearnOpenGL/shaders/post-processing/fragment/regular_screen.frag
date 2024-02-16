@@ -5,8 +5,14 @@ in vec2 TexCoords;
 
 uniform sampler2D screenTexture;
 
-void main() {
-	vec3 color = texture(screenTexture, TexCoords).rgb;
+// Temporarily control output color
+uniform bool specular;
 
-	FragColor = vec4(color, 1.0);
+void main() {
+	vec4 color = texture(screenTexture, TexCoords);
+
+	if (specular)
+		FragColor = vec4(color.a, color.a, color.a, 1.0);
+	else
+		FragColor = vec4(color.rgb, 1.0);
 }

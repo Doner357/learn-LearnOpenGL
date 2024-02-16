@@ -73,6 +73,27 @@
     <Filter Include="Resource Files\shaders\others\geometry">
       <UniqueIdentifier>{b9752052-0aa0-4305-ab61-cc040b6d71f6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\shaders\deferred_shading">
+      <UniqueIdentifier>{3613dbd3-a885-42be-b6a8-dff3fd57cb37}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\deferred_shading\g-buffer">
+      <UniqueIdentifier>{a80373da-e024-4588-8390-671ec44e617e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\deferred_shading\lighting">
+      <UniqueIdentifier>{1e207385-3238-416e-a265-b3f65d6f65cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\deferred_shading\g-buffer\vertex">
+      <UniqueIdentifier>{bf90694c-1458-40cb-b2c5-c464547e217f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\deferred_shading\g-buffer\fragment">
+      <UniqueIdentifier>{7b180266-b955-468a-ad24-81f1a8e98370}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\deferred_shading\lighting\vertex">
+      <UniqueIdentifier>{d25c874d-0eea-442c-b645-c6be513d23f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\deferred_shading\lighting\fragment">
+      <UniqueIdentifier>{8ce4328f-9028-4d56-811f-f039ed086139}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -318,6 +339,15 @@
     </None>
     <None Include="hdr_gamma_correction.frag">
       <Filter>Resource Files\shaders\post-processing\fragment</Filter>
+    </None>
+    <None Include="shaders\deferred_shading\g-buffer\vertex\model.vert">
+      <Filter>Resource Files\shaders\deferred_shading\g-buffer\vertex</Filter>
+    </None>
+    <None Include="shaders\deferred_shading\g-buffer\fragment\normal_height_model_geometry.frag">
+      <Filter>Resource Files\shaders\deferred_shading\g-buffer\fragment</Filter>
+    </None>
+    <None Include="shaders\deferred_shading\g-buffer\fragment\normal_model_geometry.frag">
+      <Filter>Resource Files\shaders\deferred_shading\g-buffer\fragment</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
