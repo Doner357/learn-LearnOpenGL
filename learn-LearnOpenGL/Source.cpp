@@ -580,7 +580,7 @@ int main(void) {
 	// Random generate part
 	unsigned int num_of_random_dirLight = 0;
 	unsigned int num_of_random_pointLight = 0;
-	unsigned int num_of_random_spotLight = 0;
+	unsigned int num_of_random_spotLight = 1;
 	// Appear area(x, z) = (-area, -area) ~ (area, area)
 	float appear_area = 10.0f;
 	// Appear height(y) = (0) ~ (height)

@@ -37,8 +37,8 @@ struct PointLight {
 #define NUM_OF_POINTLIGHTS 32
 
 struct SpotLight {
-	vec3 direction;
 	vec3 position;
+	vec3 direction;
 
 	float innerCutOff;
 	float outerCutOff;
