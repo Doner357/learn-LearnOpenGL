@@ -349,6 +349,12 @@
     <None Include="shaders\deferred_shading\g-buffer\fragment\normal_model_geometry.frag">
       <Filter>Resource Files\shaders\deferred_shading\g-buffer\fragment</Filter>
     </None>
+    <None Include="shaders\deferred_shading\lighting\vertex\regular_screen.vert">
+      <Filter>Resource Files\shaders\deferred_shading\lighting\vertex</Filter>
+    </None>
+    <None Include="shaders\deferred_shading\lighting\fragment\global-lighting.frag">
+      <Filter>Resource Files\shaders\deferred_shading\lighting\fragment</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">

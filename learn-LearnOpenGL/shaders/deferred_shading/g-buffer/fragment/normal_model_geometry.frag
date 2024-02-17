@@ -8,7 +8,7 @@ in VS_OUT {
 } fs_in;
 
 layout (location = 0) out vec3 gPosition;
-layout (location = 1) out vec3 gNormal;
+layout (location = 1) out vec4 gNormalShininess;
 layout (location = 2) out vec4 gAlbedoSpec;
 
 // Properties struct
@@ -30,7 +30,9 @@ void main() {
 	// also store the per-fragment normals into the gbuffer
 	vec3 normal = texture(material.texture_normal1, fs_in.texCoords).rgb;
 	normal = normal * 2.0 - 1.0;
-	gNormal = normalize(fs_in.TBN * normal);
+	gNormalShininess.rgb = normalize(fs_in.TBN * normal);
+	// Put shininess into alpha channel of normal buffer
+	gNormalShininess.a   = material.shininess;
 	// and the diffuse per-fragment color
 	gAlbedoSpec.rgb = texture(material.texture_diffuse1, fs_in.texCoords).rgb;
     // store specular intensity in gAlbedoSpec's alpha component

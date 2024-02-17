@@ -237,7 +237,7 @@ int main(void) {
 	 * Model loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	Model backpack("models/backpack/backpack.obj", false, false);
+	Model backpack("models/backpack/backpack.obj", true, false);
 
 
 
@@ -394,6 +394,7 @@ int main(void) {
 
 	// Shaders for deferred shading
 	Shader geometryShader("shaders/deferred_shading/g-buffer/vertex/model.vert", "shaders/deferred_shading/g-buffer/fragment/normal_model_geometry.frag");
+	Shader deferredLightingShader("shaders/deferred_shading/lighting/vertex/regular_screen.vert", "shaders/deferred_shading/lighting/fragment/global-lighting.frag");
 
 
 	// Shader for bloom
@@ -434,11 +435,17 @@ int main(void) {
 	hdr_bloom_blending_screenShader.setInt("bloom", 1);
 	
 
-
 	textureShader.use();
 	textureShader.setInt("material.diffuse", CustomHelper::SAMPLER_DIFFUSE);
 	textureShader.setInt("material.specular", CustomHelper::SAMPLER_SPECULAR);
 	textureShader.setFloat("material.shininess", 64.0f);
+
+
+	// Deferred shading
+	deferredLightingShader.use();
+	deferredLightingShader.setInt("gPosition", 0);
+	deferredLightingShader.setInt("gNormalShininess", 1);
+	deferredLightingShader.setInt("gAlbedoSpec", 2);
 
 
 	glUseProgram(0);
@@ -460,6 +467,7 @@ int main(void) {
 	// Global light uniform block
 	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING, CustomHelper::UBOPOINT_BLINPHONG_LIGHTING, CustomHelper::MAX_NUM_DIRECTIONALLIGHT, CustomHelper::MAX_NUM_POINTLIGHT, CustomHelper::MAX_NUM_SPOTLIGHT);
 	globalLightManager.registerShader(textureShader);
+	globalLightManager.registerShader(deferredLightingShader);
 
 	// Global light with shadow uniform block
 	CustomHelper::GlobalBlinnPongShadowLightManager globalShadowLightManager(
@@ -501,8 +509,8 @@ int main(void) {
 	unsigned int hdr_initial_screen_framebuffer   = CreateColorFramebuffer(1, &hdr_initial_screen_texture, SCR_WIDTH, SCR_HEIGHT, false, 0, true);
 
 	// Framebuffer to store result image
-	unsigned int sdr_final_screen_texture;
-	unsigned int sdr_final_screen_framebuffer     = CreateColorFramebuffer(1, &sdr_final_screen_texture, SCR_WIDTH, SCR_HEIGHT, false, 0, true);
+	unsigned int ldr_final_screen_texture;
+	unsigned int ldr_final_screen_framebuffer     = CreateColorFramebuffer(1, &ldr_final_screen_texture, SCR_WIDTH, SCR_HEIGHT, false, 0, true);
 
 	// Framebuffer for tone mapping
 	unsigned int hdr_tone_mapping_screen_texture;
@@ -529,7 +537,7 @@ int main(void) {
 	unsigned int g_buffer;
 	glGenFramebuffers(1, &g_buffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, g_buffer);
-	unsigned int g_position, g_normal, g_color_spec;
+	unsigned int g_position, g_normal_shininess, g_color_spec;
 
 	// - position color buffer
 	glGenTextures(1, &g_position);
@@ -540,12 +548,12 @@ int main(void) {
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, g_position, 0);
 
 	// - normal color buffer
-	glGenTextures(1, &g_normal);
-	glBindTexture(GL_TEXTURE_2D, g_normal);
+	glGenTextures(1, &g_normal_shininess);
+	glBindTexture(GL_TEXTURE_2D, g_normal_shininess);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, g_normal, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, g_normal_shininess, 0);
 
 	// - color + specular color buffer
 	glGenTextures(1, &g_color_spec);
@@ -609,10 +617,10 @@ int main(void) {
 
 	// Random generate part
 	unsigned int num_of_random_dirLight = 0;
-	unsigned int num_of_random_pointLight = 0;
+	unsigned int num_of_random_pointLight = 32;
 	unsigned int num_of_random_spotLight = 0;
 	// Appear area(x, z) = (-area, -area) ~ (area, area)
-	float appear_area = 10.0f;
+	float appear_area = 50.0f;
 	// Appear height(y) = (0) ~ (height)
 	float appear_hieght = 4.0f;
 	// Minimum and maximum value of direction lights
@@ -692,7 +700,7 @@ int main(void) {
 		// Update the fps presentation
 		if (fps_delta_time >= 1.0) {
 			fps = fps_passframe_count;
-			glfwSetWindowTitle(window, ("LearnOpenGL FPS:" + std::to_string(fps)).c_str());
+			glfwSetWindowTitle(window, ("LearnOpenGL    FPS:" + std::to_string(fps)).c_str());
 			fps_previous_time = fps_current_time;
 			fps_passframe_count = 0;
 		}
@@ -758,6 +766,8 @@ int main(void) {
 		//--------------------------
 		
 
+		// *** DEFERRED SHADING PASS ***
+		//-------------------------------------------------------------------------------------
 		// **Geometry pass**
 		//----------------------------------------------------------------------
 		
@@ -789,19 +799,48 @@ int main(void) {
 			
 			backpack.Draw(geometryShader);
 		}
-
-		// Enable the blending
-		glEnable(GL_BLEND);
-
-		/*
-		// Draw light cube
-		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.025f);
 		
 
 		// **Lighting pass**
 		//----------------------------------------------------------------------
-		glBindFramebuffer(GL_FRAMEBUFFER, hdr_initial_screen_framebuffer);
+		// Disable depth test
+		glDisable(GL_DEPTH_TEST);
 
+		glBindFramebuffer(GL_FRAMEBUFFER, hdr_initial_screen_framebuffer);
+		// Clear Buffer
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		deferredLightingShader.use();
+
+		// Bind each g-buffer image
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, g_position);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, g_normal_shininess);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, g_color_spec);
+
+		// Transfer the view position
+		deferredLightingShader.setVec3("viewPos", camera.Position);
+
+		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		// Enable depth test
+		glEnable(GL_DEPTH_TEST);
+		// Enable the blending
+		glEnable(GL_BLEND);
+
+
+
+		// *** FORWARD SHADING PASS ***
+		//-------------------------------------------------------------------------------------
+		// Draw light cube
+		//CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.025f);
+
+
+		/*
 		// skybox
 		//---------------
 		// Since the default value in depth buffer is 1.0, so the fragment should pass the depth test when the depth of fragment is less or equal to
@@ -820,17 +859,20 @@ int main(void) {
 		// Set the depth function and culling face to default
 		glDepthFunc(GL_LESS);
 		glCullFace(GL_BACK);
+		*/
 
 
 
-		// **Post-processing pass**
-		//----------------------------------------------------------------------
+		// **POST-PROCESSING PASS**
+		//-------------------------------------------------------------------------------------
 		
 		// Transfer the color from multisamples framebuffer to normal framebuffer
-		
+		// Since we're using deferred shading now, we disable MSAA
+		/*
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, hdr_ms_render_screen_framebuffer);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdr_initial_screen_framebuffer);
 		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+		*/
 		
 		// Also copy the image to the framebuffer used to store post-processing effects
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, hdr_initial_screen_framebuffer);
@@ -956,72 +998,35 @@ int main(void) {
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, hdr_tone_mapping_screen_framebuffer);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdr_process_screen_framebuffer);
 		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-		*/
 
 
 
 		// Render final scene
 		//-------------------------
 
-		// Transfer final image to sdr framebuffer
+		// Transfer final image to ldr framebuffer
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, hdr_process_screen_framebuffer);
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, sdr_final_screen_framebuffer);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, ldr_final_screen_framebuffer);
 		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
-
+		// Disable depth test
 		glDisable(GL_DEPTH_TEST);
 
+
+		// Render final result to screen framebuffer
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		// Render final result to screen framebuffer
-
 		screenShader.use();
 
-		// Albedo
-		glViewport(0, 0, SCR_WIDTH / 2, SCR_HEIGHT / 2);
-
-		screenShader.setBool("specular", false);	// Bottom-left
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, g_color_spec);
+		glBindTexture(GL_TEXTURE_2D, ldr_final_screen_texture);
 
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
-		// Specular
-		glViewport(SCR_WIDTH / 2, 0, SCR_WIDTH / 2, SCR_HEIGHT / 2);	// Bottom-right
-
-		screenShader.setBool("specular", true);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, g_color_spec);
-
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-
-		// Position
-		glViewport(0, SCR_HEIGHT / 2, SCR_WIDTH / 2, SCR_HEIGHT / 2);	// Top-left
-		screenShader.use();
-
-		screenShader.setBool("specular", false);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, g_position);
-
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-
-		// Normal
-		glViewport(SCR_WIDTH / 2, SCR_HEIGHT / 2, SCR_WIDTH / 2, SCR_HEIGHT / 2);	// Top-right
-
-		screenShader.setBool("specular", false);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, g_normal);
-
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		// Unbind VAO
 		glBindVertexArray(0);
