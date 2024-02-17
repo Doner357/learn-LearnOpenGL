@@ -499,8 +499,8 @@ int main(void) {
 	unsigned int hdr_initial_screen_framebuffer   = CreateColorFramebuffer(1, &hdr_initial_screen_texture, SCR_WIDTH, SCR_HEIGHT, false, 0, true);
 
 	// Framebuffer to store result image
-	unsigned int sdr_final_screen_texture;
-	unsigned int sdr_final_screen_framebuffer     = CreateColorFramebuffer(1, &sdr_final_screen_texture, SCR_WIDTH, SCR_HEIGHT, false, 0, true);
+	unsigned int ldr_final_screen_texture;
+	unsigned int ldr_final_screen_framebuffer     = CreateColorFramebuffer(1, &ldr_final_screen_texture, SCR_WIDTH, SCR_HEIGHT, false, 0, true);
 
 	// Framebuffer for tone mapping
 	unsigned int hdr_tone_mapping_screen_texture;
@@ -942,9 +942,9 @@ int main(void) {
 		// Render final scene
 		//-------------------------
 
-		// Transfer final image to sdr framebuffer
+		// Transfer final image to LDR framebuffer
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, hdr_process_screen_framebuffer);
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, sdr_final_screen_framebuffer);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, ldr_final_screen_framebuffer);
 		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
 
@@ -956,7 +956,7 @@ int main(void) {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, sdr_final_screen_texture);
+		glBindTexture(GL_TEXTURE_2D, ldr_final_screen_texture);
 
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
