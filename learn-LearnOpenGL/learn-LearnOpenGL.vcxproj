@@ -159,6 +159,7 @@
   <ItemGroup>
     <None Include="shaders\deferred_shading\lighting\fragment\global-lighting.frag" />
     <None Include="hdr_gamma_correction.frag" />
+    <None Include="shaders\deferred_shading\lighting\fragment\global-lighting_light_valume_demo.frag" />
     <None Include="shaders\deferred_shading\lighting\vertex\regular_screen.vert" />
     <None Include="shaders\deferred_shading\g-buffer\fragment\normal_model_geometry.frag" />
     <None Include="shaders\deferred_shading\g-buffer\vertex\model.vert" />

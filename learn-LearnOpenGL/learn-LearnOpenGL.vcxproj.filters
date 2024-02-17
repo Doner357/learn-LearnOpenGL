@@ -355,6 +355,9 @@
     <None Include="shaders\deferred_shading\lighting\fragment\global-lighting.frag">
       <Filter>Resource Files\shaders\deferred_shading\lighting\fragment</Filter>
     </None>
+    <None Include="shaders\deferred_shading\lighting\fragment\global-lighting_light_valume_demo.frag">
+      <Filter>Resource Files\shaders\deferred_shading\lighting\fragment</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">

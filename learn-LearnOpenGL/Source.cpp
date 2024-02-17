@@ -394,7 +394,7 @@ int main(void) {
 
 	// Shaders for deferred shading
 	Shader geometryShader("shaders/deferred_shading/g-buffer/vertex/model.vert", "shaders/deferred_shading/g-buffer/fragment/normal_model_geometry.frag");
-	Shader deferredLightingShader("shaders/deferred_shading/lighting/vertex/regular_screen.vert", "shaders/deferred_shading/lighting/fragment/global-lighting.frag");
+	Shader deferredLightingShader("shaders/deferred_shading/lighting/vertex/regular_screen.vert", "shaders/deferred_shading/lighting/fragment/global-lighting_light_valume_demo.frag");
 
 
 	// Shader for bloom
@@ -589,14 +589,14 @@ int main(void) {
 	// Positions of container
 	std::vector<glm::vec3> objectPositions;
 	objectPositions.push_back(glm::vec3(-3.0, -0.5, -3.0));
-	objectPositions.push_back(glm::vec3(0.0, -0.5, -3.0));
-	objectPositions.push_back(glm::vec3(3.0, -0.5, -3.0));
+	objectPositions.push_back(glm::vec3( 0.0, -0.5, -3.0));
+	objectPositions.push_back(glm::vec3( 3.0, -0.5, -3.0));
 	objectPositions.push_back(glm::vec3(-3.0, -0.5, 0.0));
-	objectPositions.push_back(glm::vec3(0.0, -0.5, 0.0));
-	objectPositions.push_back(glm::vec3(3.0, -0.5, 0.0));
+	objectPositions.push_back(glm::vec3( 0.0, -0.5, 0.0));
+	objectPositions.push_back(glm::vec3( 3.0, -0.5, 0.0));
 	objectPositions.push_back(glm::vec3(-3.0, -0.5, 3.0));
-	objectPositions.push_back(glm::vec3(0.0, -0.5, 3.0));
-	objectPositions.push_back(glm::vec3(3.0, -0.5, 3.0));
+	objectPositions.push_back(glm::vec3( 0.0, -0.5, 3.0));
+	objectPositions.push_back(glm::vec3( 3.0, -0.5, 3.0));
 
 
 
@@ -617,7 +617,7 @@ int main(void) {
 
 	// Random generate part
 	unsigned int num_of_random_dirLight = 0;
-	unsigned int num_of_random_pointLight = 32;
+	unsigned int num_of_random_pointLight = 3;
 	unsigned int num_of_random_spotLight = 0;
 	// Appear area(x, z) = (-area, -area) ~ (area, area)
 	float appear_area = 10.0f;
