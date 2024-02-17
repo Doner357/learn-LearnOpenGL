@@ -473,8 +473,8 @@ namespace CustomHelper {
 	};
 
 	struct BlinnPhongLight_spot {
-		alignas(16) glm::vec3 position;
 		alignas(16) glm::vec3 direction;
+		alignas(16) glm::vec3 position;
 
 		alignas(4)  float innerCutOff;
 		alignas(4)  float outerCutOff;

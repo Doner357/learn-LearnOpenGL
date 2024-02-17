@@ -620,15 +620,15 @@ int main(void) {
 	unsigned int num_of_random_pointLight = 32;
 	unsigned int num_of_random_spotLight = 0;
 	// Appear area(x, z) = (-area, -area) ~ (area, area)
-	float appear_area = 50.0f;
+	float appear_area = 10.0f;
 	// Appear height(y) = (0) ~ (height)
 	float appear_hieght = 4.0f;
 	// Minimum and maximum value of direction lights
 	glm::vec3 min_dirlights_color(1.0f);
 	glm::vec3 max_dirlights_color(100.0f);
 	// Minimum and maximum value of point lights
-	glm::vec3 min_pointlights_color(0.5f);
-	glm::vec3 max_pointlights_color(15.0f);
+	glm::vec3 min_pointlights_color(1.0f);
+	glm::vec3 max_pointlights_color(5.0f);
 	// Minimum and maximum value of spot lights
 	glm::vec3 min_spotlights_color(0.5f);
 	glm::vec3 max_spotlights_color(100.0f);
@@ -836,11 +836,21 @@ int main(void) {
 
 		// *** FORWARD SHADING PASS ***
 		//-------------------------------------------------------------------------------------
+
+		// First copy the depth buffer info from geometry pass to current working framebuffer
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, g_buffer);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdr_initial_screen_framebuffer);
+		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+		// Bind current working framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, hdr_initial_screen_framebuffer);
+
+
 		// Draw light cube
-		//CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.025f);
+		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.025f);
 
 
-		/*
+		
 		// skybox
 		//---------------
 		// Since the default value in depth buffer is 1.0, so the fragment should pass the depth test when the depth of fragment is less or equal to
@@ -859,7 +869,7 @@ int main(void) {
 		// Set the depth function and culling face to default
 		glDepthFunc(GL_LESS);
 		glCullFace(GL_BACK);
-		*/
+		
 
 
 
