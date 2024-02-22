@@ -772,7 +772,7 @@ namespace CustomHelper {
 	};
 
 
-	void GenDepthFramebuffers(const unsigned int n, unsigned int *const framebuffers) {
+	inline void GenDepthFramebuffers(const unsigned int n, unsigned int *const framebuffers) {
 		glGenFramebuffers(n, framebuffers);
 		for (unsigned int i = 0; i < n; i++) {
 			glBindFramebuffer(GL_FRAMEBUFFER, framebuffers[i]);
@@ -782,7 +782,7 @@ namespace CustomHelper {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	void GenDirDepthMaps(const unsigned int n, unsigned int* const textures, const unsigned int width, const unsigned int height) {
+	inline void GenDirDepthMaps(const unsigned int n, unsigned int* const textures, const unsigned int width, const unsigned int height) {
 		glGenTextures(n, textures);
 		for (unsigned int i = 0; i < n; i++) {
 			glBindTexture(GL_TEXTURE_2D, textures[i]);
@@ -798,7 +798,7 @@ namespace CustomHelper {
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	void GenCubeDepthMaps(const unsigned int n, unsigned int *const textures, const unsigned int width, const unsigned int height) {
+	inline void GenCubeDepthMaps(const unsigned int n, unsigned int *const textures, const unsigned int width, const unsigned int height) {
 		glGenTextures(n, textures);
 		for (unsigned int i = 0; i < n; i++) {
 			glBindTexture(GL_TEXTURE_CUBE_MAP, textures[i]);
@@ -1053,12 +1053,12 @@ namespace CustomHelper {
 
 
 	// Calculate the normal matrix
-	glm::mat3 CalculateNormalMat(const glm::mat4 &modelMat) {
+	inline glm::mat3 CalculateNormalMat(const glm::mat4 &modelMat) {
 		return glm::mat3(glm::transpose(glm::inverse(modelMat)));
 	}
 
 	// Random color generator
-	glm::vec3 GenerateRandomColor(glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
+	inline glm::vec3 GenerateRandomColor(glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
 
 		// Original generator version
 		/*
@@ -1087,7 +1087,7 @@ namespace CustomHelper {
 	}
 
 	// Random vec3 generator
-	glm::vec3 GenerateRandomVec3(const glm::vec3 min_vec3, const glm::vec3 max_vec3) {
+	inline glm::vec3 GenerateRandomVec3(const glm::vec3 min_vec3, const glm::vec3 max_vec3) {
 		
 		// Original generator version
 		/*
@@ -1121,7 +1121,7 @@ namespace CustomHelper {
 		return ran_vec;
 	}
 
-	float GenerateRandomAngle(const float min_angle, const float max_angle) {
+	inline float GenerateRandomAngle(const float min_angle, const float max_angle) {
 		// Set up distribute random number generator
 		typedef std::mt19937 random_engine;
 		std::random_device rd;
@@ -1134,7 +1134,7 @@ namespace CustomHelper {
 		return angle;
 	}
 
-	BlinnPhongLight_direct GenerateRandomGlobalBlinnPhongLight_dirLight(const glm::vec3 min_dir, const glm::vec3 max_dir, glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
+	inline BlinnPhongLight_direct GenerateRandomGlobalBlinnPhongLight_dirLight(const glm::vec3 min_dir, const glm::vec3 max_dir, glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
 		BlinnPhongLight_direct light{};
 
 		// Generate random color
@@ -1150,7 +1150,7 @@ namespace CustomHelper {
 		return light;
 	}
 
-	BlinnPhongLight_point GenerateRandomGlobalBlinnPhongLight_pointLight(const glm::vec3 min_pos, const glm::vec3 max_pos, glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
+	inline BlinnPhongLight_point GenerateRandomGlobalBlinnPhongLight_pointLight(const glm::vec3 min_pos, const glm::vec3 max_pos, glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
 		BlinnPhongLight_point light{};
 
 		// Generate random color
@@ -1169,10 +1169,13 @@ namespace CustomHelper {
 		return light;
 	}
 
-	BlinnPhongLight_spot GenerateRandomGlobalBlinnPhongLight_spotLight(const glm::vec3 min_dir, const glm::vec3 max_dir, 
-																	   const glm::vec3 min_pos, const glm::vec3 max_pos, 
-																	   const float min_angle  , const float max_angle,
-																		glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
+	inline BlinnPhongLight_spot GenerateRandomGlobalBlinnPhongLight_spotLight(
+		const glm::vec3 min_dir, const glm::vec3 max_dir,
+		const glm::vec3 min_pos, const glm::vec3 max_pos, 
+		const float min_angle  , const float max_angle,
+		glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)
+	) 
+	{
 		BlinnPhongLight_spot light{};
 
 		// Generate color
@@ -1201,7 +1204,7 @@ namespace CustomHelper {
 	}
 
 	// Draw the point lights in the global light uniform block
-	void DrawGlobalPointLightCube(GlobalBlinnPongLightManager &manager,const unsigned int VAO,  Shader &shader, const float scale, const unsigned int number = MAX_NUM_POINTLIGHT) {
+	inline void DrawGlobalPointLightCube(GlobalBlinnPongLightManager &manager,const unsigned int VAO,  Shader &shader, const float scale, const unsigned int number = MAX_NUM_POINTLIGHT) {
 		shader.use();
 		glBindVertexArray(VAO);
 		BlinnPhongLight_point light = {};
@@ -1222,7 +1225,7 @@ namespace CustomHelper {
 		glUseProgram(0);
 	}
 
-	void DrawTexFloor(const unsigned int &quad_VAO, Shader & const shader, glm::vec3 & const viewPos, const unsigned int &diffuse_tex, const unsigned int &specular_tex, const float shininess, const glm::vec3 position = glm::vec3(0.0f), const float scale = 1.0f, const int tex_repeate_times = 1) {
+	inline void DrawTexFloor(const unsigned int &quad_VAO, Shader & const shader, glm::vec3 & const viewPos, const unsigned int &diffuse_tex, const unsigned int &specular_tex, const float shininess, const glm::vec3 position = glm::vec3(0.0f), const float scale = 1.0f, const int tex_repeate_times = 1) {
 		shader.use();
 		shader.setInt("material.diffuse", 0);
 		shader.setInt("material.specular", 1);
