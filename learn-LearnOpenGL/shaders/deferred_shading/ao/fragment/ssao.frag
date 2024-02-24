@@ -7,9 +7,12 @@ uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D texNoise;
 
-uniform vec3 samples[64];
-uniform float radius;
-uniform float bias;
+uniform vec3  samples[64];
+uniform int   kernelSize;   // The number of samples
+uniform vec2  screenSize;   // The size of the screen, x component contains width, y contains height
+uniform float radius;       // The radius of kernel
+uniform float bias;         // The bias for sample depth
+uniform float power;        // The power to control the strength of ao
 
 // We need projection matrix
 layout (std140) uniform CameraMatrices {
@@ -17,15 +20,14 @@ layout (std140) uniform CameraMatrices {
 	mat4 projection;
 };
 
-// tile noise texture over screen, based on screen dimensions divided by noise size
-const vec2 kNoiseScale = vec2(800.0/4.0, 600.0/4.0); // screen = 800x600
-const int  kKernelSize = 64;                         // The number of samples
-
 void main() {
+    // tile noise texture over screen, based on screen dimensions divided by noise size
+    vec2 noise_scale = vec2(screenSize.x / 4.0, screenSize.y / 4.0); // screen = 800x600
+
     // Extract data from textures
     vec3 fragPos   = texture(gPosition, TexCoords).rgb;
     vec3 normal    = texture(gNormal, TexCoords).rgb;
-    vec3 randomVec = texture(texNoise, TexCoords * kNoiseScale).rgb;
+    vec3 randomVec = texture(texNoise, TexCoords * noise_scale).rgb;
 
     // Using Gramm-Schmidt process to calculate tangent-space to view-sapce TBN matrix
     vec3 tangent   = normalize(randomVec - normal * dot(randomVec, normal));
@@ -34,7 +36,8 @@ void main() {
 
     // ** AO calculation **
     float occlusion = 0.0;
-    for (int i = 0; i < kKernelSize; i++) {
+    int num_of_samples = clamp(kernelSize, 0, 64);
+    for (int i = 0; i < num_of_samples; i++) {
         // Get sample postion
         vec3 samplePos = TBN * samples[i]; // From tangent to view space
         samplePos = fragPos + samplePos * radius;
@@ -58,6 +61,6 @@ void main() {
     // Normalize the occlusion contribution
     // Note that we subtract the occlusion factor from 1.0 so we can directly use the occlusion
     // factor to scale the ambient lighting component.
-    occlusion = 1.0 - (occlusion / kKernelSize);
-    FragColor = occlusion;
+    occlusion = 1.0 - (occlusion / num_of_samples);
+    FragColor = pow(occlusion, power);
 }

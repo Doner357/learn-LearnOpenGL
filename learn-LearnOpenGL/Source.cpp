@@ -71,6 +71,12 @@ unsigned int bloom_blur_time = 5;
 bool bloomKeyPressed = false;
 
 
+// Control SSAO
+bool applySsao = true;
+bool ssaoKeyPressed = false;
+float ssao_power = 1.0f;
+
+
 int main(void) {
 
 	/*
@@ -401,7 +407,8 @@ int main(void) {
 	Shader modelGeometryShader("shaders/deferred_shading/g-buffer/vertex/view_space_model.vert", "shaders/deferred_shading/g-buffer/fragment/normal_model_geometry.frag");
 	Shader textureGeometryShader("shaders/deferred_shading/g-buffer/vertex/view_space_texture.vert", "shaders/deferred_shading/g-buffer/fragment/texture_geometry.frag");
 	Shader pureWhiteGeometryShader("shaders/deferred_shading/g-buffer/vertex/view_space_texture.vert", "shaders/deferred_shading/g-buffer/fragment/pure_white_geometry.frag");
-	Shader deferredLightingShader("shaders/deferred_shading/lighting/vertex/regular_screen.vert", "shaders/deferred_shading/lighting/fragment/global-view_space-lighting.frag");
+	Shader deferredLightingShader("shaders/deferred_shading/lighting/vertex/regular_screen.vert", "shaders/deferred_shading/lighting/fragment/global-view-space-lighting.frag");
+	Shader deferredAoLightingShader("shaders/deferred_shading/lighting/vertex/regular_screen.vert", "shaders/deferred_shading/lighting/fragment/global-view-space-lighting_ao.frag");
 
 
 	// Shaders for bloom
@@ -466,14 +473,24 @@ int main(void) {
 	deferredLightingShader.setInt("gNormalShininess", 1);
 	deferredLightingShader.setInt("gAlbedoSpec", 2);
 
+	deferredAoLightingShader.use();
+	deferredAoLightingShader.setInt("gPosition", 0);
+	deferredAoLightingShader.setInt("gNormalShininess", 1);
+	deferredAoLightingShader.setInt("gAlbedoSpec", 2);
+	deferredAoLightingShader.setInt("ambientOcclusion", 3);
+
 
 	// SSAO
+	unsigned int kernel_size = 64;
 	ssaoShader.use();
 	ssaoShader.setInt("gPosition", 0);
 	ssaoShader.setInt("gNormal", 1);
 	ssaoShader.setInt("texNoise", 2);
+	ssaoShader.setInt("kernelSize", kernel_size);
+	ssaoShader.setVec2("screenSize", glm::vec2(SCR_WIDTH, SCR_HEIGHT));
 	ssaoShader.setFloat("radius", 0.5f);
 	ssaoShader.setFloat("bias", 0.025f);
+	ssaoShader.setFloat("power", ssao_power);
 
 	ssaoBlurShader.use();
 	ssaoBlurShader.setInt("ssaoInput", 0);
@@ -497,11 +514,13 @@ int main(void) {
 	cameraMatManager.registerShader(textureGeometryShader);
 	cameraMatManager.registerShader(deferredLightingShader);
 	cameraMatManager.registerShader(ssaoShader);
+	cameraMatManager.registerShader(deferredAoLightingShader);
 
 	// Global light uniform block
 	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING, CustomHelper::UBOPOINT_BLINPHONG_LIGHTING, CustomHelper::MAX_NUM_DIRECTIONALLIGHT, CustomHelper::MAX_NUM_POINTLIGHT, CustomHelper::MAX_NUM_SPOTLIGHT);
 	globalLightManager.registerShader(textureShader);
 	globalLightManager.registerShader(deferredLightingShader);
+	globalLightManager.registerShader(deferredAoLightingShader);
 
 	// Global light with shadow uniform block
 	CustomHelper::GlobalBlinnPongShadowLightManager globalShadowLightManager(
@@ -957,36 +976,45 @@ int main(void) {
 
 
 		// -- SSAO --
-		// Calculate the screen-space ambient occlusion
-		glBindFramebuffer(GL_FRAMEBUFFER, ssao_framebuffer);
+		if (applySsao) {
+			// Calculate the screen-space ambient occlusion
+			glBindFramebuffer(GL_FRAMEBUFFER, ssao_framebuffer);
 
-		glClearColor(1.0, 1.0, 1.0, 1.0);
-		glClear(GL_COLOR_BUFFER_BIT);
+			glClearColor(1.0, 1.0, 1.0, 1.0);
+			glClear(GL_COLOR_BUFFER_BIT);
 
-		ssaoShader.use();
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, g_position);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, g_normal_shininess);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, noise_texture);
+			ssaoShader.use();
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, g_position);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, g_normal_shininess);
+			glActiveTexture(GL_TEXTURE2);
+			glBindTexture(GL_TEXTURE_2D, noise_texture);
 
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+			// Set up SSAO factors
+			ssaoShader.setInt  ("kernelSize", kernel_size);
+			ssaoShader.setVec2 ("screenSize", glm::vec2(SCR_WIDTH, SCR_HEIGHT));
+			ssaoShader.setFloat("radius"    , 0.5f);
+			ssaoShader.setFloat("bias"      , 0.025f);
+			ssaoShader.setFloat("power"     , ssao_power);
+
+			glBindVertexArray(quadVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
-		// Blur the ao image
-		glBindFramebuffer(GL_FRAMEBUFFER, ssao_blur_framebuffer);
+			// Blur the ao image
+			glBindFramebuffer(GL_FRAMEBUFFER, ssao_blur_framebuffer);
 
-		glClearColor(1.0, 1.0, 1.0, 1.0);
-		glClear(GL_COLOR_BUFFER_BIT);
+			glClearColor(1.0, 1.0, 1.0, 1.0);
+			glClear(GL_COLOR_BUFFER_BIT);
 
-		ssaoBlurShader.use();
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, ssao_color_texture);
+			ssaoBlurShader.use();
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, ssao_color_texture);
 
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+			glBindVertexArray(quadVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
 
 		
 
@@ -1000,7 +1028,13 @@ int main(void) {
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		deferredLightingShader.use();
+		// Determind whether apply SSAO
+		if (applySsao) {
+			deferredAoLightingShader.use();
+		}
+		else {
+			deferredLightingShader.use();
+		}
 
 		// Bind each g-buffer image
 		glActiveTexture(GL_TEXTURE0);
@@ -1009,9 +1043,20 @@ int main(void) {
 		glBindTexture(GL_TEXTURE_2D, g_normal_shininess);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, g_color_spec);
+		
+		if (applySsao) {
+			glActiveTexture(GL_TEXTURE3);
+			glBindTexture(GL_TEXTURE_2D, ssao_blur_color_texture);
+		}
 
-		// Transfer the view position
-		deferredLightingShader.setMat3("normalMat", normalMat);
+		// Transfer the direction matrix
+		glm::mat3 directionMat = CustomHelper::CalculateNormalMat(view);
+		if (applySsao) {
+			deferredAoLightingShader.setMat3("directionMat", directionMat);
+		}
+		else {
+			deferredLightingShader.setMat3("directionMat", directionMat);
+		}
 
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -1219,7 +1264,7 @@ int main(void) {
 		screenShader.use();
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, ssao_blur_color_texture);
+		glBindTexture(GL_TEXTURE_2D, ldr_final_screen_texture);
 
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -1279,6 +1324,7 @@ void processInput(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		camera.ProcessKeyboard(CAMERA_DOWN, deltaTime);
 
+	// Control vertical async
 	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS && !vSyncKeyPressed) {
 		needVerticalSync = !needVerticalSync;
 		if (needVerticalSync) {
@@ -1293,6 +1339,7 @@ void processInput(GLFWwindow *window) {
 		vSyncKeyPressed = false;
 	}
 
+	// Control eye adaption
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && !eyeAdaptionKeyPressed) {
 		isEyeAdaptionEnable = !isEyeAdaptionEnable;
 		eyeAdaptionKeyPressed = true;
@@ -1301,6 +1348,7 @@ void processInput(GLFWwindow *window) {
 		eyeAdaptionKeyPressed = false;
 	}
 
+	// Control bloom
 	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && !bloomKeyPressed) {
 		applyBloom = !applyBloom;
 		bloomKeyPressed = true;
@@ -1308,7 +1356,33 @@ void processInput(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_RELEASE) {
 		bloomKeyPressed = false;
 	}
+
+	// Control SSAO
+	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && !ssaoKeyPressed) {
+		applySsao = !applySsao;
+		ssaoKeyPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_RELEASE) {
+		ssaoKeyPressed = false;
+	}
 	
+	// Control the strength of SSAO
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+		if (ssao_power < 10.0f) {
+			ssao_power += 0.02f;
+		}
+		else {
+			ssao_power = 10.0f;
+		}
+	}
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+		if (ssao_power > 1.0f) {
+			ssao_power -= 0.02f;
+		}
+		else {
+			ssao_power = 1.0f;
+		}
+	}
 }
 
 // glfw: whenever the mouse moves, this callback is called

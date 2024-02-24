@@ -157,10 +157,11 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\deferred_shading\lighting\fragment\global-view-space-lighting_ao.frag" />
     <None Include="shaders\deferred_shading\ao\fragment\ao_blur.frag" />
     <None Include="shaders\deferred_shading\ao\vertex\regular_screen.vert" />
     <None Include="shaders\deferred_shading\g-buffer\fragment\pure_white_geometry.frag" />
-    <None Include="shaders\deferred_shading\lighting\fragment\global-view_space-lighting.frag" />
+    <None Include="shaders\deferred_shading\lighting\fragment\global-view-space-lighting.frag" />
     <None Include="shaders\deferred_shading\lighting\fragment\global-lighting.frag" />
     <None Include="shaders\post-processing\fragment\hdr_gamma_correction.frag" />
     <None Include="shaders\deferred_shading\lighting\fragment\global-lighting_light_valume_demo.frag" />

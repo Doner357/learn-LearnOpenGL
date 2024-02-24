@@ -7,6 +7,7 @@ out vec4 FragColor;
 uniform sampler2D gPosition;
 uniform sampler2D gNormalShininess;
 uniform sampler2D gAlbedoSpec;
+uniform sampler2D ambientOcclusion;
 
 struct DirLight {
 	vec3 direction;
@@ -59,7 +60,7 @@ layout (std140) uniform CameraMatrices {
 	mat4 view;
 	mat4 projection;
 };
-uniform mat3 normalMat;
+uniform mat3 directionMat;
 
 layout (std140) uniform GlobalLights {               // size      ali
 	DirLight dirLights[NUM_OF_DIRLIGHTS];            //  256        0
@@ -77,7 +78,7 @@ void main() {
 	for(int i = 0; i < NUM_OF_DIRLIGHTS; i++) {
 		DirLight light = dirLights[i];
 		if (light.direction != vec3(0.0)) {
-			light.direction = normalMat * dirLights[i].direction;
+			light.direction = directionMat * dirLights[i].direction;
 			result += CalcDirLight(light, normal, viewDir);
 		}
 	}
@@ -92,7 +93,7 @@ void main() {
 		SpotLight light = spotLights[i];
 		if (light.position != vec3(0.0)) {
 			light.position = vec3((view * vec4(light.position, 1.0)).xyz);
-			light.direction = normalMat * light.direction;
+			light.direction = directionMat * light.direction;
 			result += CalcSpotLight(light, normal, fragPos, viewDir);
 		}
 	}
@@ -107,7 +108,8 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir){
 	vec3 halfwayDir = normalize(viewDir + lightDir);
 
 	// --ambient--
-	vec3 ambient = light.ambient * texture(gAlbedoSpec, TexCoords).rgb;
+	float ao = texture(ambientOcclusion, TexCoords).r;
+	vec3 ambient = light.ambient * ao * texture(gAlbedoSpec, TexCoords).rgb;
 
 	// --diffuse--
 	float diff = max(dot(normal, lightDir), 0.0);
@@ -130,7 +132,8 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 	vec3 halfwayDir = normalize(viewDir + lightDir);
 
 	// --ambient--
-	vec3 ambient = light.ambient * texture(gAlbedoSpec, TexCoords).rgb;
+	float ao = texture(ambientOcclusion, TexCoords).r;
+	vec3 ambient = light.ambient * ao * texture(gAlbedoSpec, TexCoords).rgb;
 
 	// --diffuse--
 	float diff = max(dot(normal, lightDir), 0.0);
@@ -161,7 +164,8 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 	vec3 halfwayDir = normalize(viewDir + lightDir);
 
 	// --ambient--
-	vec3 ambient = light.ambient * texture(gAlbedoSpec, TexCoords).rgb;
+	float ao = texture(ambientOcclusion, TexCoords).r;
+	vec3 ambient = light.ambient * ao * texture(gAlbedoSpec, TexCoords).rgb;
 
 	// --diffuse--
 	float diff = max(dot(normal, lightDir), 0.0);
