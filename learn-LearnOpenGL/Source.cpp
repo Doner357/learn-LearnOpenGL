@@ -951,7 +951,7 @@ int main(void) {
 		glBindTexture(GL_TEXTURE_2D, noise_texture);
 
 		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glEnable(GL_DEPTH_TEST);
 
 		
