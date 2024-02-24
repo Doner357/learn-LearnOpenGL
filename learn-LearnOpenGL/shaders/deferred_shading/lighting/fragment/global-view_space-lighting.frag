@@ -59,7 +59,7 @@ layout (std140) uniform CameraMatrices {
 	mat4 view;
 	mat4 projection;
 };
-uniform mat3 normalMat;
+uniform mat3 directionMat;
 
 layout (std140) uniform GlobalLights {               // size      ali
 	DirLight dirLights[NUM_OF_DIRLIGHTS];            //  256        0
@@ -77,7 +77,7 @@ void main() {
 	for(int i = 0; i < NUM_OF_DIRLIGHTS; i++) {
 		DirLight light = dirLights[i];
 		if (light.direction != vec3(0.0)) {
-			light.direction = normalMat * dirLights[i].direction;
+			light.direction = directionMat * dirLights[i].direction;
 			result += CalcDirLight(light, normal, viewDir);
 		}
 	}
@@ -92,7 +92,7 @@ void main() {
 		SpotLight light = spotLights[i];
 		if (light.position != vec3(0.0)) {
 			light.position = vec3((view * vec4(light.position, 1.0)).xyz);
-			light.direction = normalMat * light.direction;
+			light.direction = directionMat * light.direction;
 			result += CalcSpotLight(light, normal, fragPos, viewDir);
 		}
 	}
