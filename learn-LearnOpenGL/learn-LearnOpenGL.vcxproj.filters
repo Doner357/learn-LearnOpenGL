@@ -137,9 +137,6 @@
     <ClInclude Include="learnopengl\common_vao_creator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="learnopengl\custom_math.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\others\vertex\light_cube.vert">
@@ -392,6 +389,9 @@
       <Filter>Resource Files\shaders\deferred_shading\ao\vertex</Filter>
     </None>
     <None Include="shaders\deferred_shading\ao\fragment\ssao.frag">
+      <Filter>Resource Files\shaders\deferred_shading\ao\fragment</Filter>
+    </None>
+    <None Include="shaders\deferred_shading\ao\fragment\ao_blur.frag">
       <Filter>Resource Files\shaders\deferred_shading\ao\fragment</Filter>
     </None>
   </ItemGroup>

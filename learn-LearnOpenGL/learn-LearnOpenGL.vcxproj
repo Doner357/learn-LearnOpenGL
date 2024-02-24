@@ -144,7 +144,6 @@
     <ClCompile Include="stb_image_define.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="learnopengl\custom_math.h" />
     <ClInclude Include="learnopengl\common_vao_creator.h" />
     <ClInclude Include="learnopengl\custom_helper.h" />
     <ClInclude Include="learnopengl\camera.h" />
@@ -158,6 +157,7 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\deferred_shading\ao\fragment\ao_blur.frag" />
     <None Include="shaders\deferred_shading\ao\vertex\regular_screen.vert" />
     <None Include="shaders\deferred_shading\g-buffer\fragment\pure_white_geometry.frag" />
     <None Include="shaders\deferred_shading\lighting\fragment\global-view_space-lighting.frag" />

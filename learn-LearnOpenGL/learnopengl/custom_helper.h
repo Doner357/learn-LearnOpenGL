@@ -1254,6 +1254,11 @@ namespace CustomHelper {
 		glUseProgram(0);
 	}
 
+	// Lerp function
+	inline float lerp(float a, float b, float f) {
+		return a + f * (b - a);
+	}
+
 }
 
 #endif

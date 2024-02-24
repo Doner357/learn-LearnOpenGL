@@ -10,7 +10,6 @@
 #include "learnopengl/camera_plus.h"
 #include "learnopengl/model.h"
 #include "learnopengl/custom_helper.h"
-#include "learnopengl/custom_math.h"
 
 #include <iostream>
 #include <vector>
@@ -413,6 +412,7 @@ int main(void) {
 
 	// Shaders for SSAO
 	Shader ssaoShader("shaders/deferred_shading/ao/vertex/regular_screen.vert", "shaders/deferred_shading/ao/fragment/ssao.frag");
+	Shader ssaoBlurShader("shaders/deferred_shading/ao/vertex/regular_screen.vert", "shaders/deferred_shading/ao/fragment/ao_blur.frag");
 
 
 
@@ -474,6 +474,9 @@ int main(void) {
 	ssaoShader.setInt("texNoise", 2);
 	ssaoShader.setFloat("radius", 0.5f);
 	ssaoShader.setFloat("bias", 0.025f);
+
+	ssaoBlurShader.use();
+	ssaoBlurShader.setInt("ssaoInput", 0);
 
 
 	glUseProgram(0);
@@ -624,6 +627,24 @@ int main(void) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssao_color_texture, 0);
+
+	// Check whether the framebuffer is complete
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+
+
+	// Framebuffer for ambient occlusion blur
+	unsigned int ssao_blur_framebuffer;
+	glGenFramebuffers(1, &ssao_blur_framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, ssao_blur_framebuffer);
+
+	unsigned int ssao_blur_color_texture;
+	glGenTextures(1, &ssao_blur_color_texture);
+	glBindTexture(GL_TEXTURE_2D, ssao_blur_color_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, SCR_WIDTH, SCR_HEIGHT, 0, GL_RED, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssao_blur_color_texture, 0);
 
 	// Check whether the framebuffer is complete
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -935,8 +956,8 @@ int main(void) {
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
-		// SSAO
-		glDisable(GL_DEPTH_TEST);
+		// -- SSAO --
+		// Calculate the screen-space ambient occlusion
 		glBindFramebuffer(GL_FRAMEBUFFER, ssao_framebuffer);
 
 		glClearColor(1.0, 1.0, 1.0, 1.0);
@@ -951,8 +972,21 @@ int main(void) {
 		glBindTexture(GL_TEXTURE_2D, noise_texture);
 
 		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glEnable(GL_DEPTH_TEST);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+		// Blur the ao image
+		glBindFramebuffer(GL_FRAMEBUFFER, ssao_blur_framebuffer);
+
+		glClearColor(1.0, 1.0, 1.0, 1.0);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		ssaoBlurShader.use();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, ssao_color_texture);
+
+		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		
 
@@ -1185,7 +1219,7 @@ int main(void) {
 		screenShader.use();
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, ssao_color_texture);
+		glBindTexture(GL_TEXTURE_2D, ssao_blur_color_texture);
 
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
