@@ -1011,7 +1011,8 @@ int main(void) {
 		glBindTexture(GL_TEXTURE_2D, g_color_spec);
 
 		// Transfer the view position
-		deferredLightingShader.setMat3("normalMat", normalMat);
+		glm::mat3 directionMat = CustomHelper::CalculateNormalMat(view);
+		deferredLightingShader.setMat3("directionMat", directionMat);
 
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
