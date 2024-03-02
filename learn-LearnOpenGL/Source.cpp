@@ -30,8 +30,8 @@ unsigned int LoadCubemap(std::vector<std::string> faces, bool gammaCorrection, b
 unsigned int CreateColorFramebuffer(const size_t numOfColorAttachment, unsigned int *frameColortextures, const unsigned int width, const unsigned int height, const bool multisample, const unsigned int samples, const bool hdr);
 
 // Screen Width and Height setting
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1920;
+const unsigned int SCR_HEIGHT = 1080;
 
 // Gamma value
 // This time we do gamma correction in screen post-processing shader
@@ -54,7 +54,7 @@ bool vSyncKeyPressed  = false;
 // Tone mapping options
 bool  isEyeAdaptionEnable = true;   // Determine whether do the eye adaption for tone mapping
 bool  eyeAdaptionKeyPressed = false;
-const float kMaxLuminance = 0.7f;
+const float kMaxLuminance = 200.0f;
 const float kMinLuminance = 0.3f;
 const float kExposureAdjustSpeed = 50.0f;
 const float kAverageLuminance = 0.5f;
@@ -69,6 +69,11 @@ bool applyBloom = true;
 unsigned int bloom_blur_time = 5;
 // Used to control bloom
 bool bloomKeyPressed = false;
+
+
+// Control switching between PBR shaders and Blinn-Phong shaders
+bool applyPBR = true;
+bool PBRKeyPressed = false;
 
 
 
@@ -410,6 +415,7 @@ int main(void) {
 
 	// Shader for PBR
 	Shader pbrTestShader("shaders/pbr/lighting/vertex/regular.vert", "shaders/pbr/lighting/fragment/test_color.frag");
+	Shader pbrColorShader("shaders/pbr/lighting/vertex/regular.vert", "shaders/pbr/lighting/fragment/pbr_global-lighting_color.frag");
 
 
 
@@ -467,11 +473,13 @@ int main(void) {
 	cameraMatManager.registerShader(lightCubeShader);
 	cameraMatManager.registerShader(textureShader);
 	cameraMatManager.registerShader(pbrTestShader);
+	cameraMatManager.registerShader(pbrColorShader);
 
 	// Global light uniform block
 	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING, CustomHelper::UBOPOINT_BLINPHONG_LIGHTING, CustomHelper::MAX_NUM_DIRECTIONALLIGHT, CustomHelper::MAX_NUM_POINTLIGHT, CustomHelper::MAX_NUM_SPOTLIGHT);
 	globalLightManager.registerShader(textureShader);
 	globalLightManager.registerShader(pbrTestShader);
+	globalLightManager.registerShader(pbrColorShader);
 
 	// Global light with shadow uniform block
 	CustomHelper::GlobalBlinnPongShadowLightManager globalShadowLightManager(
@@ -607,9 +615,9 @@ int main(void) {
 
 	for (unsigned int i = 0; i < 4; i++) {
 		pointLight.position = light_positions[i];
-		pointLight.ambient  = light_colors[i] * 0.03f;
-		pointLight.diffuse  = light_colors[i] * 0.5f;
-		pointLight.specular = light_colors[i] * 1.0f;
+		pointLight.ambient  = glm::vec3(0.03f);
+		pointLight.diffuse  = light_colors[i];
+		pointLight.specular = light_colors[i];
 		pointLight.quadratic = 1.0f;
 		globalLightManager.updatePointLight(pointLight, num_of_pointLight++);
 	}
@@ -782,29 +790,55 @@ int main(void) {
 		glClearColor(inverse_gamma_background_color, inverse_gamma_background_color, inverse_gamma_background_color, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		for (unsigned int row = 0; row < nrRows; row++) {
-			for (unsigned int col = 0; col < nrColumns; col++) {
-				pbrTestShader.use();
+		// Render the spheres according to the selected shader
+		if (applyPBR) {
+			for (unsigned int row = 0; row < nrRows; row++) {
+				for (unsigned int col = 0; col < nrColumns; col++) {
+					pbrColorShader.use();
 
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, sphere_positions[row][col]);
-				normalMat = CustomHelper::CalculateNormalMat(model);
+					model = glm::mat4(1.0f);
+					model = glm::translate(model, sphere_positions[row][col]);
+					normalMat = CustomHelper::CalculateNormalMat(model);
 
-				pbrTestShader.setMat4("model", model);
-				pbrTestShader.setMat3("normalMat", normalMat);
-				pbrTestShader.setVec3("viewPos", camera.Position);
+					pbrColorShader.setMat4("model", model);
+					pbrColorShader.setMat3("normalMat", normalMat);
+					pbrColorShader.setVec3("viewPos", camera.Position);
 
-				pbrTestShader.setVec3("material.diffuse", glm::vec3(0.5f, 0.0f, 0.0f));
-				pbrTestShader.setVec3("material.specular", glm::vec3(1.0f, 0.0f, 0.0f));
-				pbrTestShader.setFloat("material.shininess", (2.0f / (std::pow(roughness[col], 4.0f))) - 2);
+					pbrColorShader.setVec3("material.albedo", sphere_color);
+					pbrColorShader.setFloat("material.metallic", metallic[row]);
+					pbrColorShader.setFloat("material.roughness", roughness[col]);
+					pbrColorShader.setFloat("material.ao", 1.0f);
 
-				glBindVertexArray(sphereVAO);
-				glDrawElements(GL_TRIANGLE_STRIP, sphere_index_count, GL_UNSIGNED_INT, 0);
+					glBindVertexArray(sphereVAO);
+					glDrawElements(GL_TRIANGLE_STRIP, sphere_index_count, GL_UNSIGNED_INT, 0);
+				}
+			}
+		}
+		else {
+			for (unsigned int row = 0; row < nrRows; row++) {
+				for (unsigned int col = 0; col < nrColumns; col++) {
+					pbrTestShader.use();
+
+					model = glm::mat4(1.0f);
+					model = glm::translate(model, sphere_positions[row][col]);
+					normalMat = CustomHelper::CalculateNormalMat(model);
+
+					pbrTestShader.setMat4("model", model);
+					pbrTestShader.setMat3("normalMat", normalMat);
+					pbrTestShader.setVec3("viewPos", camera.Position);
+
+					pbrTestShader.setVec3("material.diffuse", sphere_color * 0.2f);
+					pbrTestShader.setVec3("material.specular", light_colors[0] * 0.0015f);
+					pbrTestShader.setFloat("material.shininess", (2.0f / (std::pow(roughness[col], 3.0f))) - 2);
+
+					glBindVertexArray(sphereVAO);
+					glDrawElements(GL_TRIANGLE_STRIP, sphere_index_count, GL_UNSIGNED_INT, 0);
+				}
 			}
 		}
 
 		// Draw light cube
-		//CustomHelper::DrawGlobalPointLightSphere(globalLightManager, sphereVAO, sphere_index_count, lightCubeShader, 0.025f);
+		CustomHelper::DrawGlobalPointLightSphere(globalLightManager, sphereVAO, sphere_index_count, lightCubeShader, 0.025f);
 
 
 		
@@ -936,13 +970,17 @@ int main(void) {
 			// Get average color by get lowest mipmap level pixel color
 			glm::vec3 average_color;
 			glGetTexImage(GL_TEXTURE_2D, max_mipmap_level, GL_RGB, GL_FLOAT, &average_color);
+			if (std::isnan(average_color.r) || std::isnan(average_color.g) || std::isnan(average_color.b)) {
+				average_color = glm::vec3(1.0f);
+			}
 			// Calculate the real luminance in the scene
-			const float real_luminance = 0.2126f * average_color.r + 0.7152 * average_color.g + 0.0722 * average_color.b;
+			float real_luminance = 0.2126f * average_color.r + 0.7152 * average_color.g + 0.0722 * average_color.b;
 
 			// Calculate adapted luminance
 			float adapted_luminance = last_luminance + (real_luminance - last_luminance) * (1.0 - std::pow(0.98f, kExposureAdjustSpeed * (1.0f / fps)));
 			// Clamp the luminance
 			adapted_luminance = (adapted_luminance >= kMaxLuminance) ? kMaxLuminance : ((adapted_luminance <= kMinLuminance) ? kMinLuminance : adapted_luminance);
+			adapted_luminance = std::max(adapted_luminance, 0.0001f);
 
 			// Record the adpated luminance to last luminace
 			last_luminance = adapted_luminance;
@@ -1079,6 +1117,15 @@ void processInput(GLFWwindow *window) {
 	}
 	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_RELEASE) {
 		bloomKeyPressed = false;
+	}
+
+	// Control bloom
+	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && !PBRKeyPressed) {
+		applyPBR = !applyPBR;
+		PBRKeyPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_RELEASE) {
+		PBRKeyPressed = false;
 	}
 }
 

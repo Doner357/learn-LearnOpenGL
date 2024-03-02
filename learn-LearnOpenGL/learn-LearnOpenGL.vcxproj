@@ -157,6 +157,7 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\pbr\lighting\fragment\pbr_global-lighting_color.frag" />
     <None Include="shaders\pbr\lighting\fragment\test_color.frag" />
     <None Include="shaders\pbr\lighting\vertex\regular.vert" />
     <None Include="shaders\deferred_shading\lighting\fragment\global-view-space-lighting_ao.frag" />

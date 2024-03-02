@@ -415,6 +415,9 @@
     <None Include="shaders\deferred_shading\lighting\fragment\global-view-space-lighting_ao.frag">
       <Filter>Resource Files\shaders\deferred_shading\lighting\fragment</Filter>
     </None>
+    <None Include="shaders\pbr\lighting\fragment\pbr_global-lighting_color.frag">
+      <Filter>Resource Files\shaders\pbr\lighting\fragment</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">
