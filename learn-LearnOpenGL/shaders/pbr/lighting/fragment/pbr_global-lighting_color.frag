@@ -161,8 +161,8 @@ vec3 CalcDirLight(DirLight light, vec3 N, vec3 V, vec3 F0) {
 	// Half vector
 	vec3 H = normalize(V + L);
 
-	// In fact light.diffuse is light color
-	vec3  radians = light.diffuse;
+	// In fact light.specular is light color
+	vec3  radians = light.specular;
 
 	// Fresnel-Schlick
 	vec3  F   = FresnelSchlick(max(dot(H, V), 0.0), F0);
@@ -187,6 +187,7 @@ vec3 CalcDirLight(DirLight light, vec3 N, vec3 V, vec3 F0) {
 
 	// Calculate ambient light
 	vec3 ambient = light.ambient * material.albedo * material.ao;
+	ambient *= vec3(0.03);
 
 	return ambient + Lo;
 }
@@ -203,8 +204,8 @@ vec3 CalcPointLight(PointLight light, vec3 fragPos, vec3 N, vec3 V, vec3 F0) {
 	// Do light attenuation
 	float distance    = length(light.position - fs_in.fragPos);
 	float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * distance * distance);
-	// In fact light.diffuse is light color
-	vec3  radians     = light.diffuse * attenuation;
+	// In fact light.specular is light color
+	vec3  radians     = light.specular * attenuation;
 
 	// Fresnel-Schlick
 	vec3  F   = FresnelSchlick(max(dot(H, V), 0.0), F0);
@@ -246,13 +247,13 @@ vec3 CalcSpotLight(SpotLight light, vec3 fragPos, vec3 N, vec3 V, vec3 F0) {
 	// Do light attenuation
 	float distance    = length(light.position - fs_in.fragPos);
 	float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * distance * distance);
-	// In fact light.diffuse is light color
-	vec3  radians     = light.diffuse * attenuation;
-
 	// --spotlight intensity--
 	float theta     = dot(L, normalize(-light.direction));   // the cosine of the angle between spotlight direction and light direction
 	float epsilon   = light.innerCutOff - light.outerCutOff;      // the cosine difference between the inner cone and outer cone
 	float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);    // the intensity of spotlight
+	
+	// In fact light.specular is light color
+	vec3  radians     = light.specular * attenuation * intensity;
 
 	// Fresnel-Schlick
 	vec3  F   = FresnelSchlick(max(dot(H, V), 0.0), F0);
@@ -273,11 +274,11 @@ vec3 CalcSpotLight(SpotLight light, vec3 fragPos, vec3 N, vec3 V, vec3 F0) {
 
 	// Calculate diffuse term and result
 	float N_dot_L = max(dot(N, L), 0.0);
-	Lo += (kD * material.albedo / PI + specular) * radians * intensity * N_dot_L;
+	Lo += (kD * material.albedo / PI + specular) * radians * N_dot_L;
 
 	// Calculate ambient light
 	vec3 ambient = light.ambient * material.albedo * material.ao;
-	ambient *= attenuation;
+	ambient *= attenuation * vec3(0.1);
 
 	return ambient + Lo;
 }
