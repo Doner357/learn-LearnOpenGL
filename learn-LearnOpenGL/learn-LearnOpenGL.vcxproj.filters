@@ -103,6 +103,18 @@
     <Filter Include="Resource Files\shaders\deferred_shading\ao\fragment">
       <UniqueIdentifier>{89a5915e-9e58-4860-82be-7b1b59a8f90d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\shaders\pbr">
+      <UniqueIdentifier>{1f8f8f68-c8d3-41ca-ba60-3e6d33f79bd1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\pbr\lighting">
+      <UniqueIdentifier>{5a6e9ae2-51b3-4e22-8cc4-89cc7c1435be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\pbr\lighting\vertex">
+      <UniqueIdentifier>{682afec8-453d-4301-8aef-f063dd10cc06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders\pbr\lighting\fragment">
+      <UniqueIdentifier>{3915b0a0-2fd9-430d-a6fc-9488cd881c1f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -373,9 +385,6 @@
     <None Include="shaders\deferred_shading\g-buffer\vertex\texture.vert">
       <Filter>Resource Files\shaders\deferred_shading\g-buffer\vertex</Filter>
     </None>
-    <None Include="shaders\deferred_shading\lighting\fragment\global-view_space-lighting.frag">
-      <Filter>Resource Files\shaders\deferred_shading\lighting\fragment</Filter>
-    </None>
     <None Include="shaders\deferred_shading\g-buffer\vertex\view_space_model.vert">
       <Filter>Resource Files\shaders\deferred_shading\g-buffer\vertex</Filter>
     </None>
@@ -393,6 +402,18 @@
     </None>
     <None Include="shaders\deferred_shading\ao\fragment\ao_blur.frag">
       <Filter>Resource Files\shaders\deferred_shading\ao\fragment</Filter>
+    </None>
+    <None Include="shaders\pbr\lighting\vertex\regular.vert">
+      <Filter>Resource Files\shaders\pbr\lighting\vertex</Filter>
+    </None>
+    <None Include="shaders\pbr\lighting\fragment\test_color.frag">
+      <Filter>Resource Files\shaders\pbr\lighting\fragment</Filter>
+    </None>
+    <None Include="shaders\deferred_shading\lighting\fragment\global-view-space-lighting.frag">
+      <Filter>Resource Files\shaders\deferred_shading\lighting\fragment</Filter>
+    </None>
+    <None Include="shaders\deferred_shading\lighting\fragment\global-view-space-lighting_ao.frag">
+      <Filter>Resource Files\shaders\deferred_shading\lighting\fragment</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

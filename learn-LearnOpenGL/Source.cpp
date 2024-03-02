@@ -71,11 +71,6 @@ unsigned int bloom_blur_time = 5;
 bool bloomKeyPressed = false;
 
 
-// Control SSAO
-bool applySsao = true;
-bool ssaoKeyPressed = false;
-float ssao_power = 1.0f;
-
 
 int main(void) {
 
@@ -246,7 +241,6 @@ int main(void) {
 	 * Model loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	Model backpack("models/backpack/backpack.obj", true, false);
 
 
 
@@ -259,6 +253,10 @@ int main(void) {
 	unsigned int quadVAO = vaoManager.getVAO(CustomHelper::VAO_QUAD);
 	unsigned int cubeVAO = vaoManager.getVAO(CustomHelper::VAO_CUBE);
 	unsigned int roomVAO = vaoManager.getVAO(CustomHelper::VAO_ROOM);
+	// Special VAO
+	// Sphere VAO : Using glDrawElements wiht GL_TRIANGLE_STRIP mod
+	unsigned int sphereVAO = vaoManager.getVAO(CustomHelper::VAO_SPHERE);
+	size_t sphere_index_count = vaoManager.getSphereIndexCount();
 
 
 	// positions
@@ -403,13 +401,6 @@ int main(void) {
 	// Shader just for render texture on simple shape
 	Shader textureShader("shaders/lighting/vertex/lighting_texture.vert", "shaders/lighting/fragment/global-lighting_texture.frag");
 
-	// Shaders for deferred shading
-	Shader modelGeometryShader("shaders/deferred_shading/g-buffer/vertex/view_space_model.vert", "shaders/deferred_shading/g-buffer/fragment/normal_model_geometry.frag");
-	Shader textureGeometryShader("shaders/deferred_shading/g-buffer/vertex/view_space_texture.vert", "shaders/deferred_shading/g-buffer/fragment/texture_geometry.frag");
-	Shader pureWhiteGeometryShader("shaders/deferred_shading/g-buffer/vertex/view_space_texture.vert", "shaders/deferred_shading/g-buffer/fragment/pure_white_geometry.frag");
-	Shader deferredLightingShader("shaders/deferred_shading/lighting/vertex/regular_screen.vert", "shaders/deferred_shading/lighting/fragment/global-view-space-lighting.frag");
-	Shader deferredAoLightingShader("shaders/deferred_shading/lighting/vertex/regular_screen.vert", "shaders/deferred_shading/lighting/fragment/global-view-space-lighting_ao.frag");
-
 
 	// Shaders for bloom
 	Shader hdr_bloom_screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/hdr_bloom_extract.frag");
@@ -417,9 +408,8 @@ int main(void) {
 	Shader hdr_bloom_blending_screenShader("shaders/post-processing/vertex/regular_screen.vert", "shaders/post-processing/fragment/hdr_bloom_blending.frag");
 
 
-	// Shaders for SSAO
-	Shader ssaoShader("shaders/deferred_shading/ao/vertex/regular_screen.vert", "shaders/deferred_shading/ao/fragment/ssao.frag");
-	Shader ssaoBlurShader("shaders/deferred_shading/ao/vertex/regular_screen.vert", "shaders/deferred_shading/ao/fragment/ao_blur.frag");
+	// Shader for PBR
+	Shader pbrTestShader("shaders/pbr/lighting/vertex/regular.vert", "shaders/pbr/lighting/fragment/test_color.frag");
 
 
 
@@ -462,40 +452,6 @@ int main(void) {
 	textureShader.setFloat("material.shininess", 64.0f);
 
 
-	// Deferred shading
-	textureGeometryShader.use();
-	textureGeometryShader.setInt("material.diffuse", CustomHelper::SAMPLER_DIFFUSE);
-	textureGeometryShader.setInt("material.specular", CustomHelper::SAMPLER_SPECULAR);
-	textureGeometryShader.setFloat("material.shininess", 64.0f);
-
-	deferredLightingShader.use();
-	deferredLightingShader.setInt("gPosition", 0);
-	deferredLightingShader.setInt("gNormalShininess", 1);
-	deferredLightingShader.setInt("gAlbedoSpec", 2);
-
-	deferredAoLightingShader.use();
-	deferredAoLightingShader.setInt("gPosition", 0);
-	deferredAoLightingShader.setInt("gNormalShininess", 1);
-	deferredAoLightingShader.setInt("gAlbedoSpec", 2);
-	deferredAoLightingShader.setInt("ambientOcclusion", 3);
-
-
-	// SSAO
-	unsigned int kernel_size = 64;
-	ssaoShader.use();
-	ssaoShader.setInt("gPosition", 0);
-	ssaoShader.setInt("gNormal", 1);
-	ssaoShader.setInt("texNoise", 2);
-	ssaoShader.setInt("kernelSize", kernel_size);
-	ssaoShader.setVec2("screenSize", glm::vec2(SCR_WIDTH, SCR_HEIGHT));
-	ssaoShader.setFloat("radius", 0.5f);
-	ssaoShader.setFloat("bias", 0.025f);
-	ssaoShader.setFloat("power", ssao_power);
-
-	ssaoBlurShader.use();
-	ssaoBlurShader.setInt("ssaoInput", 0);
-
-
 	glUseProgram(0);
 
 	
@@ -510,17 +466,12 @@ int main(void) {
 	cameraMatManager.registerShader(skyboxShader);
 	cameraMatManager.registerShader(lightCubeShader);
 	cameraMatManager.registerShader(textureShader);
-	cameraMatManager.registerShader(modelGeometryShader);
-	cameraMatManager.registerShader(textureGeometryShader);
-	cameraMatManager.registerShader(deferredLightingShader);
-	cameraMatManager.registerShader(ssaoShader);
-	cameraMatManager.registerShader(deferredAoLightingShader);
+	cameraMatManager.registerShader(pbrTestShader);
 
 	// Global light uniform block
 	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING, CustomHelper::UBOPOINT_BLINPHONG_LIGHTING, CustomHelper::MAX_NUM_DIRECTIONALLIGHT, CustomHelper::MAX_NUM_POINTLIGHT, CustomHelper::MAX_NUM_SPOTLIGHT);
 	globalLightManager.registerShader(textureShader);
-	globalLightManager.registerShader(deferredLightingShader);
-	globalLightManager.registerShader(deferredAoLightingShader);
+	globalLightManager.registerShader(pbrTestShader);
 
 	// Global light with shadow uniform block
 	CustomHelper::GlobalBlinnPongShadowLightManager globalShadowLightManager(
@@ -552,10 +503,8 @@ int main(void) {
 	*/
 	// Multisample framebuffer for render first scene
 	// Disable MSAA since we're using deferred shading
-	/*
 	unsigned int hdr_ms_render_screen_texture;
 	unsigned int hdr_ms_render_screen_framebuffer = CreateColorFramebuffer(1, &hdr_ms_render_screen_texture, SCR_WIDTH, SCR_HEIGHT, true, 4, true);
-	*/
 
 	// Initial framebuffer for post-processing
 	unsigned int hdr_initial_screen_texture;
@@ -585,163 +534,47 @@ int main(void) {
 	}
 
 
-	// ** Deferred shading **
-	// G-buffer creation
-	unsigned int g_buffer;
-	glGenFramebuffers(1, &g_buffer);
-	glBindFramebuffer(GL_FRAMEBUFFER, g_buffer);
-	unsigned int g_position, g_normal_shininess, g_color_spec;
-
-	// - position color buffer
-	glGenTextures(1, &g_position);
-	glBindTexture(GL_TEXTURE_2D, g_position);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, g_position, 0);
-
-	// - normal color buffer
-	glGenTextures(1, &g_normal_shininess);
-	glBindTexture(GL_TEXTURE_2D, g_normal_shininess);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, g_normal_shininess, 0);
-
-	// - color + specular color buffer
-	glGenTextures(1, &g_color_spec);
-	glBindTexture(GL_TEXTURE_2D, g_color_spec);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, g_color_spec, 0);
-
-	// - tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
-	unsigned int g_attachments[3] = {GL_COLOR_ATTACHMENT0 ,GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
-	glDrawBuffers(3, g_attachments);
-
-	// Create and attach render buffer (renderbuffer)
-	unsigned g_renderbuffer;
-	glGenRenderbuffers(1, &g_renderbuffer);
-	glBindRenderbuffer(GL_RENDERBUFFER, g_renderbuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, g_renderbuffer);
-
-	// Check whether the framebuffer is complete
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-
-
-	// Framebuffer for SSAO
-	unsigned int ssao_framebuffer;
-	glGenFramebuffers(1, &ssao_framebuffer);
-	glBindFramebuffer(GL_FRAMEBUFFER, ssao_framebuffer);
-
-	unsigned int ssao_color_texture;
-	glGenTextures(1, &ssao_color_texture);
-	glBindTexture(GL_TEXTURE_2D, ssao_color_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, SCR_WIDTH, SCR_HEIGHT, 0, GL_RED, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssao_color_texture, 0);
-
-	// Check whether the framebuffer is complete
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-
-
-	// Framebuffer for ambient occlusion blur
-	unsigned int ssao_blur_framebuffer;
-	glGenFramebuffers(1, &ssao_blur_framebuffer);
-	glBindFramebuffer(GL_FRAMEBUFFER, ssao_blur_framebuffer);
-
-	unsigned int ssao_blur_color_texture;
-	glGenTextures(1, &ssao_blur_color_texture);
-	glBindTexture(GL_TEXTURE_2D, ssao_blur_color_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, SCR_WIDTH, SCR_HEIGHT, 0, GL_RED, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssao_blur_color_texture, 0);
-
-	// Check whether the framebuffer is complete
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-
-
-	// Unbind framebuffer
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
-
-	/*
-	 * SSAO Pre-calculate datas
-	 * --------------------------------------------------------------------------------------------------------------------
-	 */
-	
-	// ** SSAO normal-oriented hemisphere random samples generation **
-	// Create random float generator
-	std::uniform_real_distribution<float> random_floats(0.0, 1.0); // Random float between [0.0, 1.0]
-	std::default_random_engine generator;
-	std::vector<glm::vec3> ssao_kernel;
-
-	// Generate the sample kernel
-	const unsigned int kNumOfSsaoSample = 64;
-	for (unsigned int i = 0; i < kNumOfSsaoSample; i++) {
-		glm::vec3 sample(
-			random_floats(generator) * 2.0f - 1.0f,
-			random_floats(generator) * 2.0f - 1.0f,
-			random_floats(generator)
-		);
-		sample = glm::normalize(sample);
-		sample *= random_floats(generator);
-
-		// scale samples s.t. they're more aligned to center of kernel
-		float scale = static_cast<float>(i) / 64.0f;
-		scale = CustomHelper::lerp(0.1f, 1.0f, scale * scale);
-		sample *= scale;
-
-		ssao_kernel.push_back(sample);
-	}
-
-	// Send samples into shader
-	ssaoShader.use();
-	for (unsigned int i = 0; i < kNumOfSsaoSample; i++) {
-		ssaoShader.setVec3("samples[" + std::to_string(i) + "]", ssao_kernel[i]);
-	}
-	glUseProgram(0);
-
-
-	// Create random kernel rotations noise map
-	std::vector<glm::vec3> ssao_noise;
-	for (unsigned int i = 0; i < 16; i++) {
-		glm::vec3 noise(
-			random_floats(generator) * 2.0f - 1.0f,
-			random_floats(generator) * 2.0f - 1.0f,
-			0.0f
-		);
-		ssao_noise.push_back(noise);
-	}
-
-	// Fill the noise on a 4x4 texture
-	unsigned int noise_texture;
-	glGenTextures(1, &noise_texture);
-	glBindTexture(GL_TEXTURE_2D, noise_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 4, 4, 0, GL_RGB, GL_FLOAT, &ssao_noise[0]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-
 
 	/*
 	 * Others data calculation
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
+	// PBR render datas
+	const int   nrRows    = 7;
+	const int   nrColumns = 7;
+	const float spacing   = 2.5;
+
+	std::vector<std::vector<glm::vec3>> sphere_positions;
+	std::vector<float> metallic;
+	std::vector<float> roughness;
+	glm::vec3 sphere_color = glm::vec3(0.5f, 0.0f, 0.0f);
+
+	sphere_positions.resize(nrRows);
+	metallic.resize(nrRows);
+	roughness.resize(nrColumns);
+
+	// Sphere positions
+	for (int row = 0; row < nrRows; row++) {
+		sphere_positions[row].resize(nrColumns);
+		for (int col = 0; col < nrColumns; col++) {
+			sphere_positions[row][col] = glm::vec3(
+				(col - (nrColumns / 2)) * spacing,
+				(row - (nrRows / 2))    * spacing,
+				0.0f
+				);
+		}
+	}
+	// Sphere metallic
+	for (unsigned int row = 0; row < nrRows; row++) {
+		metallic[row] = static_cast<float>(row) / static_cast<float>(nrRows);
+	}
+	// Sphere roughness
+	for (unsigned int col = 0; col < nrColumns; col++) {
+		// we clamp the roughness to 0.05 - 1.0 as perfectly smooth surfaces (roughness of 0.0) tend to look a bit off
+		// on direct lighting.
+		roughness[col] = glm::clamp(static_cast<float>(col) / static_cast<float>(nrRows), 0.05f, 1.0f);
+	}
 
 
 
@@ -759,14 +592,28 @@ int main(void) {
 	unsigned int num_of_pointLight = 0;
 	unsigned int num_of_spotLight = 0;
 
-	const glm::vec3 kLightColor = glm::vec3(1.0f, 1.0f, 3.5f);
-	pointLight.position = glm::vec3(2.0, 4.0, -2.0);
-	pointLight.ambient  = kLightColor * 0.2f;
-	pointLight.diffuse  = kLightColor * 0.5f;
-	pointLight.specular = kLightColor * 1.0f;
-	pointLight.quadratic = 1.0f;
+	glm::vec3 light_positions[] = {
+		glm::vec3(-10.0f,  10.0f, 10.0f),
+		glm::vec3( 10.0f,  10.0f, 10.0f),
+		glm::vec3(-10.0f, -10.0f, 10.0f),
+		glm::vec3( 10.0f, -10.0f, 10.0f),
+	};
+	glm::vec3 light_colors[] = {
+		glm::vec3(300.0f, 300.0f, 300.0f),
+		glm::vec3(300.0f, 300.0f, 300.0f),
+		glm::vec3(300.0f, 300.0f, 300.0f),
+		glm::vec3(300.0f, 300.0f, 300.0f)
+	};
 
-	globalLightManager.updatePointLight(pointLight, num_of_pointLight++);
+	for (unsigned int i = 0; i < 4; i++) {
+		pointLight.position = light_positions[i];
+		pointLight.ambient  = light_colors[i] * 0.03f;
+		pointLight.diffuse  = light_colors[i] * 0.5f;
+		pointLight.specular = light_colors[i] * 1.0f;
+		pointLight.quadratic = 1.0f;
+		globalLightManager.updatePointLight(pointLight, num_of_pointLight++);
+	}
+
 
 
 	// Random generate part
@@ -870,11 +717,8 @@ int main(void) {
 		processInput(window);
 
 
-		// **FIRST PASS**
-		//----------------------------------------------------------------------
-
 		// Create transformations
-		//-------------------------
+		//--------------------------------------------------
 		// --model matrix--
 		// Since each cube has its own position, we declare the matrix variable here
 		glm::mat4 model;
@@ -888,16 +732,15 @@ int main(void) {
 
 
 		// Fill the uniform buffer
-		//-------------------------
+		//--------------------------------------------------
 		// Camera view
 		cameraMatManager.updateView(view);
-
 		// Camera projection
 		cameraMatManager.updateProjection(projection);
 
 
 		// Render scene
-		//---------------------------------------------
+		//----------------------------------------------------------------------------------------------------------------
 
 		glEnable(GL_DEPTH_TEST);
 
@@ -925,163 +768,43 @@ int main(void) {
 		// **Geometry pass**
 		//----------------------------------------------------------------------
 		
-		// Disable blending so alpha won't affect the result
-		glDisable(GL_BLEND);
-
-		// Rescale the view port to the size of the screen
-		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
-		// Bind framebuffer
-		glBindFramebuffer(GL_FRAMEBUFFER, g_buffer);
-
-		// Render command
-		//---------------
-		// Clear Buffer
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);	// keep it black so it doesn't leak into g-buffer
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		
-		// Draw backpack
-		pureWhiteGeometryShader.use();
-		
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 0.5f, 0.0));
-		model = glm::scale(model, glm::vec3(1.0f));
-		model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0, 0.0, 0.0));
-		normalMat = CustomHelper::CalculateNormalMat(view * model);
-
-		pureWhiteGeometryShader.setMat4("model", model);
-		pureWhiteGeometryShader.setMat3("normalMat", normalMat);
-			
-		backpack.Draw(pureWhiteGeometryShader);
-
-
-		// Draw room
-		pureWhiteGeometryShader.use();
-		
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, room_texture_diff);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, room_texture_spec);
-
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0, 7.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(7.5f, 7.5f, 7.5f));
-		normalMat = CustomHelper::CalculateNormalMat(view * model);
-
-		pureWhiteGeometryShader.setMat4("model", model);
-		pureWhiteGeometryShader.setMat3("normalMat", normalMat);
-
-		glBindVertexArray(roomVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-
-		// -- SSAO --
-		if (applySsao) {
-			// Calculate the screen-space ambient occlusion
-			glBindFramebuffer(GL_FRAMEBUFFER, ssao_framebuffer);
-
-			glClearColor(1.0, 1.0, 1.0, 1.0);
-			glClear(GL_COLOR_BUFFER_BIT);
-
-			ssaoShader.use();
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, g_position);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, g_normal_shininess);
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, noise_texture);
-
-			// Set up SSAO factors
-			ssaoShader.setInt  ("kernelSize", kernel_size);
-			ssaoShader.setVec2 ("screenSize", glm::vec2(SCR_WIDTH, SCR_HEIGHT));
-			ssaoShader.setFloat("radius"    , 0.5f);
-			ssaoShader.setFloat("bias"      , 0.025f);
-			ssaoShader.setFloat("power"     , ssao_power);
-
-			glBindVertexArray(quadVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-
-
-			// Blur the ao image
-			glBindFramebuffer(GL_FRAMEBUFFER, ssao_blur_framebuffer);
-
-			glClearColor(1.0, 1.0, 1.0, 1.0);
-			glClear(GL_COLOR_BUFFER_BIT);
-
-			ssaoBlurShader.use();
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, ssao_color_texture);
-
-			glBindVertexArray(quadVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-		}
-
-		
 
 		// **Lighting pass**
 		//----------------------------------------------------------------------
-		// Disable depth test
-		glDisable(GL_DEPTH_TEST);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, hdr_initial_screen_framebuffer);
-		// Clear Buffer
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		// Determind whether apply SSAO
-		if (applySsao) {
-			deferredAoLightingShader.use();
-		}
-		else {
-			deferredLightingShader.use();
-		}
-
-		// Bind each g-buffer image
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, g_position);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, g_normal_shininess);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, g_color_spec);
-		
-		if (applySsao) {
-			glActiveTexture(GL_TEXTURE3);
-			glBindTexture(GL_TEXTURE_2D, ssao_blur_color_texture);
-		}
-
-		// Transfer the direction matrix
-		glm::mat3 directionMat = CustomHelper::CalculateNormalMat(view);
-		if (applySsao) {
-			deferredAoLightingShader.setMat3("directionMat", directionMat);
-		}
-		else {
-			deferredLightingShader.setMat3("directionMat", directionMat);
-		}
-
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		// Enable depth test
-		glEnable(GL_DEPTH_TEST);
-		// Enable the blending
-		glEnable(GL_BLEND);
-
 
 
 		// *** FORWARD SHADING PASS ***
 		//-------------------------------------------------------------------------------------
 
-		// First copy the depth buffer info from geometry pass to current working framebuffer
-		glBindFramebuffer(GL_READ_FRAMEBUFFER, g_buffer);
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdr_initial_screen_framebuffer);
-		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-
 		// Bind current working framebuffer
-		glBindFramebuffer(GL_FRAMEBUFFER, hdr_initial_screen_framebuffer);
+		glBindFramebuffer(GL_FRAMEBUFFER, hdr_ms_render_screen_framebuffer);
+		float inverse_gamma_background_color = std::pow(0.1f, 2.2f);
+		glClearColor(inverse_gamma_background_color, inverse_gamma_background_color, inverse_gamma_background_color, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		for (unsigned int row = 0; row < nrRows; row++) {
+			for (unsigned int col = 0; col < nrColumns; col++) {
+				pbrTestShader.use();
+
+				model = glm::mat4(1.0f);
+				model = glm::translate(model, sphere_positions[row][col]);
+				normalMat = CustomHelper::CalculateNormalMat(model);
+
+				pbrTestShader.setMat4("model", model);
+				pbrTestShader.setMat3("normalMat", normalMat);
+				pbrTestShader.setVec3("viewPos", camera.Position);
+
+				pbrTestShader.setVec3("material.diffuse", glm::vec3(0.5f, 0.0f, 0.0f));
+				pbrTestShader.setVec3("material.specular", glm::vec3(1.0f, 0.0f, 0.0f));
+				pbrTestShader.setFloat("material.shininess", (2.0f / (std::pow(roughness[col], 4.0f))) - 2);
+
+				glBindVertexArray(sphereVAO);
+				glDrawElements(GL_TRIANGLE_STRIP, sphere_index_count, GL_UNSIGNED_INT, 0);
+			}
+		}
 
 		// Draw light cube
-		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.025f);
+		//CustomHelper::DrawGlobalPointLightSphere(globalLightManager, sphereVAO, sphere_index_count, lightCubeShader, 0.025f);
 
 
 		
@@ -1089,6 +812,7 @@ int main(void) {
 		//---------------
 		// Since the default value in depth buffer is 1.0, so the fragment should pass the depth test when the depth of fragment is less or equal to
 		// the value store in the depth buffer. This can avoid the depth fighting.
+		/*
 		glDepthFunc(GL_LEQUAL);
 
 		// Activate the shader
@@ -1103,6 +827,7 @@ int main(void) {
 		// Set the depth function and culling face to default
 		glDepthFunc(GL_LESS);
 		glCullFace(GL_BACK);
+		*/
 		
 
 
@@ -1112,11 +837,10 @@ int main(void) {
 		
 		// Transfer the color from multisamples framebuffer to normal framebuffer
 		// Since we're using deferred shading now, we disable MSAA
-		/*
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, hdr_ms_render_screen_framebuffer);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdr_initial_screen_framebuffer);
 		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-		*/
+		
 		
 		// Also copy the image to the framebuffer used to store post-processing effects
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, hdr_initial_screen_framebuffer);
@@ -1281,7 +1005,7 @@ int main(void) {
 		glfwPollEvents();
 	}
 
-	// optional: de-allocate all resources once they've outlived their purpose:
+	// optional: de-allocate all resources once they've outlived their purpose (I give up):
 	// --------------------------------------------------------------------------------------------------------------------
 	vaoManager.clean();
 	screenShader.clear();
@@ -1355,33 +1079,6 @@ void processInput(GLFWwindow *window) {
 	}
 	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_RELEASE) {
 		bloomKeyPressed = false;
-	}
-
-	// Control SSAO
-	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && !ssaoKeyPressed) {
-		applySsao = !applySsao;
-		ssaoKeyPressed = true;
-	}
-	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_RELEASE) {
-		ssaoKeyPressed = false;
-	}
-	
-	// Control the strength of SSAO
-	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-		if (ssao_power < 10.0f) {
-			ssao_power += 0.02f;
-		}
-		else {
-			ssao_power = 10.0f;
-		}
-	}
-	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-		if (ssao_power > 1.0f) {
-			ssao_power -= 0.02f;
-		}
-		else {
-			ssao_power = 1.0f;
-		}
 	}
 }
 
