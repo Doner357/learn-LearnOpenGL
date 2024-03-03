@@ -187,7 +187,6 @@ vec3 CalcDirLight(DirLight light, vec3 N, vec3 V, vec3 F0) {
 
 	// Calculate ambient light
 	vec3 ambient = light.ambient * material.albedo * material.ao;
-	ambient *= vec3(0.03);
 
 	return ambient + Lo;
 }
@@ -221,7 +220,7 @@ vec3 CalcPointLight(PointLight light, vec3 fragPos, vec3 N, vec3 V, vec3 F0) {
 
 	// Compute Cook-Torrance BRDF
 	vec3  numerator   = NDF * G * F;
-	float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.000001;
+	float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0000001;
 	vec3  specular    = numerator / denominator;
 
 	// Calculate diffuse term and result
@@ -278,7 +277,7 @@ vec3 CalcSpotLight(SpotLight light, vec3 fragPos, vec3 N, vec3 V, vec3 F0) {
 
 	// Calculate ambient light
 	vec3 ambient = light.ambient * material.albedo * material.ao;
-	ambient *= attenuation * vec3(0.1);
+	ambient *= attenuation;
 
 	return ambient + Lo;
 }

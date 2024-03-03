@@ -1294,6 +1294,75 @@ namespace CustomHelper {
 		return light;
 	}
 
+	inline BlinnPhongLight_direct GenerateRandomGlobalPbrLight_dirLight(const glm::vec3 min_dir, const glm::vec3 max_dir, glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
+		BlinnPhongLight_direct light{};
+
+		// Generate random color
+		glm::vec3 color = GenerateRandomColor(min_col, max_col);
+		// Generate random direction
+		glm::vec3 direction = GenerateRandomVec3(min_dir, max_dir);
+
+		light.direction = direction;
+		light.ambient = color * 0.002f;
+		light.diffuse = color;
+		light.specular = color;
+
+		return light;
+	}
+
+	inline BlinnPhongLight_point GenerateRandomGlobalPbrLight_pointLight(const glm::vec3 min_pos, const glm::vec3 max_pos, glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)) {
+		BlinnPhongLight_point light{};
+
+		// Generate random color
+		glm::vec3 color = GenerateRandomColor(min_col, max_col);
+		// Generate random position
+		glm::vec3 position = GenerateRandomVec3(min_pos, max_pos);
+
+		light.position = position;
+		light.constant = 0.0f;
+		light.linear = 0.0f;
+		light.quadratic = 1.0f;
+		light.ambient = color * 0.008f;
+		light.diffuse = color;
+		light.specular = color;
+
+		return light;
+	}
+
+	inline BlinnPhongLight_spot GenerateRandomGlobalPbrLight_spotLight(
+		const glm::vec3 min_dir, const glm::vec3 max_dir,
+		const glm::vec3 min_pos, const glm::vec3 max_pos,
+		const float min_angle, const float max_angle,
+		glm::vec3 min_col = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 max_col = glm::vec3(1.0f, 1.0f, 1.0f)
+	)
+	{
+		BlinnPhongLight_spot light{};
+
+		// Generate color
+		glm::vec3 color = GenerateRandomColor(min_col, max_col);
+		// Generate random direction
+		glm::vec3 direction = GenerateRandomVec3(min_dir, max_dir);
+		// Generate random position
+		glm::vec3 position = GenerateRandomVec3(min_pos, max_pos);
+		// Generate random inner cutoff and outer cutoff. The inner cutoff is between 10 and 90 degree, and the outer cutoff is always 3 degrees larger than inner cutoff.
+		float angle = GenerateRandomAngle(min_angle, max_angle);
+		float innerCutoff = glm::cos(glm::radians(angle));
+		float outerCutoff = glm::cos(glm::radians(angle + 3.0f));
+
+		light.direction = direction;
+		light.position = position;
+		light.innerCutOff = innerCutoff;
+		light.outerCutOff = outerCutoff;
+		light.constant = 0.0f;
+		light.linear = 0.0f;
+		light.quadratic = 1.0f;
+		light.ambient = color * 0.004f;
+		light.diffuse = color;
+		light.specular = color;
+
+		return light;
+	}
+
 	// Draw the point lights in the global light uniform block
 	inline void DrawGlobalPointLightCube(GlobalBlinnPongLightManager &manager,const unsigned int VAO,  Shader &shader, const float scale, const unsigned int number = MAX_NUM_POINTLIGHT) {
 		shader.use();

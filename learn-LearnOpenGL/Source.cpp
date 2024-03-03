@@ -615,7 +615,7 @@ int main(void) {
 
 	for (unsigned int i = 0; i < 4; i++) {
 		pointLight.position = light_positions[i];
-		pointLight.ambient  = glm::vec3(0.03f);
+		pointLight.ambient  = light_colors[i] * glm::vec3(0.008f);
 		pointLight.diffuse  = light_colors[i];
 		pointLight.specular = light_colors[i];
 		pointLight.quadratic = 1.0f;
@@ -642,15 +642,15 @@ int main(void) {
 	glm::vec3 min_spotlights_color(0.5f);
 	glm::vec3 max_spotlights_color(100.0f);
 	for (unsigned int i = 0; i < num_of_random_dirLight; i++) {
-		dirLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_dirLight(glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(-1.0f, -0.2, 0.1f), min_dirlights_color, max_dirlights_color);
+		dirLight = CustomHelper::GenerateRandomGlobalPbrLight_dirLight(glm::vec3(-1.0f, -0.2, 0.1f), glm::vec3(-1.0f, -0.2, 0.1f), min_dirlights_color, max_dirlights_color);
 		globalLightManager.updateDirLight(dirLight, num_of_dirLight++);
 	}
 	for (unsigned int i = 0; i < num_of_random_pointLight; i++) {
-		pointLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_pointLight(glm::vec3(-appear_area, 1.0f, -appear_area), glm::vec3(appear_area, appear_hieght, appear_area), min_pointlights_color, max_pointlights_color);
+		pointLight = CustomHelper::GenerateRandomGlobalPbrLight_pointLight(glm::vec3(-appear_area, 1.0f, -appear_area), glm::vec3(appear_area, appear_hieght, appear_area), min_pointlights_color, max_pointlights_color);
 		globalLightManager.updatePointLight(pointLight, num_of_pointLight++);
 	}
 	for (unsigned int i = 0; i < num_of_random_spotLight; i++) {
-		spotLight = CustomHelper::GenerateRandomGlobalBlinnPhongLight_spotLight(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(-appear_area, 5.0f, -appear_area), glm::vec3(appear_area, 5.0f, appear_area), 12.5f, 90.0f, min_spotlights_color, max_spotlights_color);
+		spotLight = CustomHelper::GenerateRandomGlobalPbrLight_spotLight(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(-appear_area, 5.0f, -appear_area), glm::vec3(appear_area, 5.0f, appear_area), 12.5f, 90.0f, min_spotlights_color, max_spotlights_color);
 		globalLightManager.updateSpotLight(spotLight, num_of_spotLight++);
 	}
 
