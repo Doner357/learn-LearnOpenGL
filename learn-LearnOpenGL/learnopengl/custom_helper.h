@@ -360,24 +360,58 @@ namespace CustomHelper {
 				std::vector<glm::vec3> positions;
 				std::vector<glm::vec2> uv;
 				std::vector<glm::vec3> normals;
+				std::vector<glm::vec3> tangents;
+				std::vector<glm::vec3> bitangents;
 				std::vector<unsigned int> indices;
 
-				const unsigned int X_SEGMENTS = 64;
-				const unsigned int Y_SEGMENTS = 64;
+				const unsigned int X_SEGMENTS = 512;
+				const unsigned int Y_SEGMENTS = 512;
 				const float PI = 3.14159265359f;
 				for (unsigned int x = 0; x <= X_SEGMENTS; ++x) {
 					for (unsigned int y = 0; y <= Y_SEGMENTS; ++y) {
-						float xSegment = (float)x / (float)X_SEGMENTS;
-						float ySegment = (float)y / (float)Y_SEGMENTS;
-						float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
-						float yPos = std::cos(ySegment * PI);
-						float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+						float xOffset  = 1.0f / static_cast<float>(X_SEGMENTS);
+						float yOffset  = 1.0f / static_cast<float>(Y_SEGMENTS);
+						float xSegment = xOffset * static_cast<float>(x);
+						float ySegment = yOffset * static_cast<float>(y);
+						glm::vec3 position;
+						position.x = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+						position.y = std::cos(ySegment * PI);
+						position.z = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
 
-						positions.push_back(glm::vec3(xPos, yPos, zPos));
-						uv.push_back(glm::vec2(xSegment, ySegment));
-						normals.push_back(glm::vec3(xPos, yPos, zPos));
+						// Normal, Tangent and Bitangent calculation algorithm from :
+						// https://computergraphics.stackexchange.com/questions/5498/compute-sphere-tangent-for-normal-mapping
+						// Space axis used to cross center to position vector
+						glm::vec3 axis = glm::vec3(0.0f, 1.0f, 0.0f);
+						// The vector point from center of the sphere to the vertex's position
+						glm::vec3 center_to_position = glm::normalize(position - glm::vec3(0.0f, 0.0f, 0.0f));
+						// Handle exception (center to position vector points up or down)
+						if (y == 0) {
+							center_to_position.x = std::cos(xSegment * 2.0f * PI) * std::sin((ySegment + yOffset) * PI);
+							center_to_position.y = std::cos((ySegment + yOffset) * PI);
+							center_to_position.z = std::sin(xSegment * 2.0f * PI) * std::sin((ySegment + yOffset) * PI);
+						}
+						else if (y == Y_SEGMENTS) {
+							center_to_position.x = std::cos(xSegment * 2.0f * PI) * std::sin((ySegment - yOffset) * PI);
+							center_to_position.y = std::cos((ySegment - yOffset) * PI);
+							center_to_position.z = std::sin(xSegment * 2.0f * PI) * std::sin((ySegment - yOffset) * PI);
+						}
+						// In this sphere, normal vector equal to vertex position
+						glm::vec3 normal = glm::normalize(position);
+						glm::vec3 tangent = glm::cross(axis, center_to_position);
+						glm::vec3 bitangent = glm::cross(normal, tangent);
+
+						// How many time should texture repeate?
+						const unsigned int x_repeate_time = 4;
+						const unsigned int y_repeate_time = 2;
+
+						positions.push_back(position);
+						uv.push_back(glm::vec2((1.0f - xSegment) * x_repeate_time, (1.0f - ySegment) * y_repeate_time));
+						normals.push_back(position);
+						tangents.push_back(tangent);
+						bitangents.push_back(bitangent);
 					}
 				}
+
 
 				bool oddRow = false;
 				for (unsigned int y = 0; y < Y_SEGMENTS; ++y) {
@@ -412,19 +446,33 @@ namespace CustomHelper {
 						data.push_back(uv[i].x);
 						data.push_back(uv[i].y);
 					}
+					if (tangents.size() > 0) {
+						data.push_back(tangents[i].x);
+						data.push_back(tangents[i].y);
+						data.push_back(tangents[i].z);
+					}
+					if (bitangents.size() > 0) {
+						data.push_back(bitangents[i].x);
+						data.push_back(bitangents[i].y);
+						data.push_back(bitangents[i].z);
+					}
 				}
 				glBindVertexArray(sphereVAO);
 				glBindBuffer(GL_ARRAY_BUFFER, vbo);
 				glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 				glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
-				unsigned int stride = (3 + 2 + 3) * sizeof(float);
+				unsigned int stride = (3 + 2 + 3 + 3 + 3) * sizeof(float);
 				glEnableVertexAttribArray(0);
 				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 				glEnableVertexAttribArray(1);
 				glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
 				glEnableVertexAttribArray(2);
 				glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void *)(6 * sizeof(float)));
+				glEnableVertexAttribArray(3);
+				glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, stride, (void *)(8 * sizeof(float)));
+				glEnableVertexAttribArray(4);
+				glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
 
 				this->sphere_index_count = indexCount;
 				this->registerVAO("Common_VAO_Sphere", sphereVAO);
@@ -1322,7 +1370,7 @@ namespace CustomHelper {
 		light.constant = 0.0f;
 		light.linear = 0.0f;
 		light.quadratic = 1.0f;
-		light.ambient = color * 0.008f;
+		light.ambient = color * 0.004f;
 		light.diffuse = color;
 		light.specular = color;
 
@@ -1356,7 +1404,7 @@ namespace CustomHelper {
 		light.constant = 0.0f;
 		light.linear = 0.0f;
 		light.quadratic = 1.0f;
-		light.ambient = color * 0.004f;
+		light.ambient = color * 0.002f;
 		light.diffuse = color;
 		light.specular = color;
 

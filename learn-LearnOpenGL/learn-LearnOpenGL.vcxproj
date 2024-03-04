@@ -157,6 +157,8 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\pbr\lighting\vertex\height_mapping.vert" />
+    <None Include="shaders\pbr\lighting\fragment\pbr_global-lighting_texture.frag" />
     <None Include="shaders\pbr\lighting\fragment\pbr_global-lighting_color.frag" />
     <None Include="shaders\pbr\lighting\fragment\test_color.frag" />
     <None Include="shaders\pbr\lighting\vertex\regular.vert" />
@@ -171,7 +173,7 @@
     <None Include="shaders\deferred_shading\lighting\vertex\regular_screen.vert" />
     <None Include="shaders\deferred_shading\g-buffer\fragment\normal_model_geometry.frag" />
     <None Include="shaders\deferred_shading\g-buffer\vertex\model.vert" />
-    <None Include="shaders\deferred_shading\g-buffer\fragment\normal_height_model_geometry.frag" />
+    <None Include="shaders\deferred_shading\g-buffer\fragment\normal_parallax_model_geometry.frag" />
     <None Include="shaders\post-processing\fragment\hdr_bloom_blending.frag" />
     <None Include="shaders\post-processing\fragment\bloom_gaussian_blur.frag" />
     <None Include="shaders\post-processing\fragment\hdr_bloom_extract.frag" />
@@ -179,10 +181,10 @@
     <None Include="shaders\post-processing\fragment\hdr_reinhard_screen.frag" />
     <None Include="shaders\lighting\vertex\lighting_normal-texture.vert" />
     <None Include="shaders\lighting\fragment\local-lighting_normal-texture.frag" />
-    <None Include="shaders\shadow-lighting\fragment\global-shadow-lighting_height-texture.frag" />
+    <None Include="shaders\shadow-lighting\fragment\global-shadow-lighting_parallax-texture.frag" />
     <None Include="shaders\shadow-lighting\fragment\global-shadow-lighting_model.frag" />
     <None Include="shaders\shadow-lighting\fragment\global-shadow-lighting_normal-model.frag" />
-    <None Include="shaders\shadow-lighting\vertex\global-shadow-lighting_height-texture.vert" />
+    <None Include="shaders\shadow-lighting\vertex\global-shadow-lighting_parallax-texture.vert" />
     <None Include="shaders\shadow-lighting\vertex\global-shadow-lighting_ipv-normal-model.vert" />
     <None Include="shaders\shadow-lighting\vertex\global-shadow-lighting_model.vert" />
     <None Include="shaders\shadow-lighting\vertex\global-shadow-lighting_normal-model.vert" />

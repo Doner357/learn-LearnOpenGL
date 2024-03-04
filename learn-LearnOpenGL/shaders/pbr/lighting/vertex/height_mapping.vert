@@ -5,6 +5,7 @@ layout (location = 2) in vec2 aTexCoords;
 layout (location = 3) in vec3 aTangent;
 layout (location = 4) in vec3 aBitangent;
 
+
 out vec2 TexCoords;
 
 out VS_OUT {
@@ -22,8 +23,18 @@ layout (std140) uniform CameraMatrices {
 };
 uniform mat3 normalMat;
 
+// Height map
+uniform sampler2D heightMap;
+uniform float height_scale;
+
 void main() {
-	gl_Position = projection * view * model * vec4(aPos, 1.0);
+	// Get the height from height map
+	float height = texture(heightMap, aTexCoords).r;
+	// Offset vertex along normal based on height
+	vec3 vertex_offset = (1.0 - height) * aNormal * height_scale;
+	vec3 vertex_position = aPos - vertex_offset;
+
+	gl_Position = projection * view * model * vec4(vertex_position, 1.0);
 
 	vs_out.texCoords = aTexCoords;
 	vs_out.fragPos = vec3(model * vec4(aPos, 1.0));

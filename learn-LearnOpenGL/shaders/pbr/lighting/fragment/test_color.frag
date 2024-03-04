@@ -4,6 +4,8 @@ in VS_OUT {
 	vec3 fragPos;
 	vec3 normal;
 	vec2 texCoords;
+	mat3 TBN;
+	mat3 inverse_TBN;
 } fs_in;
 
 

@@ -71,9 +71,20 @@ unsigned int bloom_blur_time = 5;
 bool bloomKeyPressed = false;
 
 
-// Control switching between PBR shaders and Blinn-Phong shaders
-bool applyPBR = true;
-bool PBRKeyPressed = false;
+// Structure to store PBR textures
+struct PbrTextures {
+	unsigned int albedo, metallic, roughness, normal, height, ao;
+};
+// The set to store all the PBR textures
+std::vector<PbrTextures> pbr_textures_set;
+// The index of current showing texture
+int current_textures = 0;
+// Control switching PBR textures
+bool rightKeyPressed = false, leftKeyPressed = false;
+
+
+// Control the height mapping scale
+float height_scale = 0.1f;
 
 
 
@@ -364,8 +375,65 @@ int main(void) {
 	 * Texture loading
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-	unsigned int room_texture_diff = LoadTexture("textures/common_spec.jpg", false, false);
-	unsigned int room_texture_spec = LoadTexture("textures/common_nonspec.jpg", false, false);
+
+	PbrTextures pbr_textures;
+
+	pbr_textures.albedo    = LoadTexture("textures/pbr/framed-square-metal-pattern1-bl/framed-square-metal-pattern1-albedo.png", true, true);
+	pbr_textures.metallic  = LoadTexture("textures/pbr/framed-square-metal-pattern1-bl/framed-square-metal-pattern1-metallic.png", false, true);
+	pbr_textures.roughness = LoadTexture("textures/pbr/framed-square-metal-pattern1-bl/framed-square-metal-pattern1-roughness.png", false, true);
+	pbr_textures.normal    = LoadTexture("textures/pbr/framed-square-metal-pattern1-bl/framed-square-metal-pattern1-normal-ogl.png", false, true);
+	pbr_textures.height    = LoadTexture("textures/pbr/framed-square-metal-pattern1-bl/framed-square-metal-pattern1-height.png", false, true);
+	pbr_textures.ao        = LoadTexture("textures/pbr/framed-square-metal-pattern1-bl/framed-square-metal-pattern1-ao.png", false, true);
+	pbr_textures_set.push_back(pbr_textures);
+
+	pbr_textures.albedo    = LoadTexture("textures/pbr/space-cruiser-panels2-bl/space-cruiser-panels2_albedo.png", true, true);
+	pbr_textures.metallic  = LoadTexture("textures/pbr/space-cruiser-panels2-bl/space-cruiser-panels2_metallic.png", false, true);
+	pbr_textures.roughness = LoadTexture("textures/pbr/space-cruiser-panels2-bl/space-cruiser-panels2_roughness.png", false, true);
+	pbr_textures.normal    = LoadTexture("textures/pbr/space-cruiser-panels2-bl/space-cruiser-panels2_normal-ogl.png", false, true);
+	pbr_textures.height    = LoadTexture("textures/pbr/space-cruiser-panels2-bl/space-cruiser-panels2_height.png", false, true);
+	pbr_textures.ao        = LoadTexture("textures/pbr/space-cruiser-panels2-bl/space-cruiser-panels2_ao.png", false, true);
+	pbr_textures_set.push_back(pbr_textures);
+
+	pbr_textures.albedo    = LoadTexture("textures/pbr/bricks-mortar-bl/bricks-mortar-albedo.png", true, true);
+	pbr_textures.metallic  = LoadTexture("textures/pbr/bricks-mortar-bl/bricks-mortar-metallic.png", false, true);
+	pbr_textures.roughness = LoadTexture("textures/pbr/bricks-mortar-bl/bricks-mortar-roughness.png", false, true);
+	pbr_textures.normal    = LoadTexture("textures/pbr/bricks-mortar-bl/bricks-mortar-normal-ogl.png", false, true);
+	pbr_textures.height    = LoadTexture("textures/pbr/bricks-mortar-bl/bricks-mortar-height.png", false, true);
+	pbr_textures.ao        = LoadTexture("textures/pbr/bricks-mortar-bl/bricks-mortar-ao.png", false, true);
+	pbr_textures_set.push_back(pbr_textures);
+
+	pbr_textures.albedo    = LoadTexture("textures/pbr/preschool-tile-bl/preschool-tile_albedo.png", true, true);
+	pbr_textures.metallic  = LoadTexture("textures/pbr/preschool-tile-bl/preschool-tile_metallic.png", false, true);
+	pbr_textures.roughness = LoadTexture("textures/pbr/preschool-tile-bl/preschool-tile_roughness.png", false, true);
+	pbr_textures.normal    = LoadTexture("textures/pbr/preschool-tile-bl/preschool-tile_normal-ogl.png", false, true);
+	pbr_textures.height    = LoadTexture("textures/pbr/preschool-tile-bl/preschool-tile_height.png", false, true);
+	pbr_textures.ao        = LoadTexture("textures/pbr/preschool-tile-bl/preschool-tile_ao.png", false, true);
+	pbr_textures_set.push_back(pbr_textures);
+
+	pbr_textures.albedo    = LoadTexture("textures/pbr/older-padded-leather-bl/older-padded-leather_albedo.png", true, true);
+	pbr_textures.metallic  = LoadTexture("textures/pbr/older-padded-leather-bl/older-padded-leather_metallic.png", false, true);
+	pbr_textures.roughness = LoadTexture("textures/pbr/older-padded-leather-bl/older-padded-leather_roughness.png", false, true);
+	pbr_textures.normal    = LoadTexture("textures/pbr/older-padded-leather-bl/older-padded-leather_normal-ogl.png", false, true);
+	pbr_textures.height    = LoadTexture("textures/pbr/older-padded-leather-bl/older-padded-leather_height.png", false, true);
+	pbr_textures.ao        = LoadTexture("textures/pbr/older-padded-leather-bl/older-padded-leather_ao.png", false, true);
+	pbr_textures_set.push_back(pbr_textures);
+
+	pbr_textures.albedo    = LoadTexture("textures/pbr/soft-blanket-bl/soft-blanket_albedo.png", true, true);
+	pbr_textures.metallic  = LoadTexture("textures/pbr/soft-blanket-bl/soft-blanket_metallic.png", false, true);
+	pbr_textures.roughness = LoadTexture("textures/pbr/soft-blanket-bl/soft-blanket_roughness.png", false, true);
+	pbr_textures.normal    = LoadTexture("textures/pbr/soft-blanket-bl/soft-blanket_normal-ogl.png", false, true);
+	pbr_textures.height    = LoadTexture("textures/pbr/soft-blanket-bl/soft-blanket_height.png", false, true);
+	pbr_textures.ao        = LoadTexture("textures/pbr/soft-blanket-bl/soft-blanket_ao.png", false, true);
+	pbr_textures_set.push_back(pbr_textures);
+
+	pbr_textures.albedo    = LoadTexture("textures/pbr/jagged-rocky-ground1-bl/jagged-rocky-ground_albedo.png", true, true);
+	pbr_textures.metallic  = LoadTexture("textures/pbr/jagged-rocky-ground1-bl/jagged-rocky-ground_metallic.png", false, true);
+	pbr_textures.roughness = LoadTexture("textures/pbr/jagged-rocky-ground1-bl/jagged-rocky-ground_roughness.png", false, true);
+	pbr_textures.normal    = LoadTexture("textures/pbr/jagged-rocky-ground1-bl/jagged-rocky-ground_normal-ogl.png", false, true);
+	pbr_textures.height    = LoadTexture("textures/pbr/jagged-rocky-ground1-bl/jagged-rocky-ground_height.png", false, true);
+	pbr_textures.ao        = LoadTexture("textures/pbr/jagged-rocky-ground1-bl/jagged-rocky-ground_ao.png", false, true);
+	pbr_textures_set.push_back(pbr_textures);
+	
 
 
 
@@ -416,6 +484,7 @@ int main(void) {
 	// Shader for PBR
 	Shader pbrTestShader("shaders/pbr/lighting/vertex/regular.vert", "shaders/pbr/lighting/fragment/test_color.frag");
 	Shader pbrColorShader("shaders/pbr/lighting/vertex/regular.vert", "shaders/pbr/lighting/fragment/pbr_global-lighting_color.frag");
+	Shader pbrTextureShader("shaders/pbr/lighting/vertex/height_mapping.vert", "shaders/pbr/lighting/fragment/pbr_global-lighting_texture.frag");
 
 
 
@@ -458,6 +527,15 @@ int main(void) {
 	textureShader.setFloat("material.shininess", 64.0f);
 
 
+	pbrTextureShader.use();
+	pbrTextureShader.setInt("material.albedo", 0);
+	pbrTextureShader.setInt("material.metallic", 1);
+	pbrTextureShader.setInt("material.roughness", 2);
+	pbrTextureShader.setInt("material.normal", 3);
+	pbrTextureShader.setInt("heightMap", 4);
+	pbrTextureShader.setInt("material.ao", 5);
+
+
 	glUseProgram(0);
 
 	
@@ -474,12 +552,14 @@ int main(void) {
 	cameraMatManager.registerShader(textureShader);
 	cameraMatManager.registerShader(pbrTestShader);
 	cameraMatManager.registerShader(pbrColorShader);
+	cameraMatManager.registerShader(pbrTextureShader);
 
 	// Global light uniform block
 	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING, CustomHelper::UBOPOINT_BLINPHONG_LIGHTING, CustomHelper::MAX_NUM_DIRECTIONALLIGHT, CustomHelper::MAX_NUM_POINTLIGHT, CustomHelper::MAX_NUM_SPOTLIGHT);
 	globalLightManager.registerShader(textureShader);
 	globalLightManager.registerShader(pbrTestShader);
 	globalLightManager.registerShader(pbrColorShader);
+	globalLightManager.registerShader(pbrTextureShader);
 
 	// Global light with shadow uniform block
 	CustomHelper::GlobalBlinnPongShadowLightManager globalShadowLightManager(
@@ -790,52 +870,39 @@ int main(void) {
 		glClearColor(inverse_gamma_background_color, inverse_gamma_background_color, inverse_gamma_background_color, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Render the spheres according to the selected shader
-		if (applyPBR) {
-			for (unsigned int row = 0; row < nrRows; row++) {
-				for (unsigned int col = 0; col < nrColumns; col++) {
-					pbrColorShader.use();
+		// Render the spheres
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, pbr_textures_set[current_textures].albedo);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, pbr_textures_set[current_textures].metallic);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, pbr_textures_set[current_textures].roughness);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, pbr_textures_set[current_textures].normal);
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, pbr_textures_set[current_textures].height);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, pbr_textures_set[current_textures].ao);
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		for (unsigned int row = 0; row < nrRows; row++) {
+			for (unsigned int col = 0; col < nrColumns; col++) {
+				pbrTextureShader.use();
 
-					model = glm::mat4(1.0f);
-					model = glm::translate(model, sphere_positions[row][col]);
-					normalMat = CustomHelper::CalculateNormalMat(model);
+				model = glm::mat4(1.0f);
+				model = glm::translate(model, sphere_positions[row][col]);
+				model = glm::rotate(model, glm::radians((float)glfwGetTime() * 7.5f), glm::vec3(0.0f, 1.0f, 0.0f));
+				normalMat = CustomHelper::CalculateNormalMat(model);
 
-					pbrColorShader.setMat4("model", model);
-					pbrColorShader.setMat3("normalMat", normalMat);
-					pbrColorShader.setVec3("viewPos", camera.Position);
+				pbrTextureShader.setMat4("model", model);
+				pbrTextureShader.setMat3("normalMat", normalMat);
+				pbrTextureShader.setVec3("viewPos", camera.Position);
+				pbrTextureShader.setFloat("height_scale", height_scale);
 
-					pbrColorShader.setVec3("material.albedo", sphere_color);
-					pbrColorShader.setFloat("material.metallic", metallic[row]);
-					pbrColorShader.setFloat("material.roughness", roughness[col]);
-					pbrColorShader.setFloat("material.ao", 1.0f);
-
-					glBindVertexArray(sphereVAO);
-					glDrawElements(GL_TRIANGLE_STRIP, sphere_index_count, GL_UNSIGNED_INT, 0);
-				}
+				glBindVertexArray(sphereVAO);
+				glDrawElements(GL_TRIANGLE_STRIP, sphere_index_count, GL_UNSIGNED_INT, 0);
 			}
 		}
-		else {
-			for (unsigned int row = 0; row < nrRows; row++) {
-				for (unsigned int col = 0; col < nrColumns; col++) {
-					pbrTestShader.use();
-
-					model = glm::mat4(1.0f);
-					model = glm::translate(model, sphere_positions[row][col]);
-					normalMat = CustomHelper::CalculateNormalMat(model);
-
-					pbrTestShader.setMat4("model", model);
-					pbrTestShader.setMat3("normalMat", normalMat);
-					pbrTestShader.setVec3("viewPos", camera.Position);
-
-					pbrTestShader.setVec3("material.diffuse", sphere_color * 0.2f);
-					pbrTestShader.setVec3("material.specular", light_colors[0] * 0.0015f);
-					pbrTestShader.setFloat("material.shininess", (2.0f / (std::pow(roughness[col], 3.0f))) - 2);
-
-					glBindVertexArray(sphereVAO);
-					glDrawElements(GL_TRIANGLE_STRIP, sphere_index_count, GL_UNSIGNED_INT, 0);
-				}
-			}
-		}
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		// Draw light cube
 		CustomHelper::DrawGlobalPointLightSphere(globalLightManager, sphereVAO, sphere_index_count, lightCubeShader, 0.025f);
@@ -1119,13 +1186,38 @@ void processInput(GLFWwindow *window) {
 		bloomKeyPressed = false;
 	}
 
-	// Control bloom
-	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && !PBRKeyPressed) {
-		applyPBR = !applyPBR;
-		PBRKeyPressed = true;
+	// Adjust height scale
+	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
+		if (height_scale > 0.0f) {
+			height_scale -= 0.002f;
+		}
+		else {
+			height_scale = 0.0f;
+		}
 	}
-	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_RELEASE) {
-		PBRKeyPressed = false;
+	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
+		if (height_scale < 1.0f) {
+			height_scale += 0.002f;
+		}
+		else {
+			height_scale = 1.0f;
+		}
+	}
+
+	// Switch PBR textures
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS && !rightKeyPressed) {
+		current_textures = std::abs(current_textures + 1) % pbr_textures_set.size();
+		rightKeyPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS && !leftKeyPressed) {
+		current_textures = (current_textures == 0) ? pbr_textures_set.size() - 1 : current_textures - 1;
+		leftKeyPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_RELEASE) {
+		rightKeyPressed = false;
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_RELEASE) {
+		leftKeyPressed = false;
 	}
 }
 
@@ -1189,8 +1281,8 @@ unsigned int LoadTexture(char const *path, bool gammaCorrection, bool flip_verti
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 		if (dataFormat == GL_RGBA) {
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		}
 		else {
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);

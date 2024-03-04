@@ -20,7 +20,7 @@ struct Material {
 	sampler2D diffuse;
 	sampler2D specular;
 	sampler2D normal;
-	sampler2D height;
+	sampler2D parallax;
 	float shininess;
 };
 
@@ -186,14 +186,14 @@ vec2 ParallaxOcclusionMapping(vec2 texCoords, vec3 viewDir) {
 
 	// Get initial values
 	vec2 current_texture_coords = texCoords;
-	float current_depth_map_value = texture(material.height, current_texture_coords).r;
+	float current_depth_map_value = texture(material.parallax, current_texture_coords).r;
 	
 	// Iterate until the sample depth value is less than current depth value
 	while (current_layer_depth < current_depth_map_value) {
 		// Shift texture coordinates along direction of p
 		current_texture_coords -= delta_texture_coords;
 		// Get depthmap value at current texture coordinates
-		current_depth_map_value = texture(material.height, current_texture_coords).r;
+		current_depth_map_value = texture(material.parallax, current_texture_coords).r;
 		// Get depth of next layer
 		current_layer_depth += layer_depth;
 	}
@@ -207,7 +207,7 @@ vec2 ParallaxOcclusionMapping(vec2 texCoords, vec3 viewDir) {
 
 	// Get depth after and before collision for linear interpolation
 	float after_depth = current_depth_map_value - current_layer_depth;
-	float before_depth = texture(material.height, prev_texuture_coords).r - current_layer_depth + layer_depth;
+	float before_depth = texture(material.parallax, prev_texuture_coords).r - current_layer_depth + layer_depth;
 
 	// Calculate the weight
 	float weight = after_depth / (after_depth - before_depth);
