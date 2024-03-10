@@ -782,6 +782,8 @@ int main(void) {
 		glClearColor(inverse_gamma_background_color, inverse_gamma_background_color, inverse_gamma_background_color, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+
 		for (unsigned int row = 0; row < nrRows; row++) {
 			for (unsigned int col = 0; col < nrColumns; col++) {
 				pbrTestShader.use();
@@ -852,6 +854,8 @@ int main(void) {
 		// Post-processing scene
 		//-------------------------
 		glDisable(GL_DEPTH_TEST);
+
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
 
 		// Bloom
