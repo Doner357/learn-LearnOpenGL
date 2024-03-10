@@ -870,6 +870,8 @@ int main(void) {
 		glClearColor(inverse_gamma_background_color, inverse_gamma_background_color, inverse_gamma_background_color, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+
 		// Render the spheres
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, pbr_textures_set[current_textures].albedo);
@@ -953,6 +955,8 @@ int main(void) {
 		// Post-processing scene
 		//-------------------------
 		glDisable(GL_DEPTH_TEST);
+
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
 
 		// Bloom
@@ -1189,7 +1193,7 @@ void processInput(GLFWwindow *window) {
 	// Adjust height scale
 	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
 		if (height_scale > 0.0f) {
-			height_scale -= 0.002f;
+			height_scale -= 0.5f * deltaTime;
 		}
 		else {
 			height_scale = 0.0f;
@@ -1197,7 +1201,7 @@ void processInput(GLFWwindow *window) {
 	}
 	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
 		if (height_scale < 1.0f) {
-			height_scale += 0.002f;
+			height_scale += 0.5f * deltaTime;
 		}
 		else {
 			height_scale = 1.0f;
