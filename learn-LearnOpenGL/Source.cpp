@@ -790,6 +790,8 @@ int main(void) {
 		glClearColor(inverse_gamma_background_color, inverse_gamma_background_color, inverse_gamma_background_color, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+
 		// Render the spheres according to the selected shader
 		if (applyPBR) {
 			for (unsigned int row = 0; row < nrRows; row++) {
@@ -886,6 +888,8 @@ int main(void) {
 		// Post-processing scene
 		//-------------------------
 		glDisable(GL_DEPTH_TEST);
+
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
 
 		// Bloom
