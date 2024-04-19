@@ -105,7 +105,7 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
 	float N_dot_V = max(dot(N, V), 0.0);
 	float N_dot_L = max(dot(N, L), 0.0);
 	float ggx2    = GeometrySchlickGGX(N_dot_V, roughness);
-	float ggx1    = GeometrySchlickGGX(N_dot_V, roughness);
+	float ggx1    = GeometrySchlickGGX(N_dot_L, roughness);
 
 	return ggx1 * ggx2;
 }

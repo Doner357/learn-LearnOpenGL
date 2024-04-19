@@ -615,7 +615,7 @@ int main(void) {
 
 	for (unsigned int i = 0; i < 4; i++) {
 		pointLight.position = light_positions[i];
-		pointLight.ambient  = light_colors[i] * glm::vec3(0.008f);
+		pointLight.ambient  = light_colors[i] * glm::vec3(0.004f);
 		pointLight.diffuse  = light_colors[i];
 		pointLight.specular = light_colors[i];
 		pointLight.quadratic = 1.0f;
