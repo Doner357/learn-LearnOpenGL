@@ -17,6 +17,8 @@
 #include <cmath>
 #include <functional>
 #include <random>
+#include <chrono>
+#include <thread>
 
 // glfw windows call back function
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -25,7 +27,7 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 
 // Custom function
-unsigned int LoadTexture(char const* path, bool gammaCorrection, bool flip_vertically = true);
+unsigned int LoadTexture(char const* path, bool gammaCorrection, bool flip_vertically = true, GLenum mode = GL_REPEAT);
 unsigned int LoadCubemap(std::vector<std::string> faces, bool gammaCorrection, bool flip_vertically = false);
 unsigned int CreateColorFramebuffer(const size_t numOfColorAttachment, unsigned int *frameColortextures, const unsigned int width, const unsigned int height, const bool multisample, const unsigned int samples, const bool hdr);
 
@@ -71,20 +73,34 @@ unsigned int bloom_blur_time = 5;
 bool bloomKeyPressed = false;
 
 
-// Structure to store PBR textures
+// Structure to store PBR materials textures
 struct PbrTextures {
 	unsigned int albedo, metallic, roughness, normal, height, ao;
 };
 // The set to store all the PBR textures
 std::vector<PbrTextures> pbr_textures_set;
 // The index of current showing texture
-int current_textures = 0;
+int current_pbr_textures = 0;
 // Control switching PBR textures
 bool rightKeyPressed = false, leftKeyPressed = false;
 
-
 // Control the height mapping scale
 float height_scale = 0.1f;
+
+
+// Structure to store IBL textures
+struct IblTextures {
+	unsigned int environment, irradiance;
+};
+// The set to store all the IBL textures
+std::vector<IblTextures> ibl_textures_set;
+// The index of current showing texture
+int current_ibl_textures = 0;
+// Control switching IBL textures
+bool upKeyPressed = false, downKeyPressed = false;
+
+// Function used to bake IBL textures
+IblTextures BakeIblTex(const char *hdr_path, const unsigned int cubemap_vao);
 
 
 
@@ -238,6 +254,10 @@ int main(void) {
 	*/
 
 
+	// Enable more smooth cube map edge
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+
 
 	/*
 	* Extra function
@@ -376,9 +396,6 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	// Load HDR equirectangular map
-	unsigned int hdr_equirectangular_map = LoadTexture("textures/hdr/newport_loft.hdr", true);
-
 	/*
 	PbrTextures pbr_textures;
 
@@ -488,10 +505,7 @@ int main(void) {
 	// Shader for PBR
 	Shader pbrColorShader("shaders/pbr/lighting/vertex/regular.vert", "shaders/pbr/lighting/fragment/pbr_global-lighting_color.frag");
 	Shader pbrTextureShader("shaders/pbr/lighting/vertex/height_mapping.vert", "shaders/pbr/lighting/fragment/pbr_global-lighting_texture.frag");
-
-	// Shader for environment map baking
-	Shader equirToCubeShader("shaders/bake/ibl/vertex/cubemap.vert", "shaders/bake/ibl/fragment/equir_to_cube.frag");
-	Shader irradianceMapShader("shaders/bake/ibl/vertex/cubemap.vert", "shaders/bake/ibl/fragment/irradiance_map.frag");
+	Shader pbrIblColorShader("shaders/pbr/lighting/vertex/regular.vert", "shaders/pbr/lighting/fragment/pbr_global-image-based-lighting_color.frag");
 
 
 
@@ -543,6 +557,10 @@ int main(void) {
 	pbrTextureShader.setInt("material.ao", 5);
 
 
+	pbrIblColorShader.use();
+	pbrIblColorShader.setInt("environment.irradiance", 0);
+
+
 	glUseProgram(0);
 
 	
@@ -559,12 +577,14 @@ int main(void) {
 	cameraMatManager.registerShader(textureShader);
 	cameraMatManager.registerShader(pbrColorShader);
 	cameraMatManager.registerShader(pbrTextureShader);
+	cameraMatManager.registerShader(pbrIblColorShader);
 
 	// Global light uniform block
 	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING, CustomHelper::UBOPOINT_BLINPHONG_LIGHTING, CustomHelper::MAX_NUM_DIRECTIONALLIGHT, CustomHelper::MAX_NUM_POINTLIGHT, CustomHelper::MAX_NUM_SPOTLIGHT);
 	globalLightManager.registerShader(textureShader);
 	globalLightManager.registerShader(pbrColorShader);
 	globalLightManager.registerShader(pbrTextureShader);
+	globalLightManager.registerShader(pbrIblColorShader);
 
 	// Global light with shadow uniform block
 	CustomHelper::GlobalBlinnPongShadowLightManager globalShadowLightManager(
@@ -634,110 +654,12 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	// 
-	// ** Bake equirectangular map to environment cube map **
-	// 
-	unsigned int captureFBO, captureRBO;
-	glGenFramebuffers(1, &captureFBO);
-	glGenRenderbuffers(1, &captureRBO);
-	// Creat render buffer storage
-	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-	glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
-
-	// Generate cube map
-	unsigned int env_cube_map;
-	glGenTextures(1, &env_cube_map);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, env_cube_map);
-	for (unsigned int i = 0; i < 6; i++) {
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 512, 512, 0, GL_RGB, GL_FLOAT, NULL);
-	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	// Six face camera
-	glm::mat4 capture_projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-	glm::mat4 capture_views[] = {
-	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
-	};
-
-	equirToCubeShader.use();
-	equirToCubeShader.setInt("equirectangular_map", 0);
-	equirToCubeShader.setMat4("projection", capture_projection);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, hdr_equirectangular_map);
-	glBindVertexArray(cubemapVAO);
-	glViewport(0, 0, 512, 512);
-	for (unsigned int i = 0; i < 6; i++) {
-		equirToCubeShader.setMat4("view", capture_views[i]);
-		glFramebufferTexture2D(
-			GL_FRAMEBUFFER,
-			GL_COLOR_ATTACHMENT0,
-			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-			env_cube_map,
-			0
-		);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
-	// 
-	// ** Bake irradiance map **
-	// 
-	unsigned int irradiance_map;
-	glGenTextures(1, &irradiance_map);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, irradiance_map);
-	for (unsigned int i = 0; i < 6; i++) {
-		glTexImage2D(
-			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 32, 32, 0, GL_RGB, GL_FLOAT, NULL);
-	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	// Rescale the framebuffer to fit irradiance map's resolution
-	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-	glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 32, 32);
-
-	irradianceMapShader.use();
-	irradianceMapShader.setInt("environment_map", 0);
-	irradianceMapShader.setMat4("projection", capture_projection);
-
-	// Start baking irradiance map
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, env_cube_map);
-	glBindVertexArray(cubemapVAO);
-	glViewport(0, 0, 32, 32);
-	for (unsigned int i = 0; i < 6; i++) {
-		equirToCubeShader.setMat4("view", capture_views[i]);
-		glFramebufferTexture2D(
-			GL_FRAMEBUFFER,
-			GL_COLOR_ATTACHMENT0,
-			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-			irradiance_map,
-			0
-		);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	// Generate IBL textures
+	ibl_textures_set.push_back(BakeIblTex("textures/hdr/newport_loft.hdr", cubemapVAO));
+	ibl_textures_set.push_back(BakeIblTex("textures/hdr/cave_wall_4k.hdr", cubemapVAO));
+	ibl_textures_set.push_back(BakeIblTex("textures/hdr/kloofendal_48d_partly_cloudy_puresky_4k.hdr", cubemapVAO));
+	ibl_textures_set.push_back(BakeIblTex("textures/hdr/moonless_golf_4k.hdr", cubemapVAO));
+	ibl_textures_set.push_back(BakeIblTex("textures/hdr/winter_evening_4k.hdr", cubemapVAO));
 
 
 
@@ -813,7 +735,7 @@ int main(void) {
 
 	for (unsigned int i = 0; i < 4; i++) {
 		pointLight.position = light_positions[i];
-		pointLight.ambient  = light_colors[i] * glm::vec3(0.004f);
+		pointLight.ambient  = light_colors[i] * glm::vec3(0.0f);
 		pointLight.diffuse  = light_colors[i];
 		pointLight.specular = light_colors[i];
 		pointLight.quadratic = 1.0f;
@@ -1003,23 +925,27 @@ int main(void) {
 		glActiveTexture(GL_TEXTURE5);
 		glBindTexture(GL_TEXTURE_2D, pbr_textures_set[current_textures].ao);
 		*/
+		pbrIblColorShader.use();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, ibl_textures_set[current_ibl_textures].irradiance);
 		for (unsigned int row = 0; row < nrRows; row++) {
 			for (unsigned int col = 0; col < nrColumns; col++) {
-				pbrColorShader.use();
+
+
 
 				model = glm::mat4(1.0f);
 				model = glm::translate(model, sphere_positions[row][col]);
 				model = glm::rotate(model, glm::radians((float)glfwGetTime() * 7.5f), glm::vec3(0.0f, 1.0f, 0.0f));
 				normalMat = CustomHelper::CalculateNormalMat(model);
 
-				pbrColorShader.setMat4("model", model);
-				pbrColorShader.setMat3("normalMat", normalMat);
-				pbrColorShader.setVec3("viewPos", camera.Position);
+				pbrIblColorShader.setMat4("model", model);
+				pbrIblColorShader.setMat3("normalMat", normalMat);
+				pbrIblColorShader.setVec3("viewPos", camera.Position);
 
-				pbrColorShader.setVec3("material.albedo", sphere_color);
-				pbrColorShader.setFloat("material.metallic", metallic[row]);
-				pbrColorShader.setFloat("material.roughness", roughness[col]);
-				pbrColorShader.setFloat("material.ao", 1.0f);
+				pbrIblColorShader.setVec3("material.albedo", sphere_color);
+				pbrIblColorShader.setFloat("material.metallic", metallic[row]);
+				pbrIblColorShader.setFloat("material.roughness", roughness[col]);
+				pbrIblColorShader.setFloat("material.ao", 1.0f);
 				//pbrColorShader.setFloat("height_scale", height_scale);
 
 				glBindVertexArray(sphereVAO);
@@ -1045,7 +971,7 @@ int main(void) {
 
 		// Bind cubemap
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, irradiance_map);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, ibl_textures_set[current_ibl_textures].environment);
 
 		glBindVertexArray(cubemapVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -1330,13 +1256,14 @@ void processInput(GLFWwindow *window) {
 		}
 	}
 
+	/*
 	// Switch PBR textures
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS && !rightKeyPressed) {
-		current_textures = std::abs(current_textures + 1) % pbr_textures_set.size();
+		current_pbr_textures = std::abs(current_pbr_textures + 1) % pbr_textures_set.size();
 		rightKeyPressed = true;
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS && !leftKeyPressed) {
-		current_textures = (current_textures == 0) ? pbr_textures_set.size() - 1 : current_textures - 1;
+		current_pbr_textures = (current_pbr_textures == 0) ? pbr_textures_set.size() - 1 : current_pbr_textures - 1;
 		leftKeyPressed = true;
 	}
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_RELEASE) {
@@ -1344,6 +1271,23 @@ void processInput(GLFWwindow *window) {
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_RELEASE) {
 		leftKeyPressed = false;
+	}
+	*/
+
+	// Switch IBL textures
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !upKeyPressed) {
+		current_ibl_textures = std::abs(current_ibl_textures + 1) % ibl_textures_set.size();
+		upKeyPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !downKeyPressed) {
+		current_ibl_textures = (current_ibl_textures == 0) ? ibl_textures_set.size() - 1 : current_ibl_textures - 1;
+		downKeyPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_RELEASE) {
+		upKeyPressed = false;
+	}
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_RELEASE) {
+		downKeyPressed = false;
 	}
 }
 
@@ -1378,7 +1322,7 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
 
 // utility function for loading a 2D texture from file
 // ---------------------------------------------------
-unsigned int LoadTexture(char const *path, bool gammaCorrection, bool flip_vertically) {
+unsigned int LoadTexture(char const *path, bool gammaCorrection, bool flip_vertically, GLenum mode) {
 	// Set whether filp vertical axis
 	stbi_set_flip_vertically_on_load(flip_vertically);
 
@@ -1407,12 +1351,12 @@ unsigned int LoadTexture(char const *path, bool gammaCorrection, bool flip_verti
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 		if (dataFormat == GL_RGBA) {
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, mode);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, mode);
 		}
 		else {
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, mode);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, mode);
 		}
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -1552,4 +1496,146 @@ unsigned int CreateColorFramebuffer(const size_t numOfColorAttachment, unsigned 
 
 
 	return framebuffer;
+}
+
+// Bake given hdr equirectangular map into IBL textures
+IblTextures BakeIblTex(const char* hdr_path, const unsigned int cubemap_vao) {
+
+	// Load equirectangular map
+	stbi_set_flip_vertically_on_load(true);
+	int width, height, nrComponents;
+	float *data = stbi_loadf(hdr_path, &width, &height, &nrComponents, 0);
+	unsigned int hdr_map;
+	if (data) {
+		glGenTextures(1, &hdr_map);
+		glBindTexture(GL_TEXTURE_2D, hdr_map);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, width, height, 0, GL_RGB, GL_FLOAT, data); // note how we specify the texture's data value to be float
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		stbi_image_free(data);
+	}
+	else {
+		std::cout << "Failed to load HDR image." << std::endl;
+	}
+	stbi_set_flip_vertically_on_load(false);
+
+	// Prepare baking shader
+	static Shader equirToCubeShader("shaders/bake/ibl/vertex/cubemap.vert", "shaders/bake/ibl/fragment/equir_to_cube.frag");
+	static Shader irradianceMapShader("shaders/bake/ibl/vertex/cubemap.vert", "shaders/bake/ibl/fragment/irradiance_map.frag");
+
+	// 
+	// ** Bake equirectangular map to environment cube map **
+	// 
+	IblTextures env_textures;
+
+	const unsigned int kEnvResolution = 512;
+	unsigned int captureFBO, captureRBO;
+	glGenFramebuffers(1, &captureFBO);
+	glGenRenderbuffers(1, &captureRBO);
+	// Creat render buffer storage
+	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, kEnvResolution, kEnvResolution);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
+
+	// Generate cube map
+	glGenTextures(1, &env_textures.environment);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, env_textures.environment);
+	for (unsigned int i = 0; i < 6; i++) {
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, kEnvResolution, kEnvResolution, 0, GL_RGB, GL_FLOAT, NULL);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// Six face camera
+	static glm::mat4 capture_projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	static glm::mat4 capture_views[] = {
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+	};
+
+	equirToCubeShader.use();
+	equirToCubeShader.setInt("equirectangular_map", 0);
+	equirToCubeShader.setMat4("projection", capture_projection);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, hdr_map);
+	glBindVertexArray(cubemap_vao);
+	glViewport(0, 0, kEnvResolution, kEnvResolution);
+	for (unsigned int i = 0; i < 6; i++) {
+		equirToCubeShader.setMat4("view", capture_views[i]);
+		glFramebufferTexture2D(
+			GL_FRAMEBUFFER,
+			GL_COLOR_ATTACHMENT0,
+			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+			env_textures.environment,
+			0
+		);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+	// 
+	// ** Bake irradiance map **
+	// 
+	const unsigned int kIrrResolution = 64;
+	glGenTextures(1, &env_textures.irradiance);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, env_textures.irradiance);
+	for (unsigned int i = 0; i < 6; i++) {
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, kIrrResolution, kIrrResolution, 0, GL_RGB, GL_FLOAT, NULL);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// Rescale the framebuffer to fit irradiance map's resolution
+	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, kIrrResolution, kIrrResolution);
+
+	irradianceMapShader.use();
+	irradianceMapShader.setInt("environment_map", 0);
+	irradianceMapShader.setMat4("projection", capture_projection);
+
+	// Start baking irradiance map
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, env_textures.environment);
+	glBindVertexArray(cubemap_vao);
+	glViewport(0, 0, kIrrResolution, kIrrResolution);
+	for (unsigned int i = 0; i < 6; i++) {
+		equirToCubeShader.setMat4("view", capture_views[i]);
+		glFramebufferTexture2D(
+			GL_FRAMEBUFFER,
+			GL_COLOR_ATTACHMENT0,
+			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+			env_textures.irradiance,
+			0
+		);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glDeleteRenderbuffers(1, &captureRBO);
+	glDeleteFramebuffers(1, &captureFBO);
+	glDeleteTextures(1, &hdr_map);
+
+	return env_textures;
 }

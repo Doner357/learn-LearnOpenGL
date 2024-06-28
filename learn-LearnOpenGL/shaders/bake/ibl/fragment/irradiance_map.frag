@@ -19,8 +19,9 @@ void main() {
     vec3 right = normalize(cross(up, normal));
     up         = normalize(cross(normal, right));
 
-    const float kSampleDelta = 0.025;
+    const float kSampleDelta = 0.005;
     float num_samples = 0.0;
+    modf((1.0 * PI * PI) / (kSampleDelta * kSampleDelta), num_samples);
 
     for (float phi = 0.0; phi < 2.0 * PI; phi += kSampleDelta) {
         for (float theta = 0.0; theta < 0.5 * PI; theta += kSampleDelta) {
@@ -29,11 +30,10 @@ void main() {
             // Tangent space to world
             vec3 sample_vector = tangent_sample.x * right + tangent_sample.y * up + tangent_sample.z * normal;
 
-            irradiance += texture(environment_map, sample_vector).rgb * cos(theta) * sin(theta);
-            num_samples++;
+            irradiance += texture(environment_map, sample_vector).rgb * cos(theta) * sin(theta) / num_samples;
         }
     }
 
-    irradiance = PI * irradiance * (1.0 / float(num_samples));
+    irradiance = PI * irradiance;
     FragColor = vec4(irradiance, 1.0);
 }

@@ -102,6 +102,12 @@ public:
 		if (geometryPath != nullptr)
 			glDeleteShader(geometry);
 	};
+
+	// Deconstructor
+	~Shader() {
+		glDeleteProgram(this->ID);
+	}
+
 	// Use/Active the shader
 	void use() {
 		glUseProgram(ID);
