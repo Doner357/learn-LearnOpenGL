@@ -376,6 +376,10 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
+	// Load HDR equirectangular map
+	unsigned int hdr_equirectangular_map = LoadTexture("textures/hdr/newport_loft.hdr", true);
+
+	/*
 	PbrTextures pbr_textures;
 
 	pbr_textures.albedo    = LoadTexture("textures/pbr/framed-square-metal-pattern1-bl/framed-square-metal-pattern1-albedo.png", true, true);
@@ -433,7 +437,7 @@ int main(void) {
 	pbr_textures.height    = LoadTexture("textures/pbr/jagged-rocky-ground1-bl/jagged-rocky-ground_height.png", false, true);
 	pbr_textures.ao        = LoadTexture("textures/pbr/jagged-rocky-ground1-bl/jagged-rocky-ground_ao.png", false, true);
 	pbr_textures_set.push_back(pbr_textures);
-	
+	*/
 
 
 
@@ -482,9 +486,11 @@ int main(void) {
 
 
 	// Shader for PBR
-	Shader pbrTestShader("shaders/pbr/lighting/vertex/regular.vert", "shaders/pbr/lighting/fragment/test_color.frag");
 	Shader pbrColorShader("shaders/pbr/lighting/vertex/regular.vert", "shaders/pbr/lighting/fragment/pbr_global-lighting_color.frag");
 	Shader pbrTextureShader("shaders/pbr/lighting/vertex/height_mapping.vert", "shaders/pbr/lighting/fragment/pbr_global-lighting_texture.frag");
+
+	// Shader for environment map baking
+	Shader equirToCubeShader("shaders/bake/ibl/vertex/equir_to_cube.vert", "shaders/bake/ibl/fragment/equir_to_cube.frag");
 
 
 
@@ -536,6 +542,10 @@ int main(void) {
 	pbrTextureShader.setInt("material.ao", 5);
 
 
+	equirToCubeShader.use();
+	equirToCubeShader.setInt("equirectangular_map", 0);
+
+
 	glUseProgram(0);
 
 	
@@ -550,14 +560,12 @@ int main(void) {
 	cameraMatManager.registerShader(skyboxShader);
 	cameraMatManager.registerShader(lightCubeShader);
 	cameraMatManager.registerShader(textureShader);
-	cameraMatManager.registerShader(pbrTestShader);
 	cameraMatManager.registerShader(pbrColorShader);
 	cameraMatManager.registerShader(pbrTextureShader);
 
 	// Global light uniform block
 	CustomHelper::GlobalBlinnPongLightManager globalLightManager(CustomHelper::UBOPOINT_NAME_BLINPHONG_LIGHTING, CustomHelper::UBOPOINT_BLINPHONG_LIGHTING, CustomHelper::MAX_NUM_DIRECTIONALLIGHT, CustomHelper::MAX_NUM_POINTLIGHT, CustomHelper::MAX_NUM_SPOTLIGHT);
 	globalLightManager.registerShader(textureShader);
-	globalLightManager.registerShader(pbrTestShader);
 	globalLightManager.registerShader(pbrColorShader);
 	globalLightManager.registerShader(pbrTextureShader);
 
@@ -620,6 +628,73 @@ int main(void) {
 	for (int i = 0; i < 2; i++) {
 		pingpong_framebuffer[i] = CreateColorFramebuffer(1, &pingpong_textures[i], SCR_WIDTH, SCR_HEIGHT, false, 0, true);
 	}
+
+
+
+
+	/*
+	 * Baking
+	 * --------------------------------------------------------------------------------------------------------------------
+	 */
+
+	// **
+	// Bake equirectangular map to environment cube map
+	// **
+	unsigned int captureFBO, captureRBO;
+	glGenFramebuffers(1, &captureFBO);
+	glGenRenderbuffers(1, &captureRBO);
+	// Creat render buffer storage
+	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
+
+	// Generate cube map
+	unsigned int env_cube_map;
+	glGenTextures(1, &env_cube_map);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, env_cube_map);
+	for (unsigned int i = 0; i < 6; i++) {
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 512, 512, 0, GL_RGB, GL_FLOAT, NULL);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// Six face camera
+	glm::mat4 capture_projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	glm::mat4 capture_views[] = {
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+	};
+
+	equirToCubeShader.use();
+	equirToCubeShader.setInt("equirectangular_map", 0);
+	equirToCubeShader.setMat4("projection", capture_projection);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, hdr_equirectangular_map);
+	glBindVertexArray(cubemapVAO);
+	glViewport(0, 0, 512, 512);
+	for (unsigned int i = 0; i < 6; i++) {
+		equirToCubeShader.setMat4("view", capture_views[i]);
+		glFramebufferTexture2D(
+			GL_FRAMEBUFFER,
+			GL_COLOR_ATTACHMENT0,
+			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+			env_cube_map,
+			0
+		);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
 
@@ -740,8 +815,6 @@ int main(void) {
 	 * Local Light setting
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
-
-	glUseProgram(0);
 
 
 
@@ -873,6 +946,7 @@ int main(void) {
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
 		// Render the spheres
+		/*
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, pbr_textures_set[current_textures].albedo);
 		glActiveTexture(GL_TEXTURE1);
@@ -885,29 +959,34 @@ int main(void) {
 		glBindTexture(GL_TEXTURE_2D, pbr_textures_set[current_textures].height);
 		glActiveTexture(GL_TEXTURE5);
 		glBindTexture(GL_TEXTURE_2D, pbr_textures_set[current_textures].ao);
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		*/
 		for (unsigned int row = 0; row < nrRows; row++) {
 			for (unsigned int col = 0; col < nrColumns; col++) {
-				pbrTextureShader.use();
+				pbrColorShader.use();
 
 				model = glm::mat4(1.0f);
 				model = glm::translate(model, sphere_positions[row][col]);
 				model = glm::rotate(model, glm::radians((float)glfwGetTime() * 7.5f), glm::vec3(0.0f, 1.0f, 0.0f));
 				normalMat = CustomHelper::CalculateNormalMat(model);
 
-				pbrTextureShader.setMat4("model", model);
-				pbrTextureShader.setMat3("normalMat", normalMat);
-				pbrTextureShader.setVec3("viewPos", camera.Position);
-				pbrTextureShader.setFloat("height_scale", height_scale);
+				pbrColorShader.setMat4("model", model);
+				pbrColorShader.setMat3("normalMat", normalMat);
+				pbrColorShader.setVec3("viewPos", camera.Position);
+
+				pbrColorShader.setVec3("material.albedo", sphere_color);
+				pbrColorShader.setFloat("material.metallic", metallic[row]);
+				pbrColorShader.setFloat("material.roughness", roughness[col]);
+				pbrColorShader.setFloat("material.ao", 1.0f);
+				//pbrColorShader.setFloat("height_scale", height_scale);
 
 				glBindVertexArray(sphereVAO);
 				glDrawElements(GL_TRIANGLE_STRIP, sphere_index_count, GL_UNSIGNED_INT, 0);
 			}
 		}
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
 
 		// Draw light cube
-		CustomHelper::DrawGlobalPointLightSphere(globalLightManager, sphereVAO, sphere_index_count, lightCubeShader, 0.025f);
+		CustomHelper::DrawGlobalPointLightCube(globalLightManager, cubeVAO, lightCubeShader, 0.025f);
 
 
 		
@@ -915,7 +994,7 @@ int main(void) {
 		//---------------
 		// Since the default value in depth buffer is 1.0, so the fragment should pass the depth test when the depth of fragment is less or equal to
 		// the value store in the depth buffer. This can avoid the depth fighting.
-		/*
+		
 		glDepthFunc(GL_LEQUAL);
 
 		// Activate the shader
@@ -923,14 +1002,14 @@ int main(void) {
 
 		// Bind cubemap
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, env_cube_map);
 
 		glBindVertexArray(cubemapVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		// Set the depth function and culling face to default
 		glDepthFunc(GL_LESS);
 		glCullFace(GL_BACK);
-		*/
+		
 		
 
 

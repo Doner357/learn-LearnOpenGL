@@ -157,6 +157,8 @@
     <Text Include="Using libraries.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\bake\ibl\fragment\equir_to_cube.frag" />
+    <None Include="shaders\bake\ibl\vertex\equir_to_cube.vert" />
     <None Include="shaders\pbr\lighting\vertex\height_mapping.vert" />
     <None Include="shaders\pbr\lighting\fragment\pbr_global-lighting_texture.frag" />
     <None Include="shaders\pbr\lighting\fragment\pbr_global-lighting_color.frag" />
