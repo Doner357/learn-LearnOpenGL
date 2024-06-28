@@ -433,10 +433,13 @@
     <None Include="shaders\pbr\lighting\vertex\height_mapping.vert">
       <Filter>Resource Files\shaders\pbr\lighting\vertex</Filter>
     </None>
-    <None Include="shaders\bake\ibl\vertex\equir_to_cube.vert">
+    <None Include="shaders\bake\ibl\vertex\cubemap.vert">
       <Filter>Resource Files\shaders\bake\ibl\vertex</Filter>
     </None>
     <None Include="shaders\bake\ibl\fragment\equir_to_cube.frag">
+      <Filter>Resource Files\shaders\bake\ibl\fragment</Filter>
+    </None>
+    <None Include="shaders\bake\ibl\fragment\irradiance_map.frag">
       <Filter>Resource Files\shaders\bake\ibl\fragment</Filter>
     </None>
   </ItemGroup>

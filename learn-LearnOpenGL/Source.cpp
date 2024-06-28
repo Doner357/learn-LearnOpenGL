@@ -490,7 +490,8 @@ int main(void) {
 	Shader pbrTextureShader("shaders/pbr/lighting/vertex/height_mapping.vert", "shaders/pbr/lighting/fragment/pbr_global-lighting_texture.frag");
 
 	// Shader for environment map baking
-	Shader equirToCubeShader("shaders/bake/ibl/vertex/equir_to_cube.vert", "shaders/bake/ibl/fragment/equir_to_cube.frag");
+	Shader equirToCubeShader("shaders/bake/ibl/vertex/cubemap.vert", "shaders/bake/ibl/fragment/equir_to_cube.frag");
+	Shader irradianceMapShader("shaders/bake/ibl/vertex/cubemap.vert", "shaders/bake/ibl/fragment/irradiance_map.frag");
 
 
 
@@ -540,10 +541,6 @@ int main(void) {
 	pbrTextureShader.setInt("material.normal", 3);
 	pbrTextureShader.setInt("heightMap", 4);
 	pbrTextureShader.setInt("material.ao", 5);
-
-
-	equirToCubeShader.use();
-	equirToCubeShader.setInt("equirectangular_map", 0);
 
 
 	glUseProgram(0);
@@ -637,9 +634,9 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	// **
-	// Bake equirectangular map to environment cube map
-	// **
+	// 
+	// ** Bake equirectangular map to environment cube map **
+	// 
 	unsigned int captureFBO, captureRBO;
 	glGenFramebuffers(1, &captureFBO);
 	glGenRenderbuffers(1, &captureRBO);
@@ -688,6 +685,52 @@ int main(void) {
 			GL_COLOR_ATTACHMENT0,
 			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
 			env_cube_map,
+			0
+		);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+	// 
+	// ** Bake irradiance map **
+	// 
+	unsigned int irradiance_map;
+	glGenTextures(1, &irradiance_map);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, irradiance_map);
+	for (unsigned int i = 0; i < 6; i++) {
+		glTexImage2D(
+			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 32, 32, 0, GL_RGB, GL_FLOAT, NULL);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// Rescale the framebuffer to fit irradiance map's resolution
+	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 32, 32);
+
+	irradianceMapShader.use();
+	irradianceMapShader.setInt("environment_map", 0);
+	irradianceMapShader.setMat4("projection", capture_projection);
+
+	// Start baking irradiance map
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, env_cube_map);
+	glBindVertexArray(cubemapVAO);
+	glViewport(0, 0, 32, 32);
+	for (unsigned int i = 0; i < 6; i++) {
+		equirToCubeShader.setMat4("view", capture_views[i]);
+		glFramebufferTexture2D(
+			GL_FRAMEBUFFER,
+			GL_COLOR_ATTACHMENT0,
+			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+			irradiance_map,
 			0
 		);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1002,7 +1045,7 @@ int main(void) {
 
 		// Bind cubemap
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, env_cube_map);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, irradiance_map);
 
 		glBindVertexArray(cubemapVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
