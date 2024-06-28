@@ -376,9 +376,6 @@ int main(void) {
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
 
-	// Load HDR equirectangular map
-	unsigned int hdr_equirectangular_map = LoadTexture("textures/hdr/newport_loft.hdr", true);
-
 	/*
 	PbrTextures pbr_textures;
 
@@ -636,6 +633,27 @@ int main(void) {
 	 * Baking
 	 * --------------------------------------------------------------------------------------------------------------------
 	 */
+	 // Load equirectangular map
+	stbi_set_flip_vertically_on_load(true);
+	int width, height, nrComponents;
+	float *data = stbi_loadf("textures/hdr/newport_loft.hdr", &width, &height, &nrComponents, 0);
+	unsigned int hdr_map;
+	if (data) {
+		glGenTextures(1, &hdr_map);
+		glBindTexture(GL_TEXTURE_2D, hdr_map);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data); // note how we specify the texture's data value to be float
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		stbi_image_free(data);
+	}
+	else {
+		std::cout << "Failed to load HDR image." << std::endl;
+	}
+	stbi_set_flip_vertically_on_load(false);
 
 	// **
 	// Bake equirectangular map to environment cube map
@@ -678,7 +696,7 @@ int main(void) {
 	equirToCubeShader.setMat4("projection", capture_projection);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, hdr_equirectangular_map);
+	glBindTexture(GL_TEXTURE_2D, hdr_map);
 	glBindVertexArray(cubemapVAO);
 	glViewport(0, 0, 512, 512);
 	for (unsigned int i = 0; i < 6; i++) {
@@ -1287,6 +1305,7 @@ void processInput(GLFWwindow *window) {
 		}
 	}
 
+	/*
 	// Switch PBR textures
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS && !rightKeyPressed) {
 		current_textures = std::abs(current_textures + 1) % pbr_textures_set.size();
@@ -1302,6 +1321,7 @@ void processInput(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_RELEASE) {
 		leftKeyPressed = false;
 	}
+	*/
 }
 
 // glfw: whenever the mouse moves, this callback is called
