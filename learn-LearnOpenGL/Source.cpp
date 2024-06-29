@@ -656,10 +656,10 @@ int main(void) {
 
 	// Generate IBL textures
 	ibl_textures_set.push_back(BakeIblTex("textures/hdr/newport_loft.hdr", cubemapVAO));
-	ibl_textures_set.push_back(BakeIblTex("textures/hdr/cave_wall_4k.hdr", cubemapVAO));
-	ibl_textures_set.push_back(BakeIblTex("textures/hdr/kloofendal_48d_partly_cloudy_puresky_4k.hdr", cubemapVAO));
-	ibl_textures_set.push_back(BakeIblTex("textures/hdr/moonless_golf_4k.hdr", cubemapVAO));
-	ibl_textures_set.push_back(BakeIblTex("textures/hdr/winter_evening_4k.hdr", cubemapVAO));
+	ibl_textures_set.push_back(BakeIblTex("textures/hdr/cave_wall_1k.hdr", cubemapVAO));
+	ibl_textures_set.push_back(BakeIblTex("textures/hdr/kloofendal_48d_partly_cloudy_puresky_1k.hdr", cubemapVAO));
+	ibl_textures_set.push_back(BakeIblTex("textures/hdr/moonless_golf_1k.hdr", cubemapVAO));
+	ibl_textures_set.push_back(BakeIblTex("textures/hdr/winter_evening_1k.hdr", cubemapVAO));
 
 
 
@@ -1592,7 +1592,7 @@ IblTextures BakeIblTex(const char* hdr_path, const unsigned int cubemap_vao) {
 	// 
 	// ** Bake irradiance map **
 	// 
-	const unsigned int kIrrResolution = 64;
+	const unsigned int kIrrResolution = 32;
 	glGenTextures(1, &env_textures.irradiance);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, env_textures.irradiance);
 	for (unsigned int i = 0; i < 6; i++) {

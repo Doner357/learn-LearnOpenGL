@@ -19,7 +19,7 @@ void main() {
     vec3 right = normalize(cross(up, normal));
     up         = normalize(cross(normal, right));
 
-    const float kSampleDelta = 0.005;
+    const float kSampleDelta = 0.007;
     float num_samples = 0.0;
     modf((1.0 * PI * PI) / (kSampleDelta * kSampleDelta), num_samples);
 
