@@ -445,6 +445,9 @@
     <None Include="shaders\pbr\lighting\fragment\pbr_global-image-based-lighting_color.frag">
       <Filter>Resource Files\shaders\pbr\lighting\fragment</Filter>
     </None>
+    <None Include="shaders\bake\ibl\fragment\pre-filtered_env.frag">
+      <Filter>Resource Files\shaders\bake\ibl\fragment</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">

@@ -90,7 +90,7 @@ float height_scale = 0.1f;
 
 // Structure to store IBL textures
 struct IblTextures {
-	unsigned int environment, irradiance;
+	unsigned int environment, irradiance, prefiltered, preBrdf;
 };
 // The set to store all the IBL textures
 std::vector<IblTextures> ibl_textures_set;
@@ -971,7 +971,7 @@ int main(void) {
 
 		// Bind cubemap
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, ibl_textures_set[current_ibl_textures].environment);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, ibl_textures_set[current_ibl_textures].prefiltered);
 
 		glBindVertexArray(cubemapVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -1526,11 +1526,12 @@ IblTextures BakeIblTex(const char* hdr_path, const unsigned int cubemap_vao) {
 	// Prepare baking shader
 	static Shader equirToCubeShader("shaders/bake/ibl/vertex/cubemap.vert", "shaders/bake/ibl/fragment/equir_to_cube.frag");
 	static Shader irradianceMapShader("shaders/bake/ibl/vertex/cubemap.vert", "shaders/bake/ibl/fragment/irradiance_map.frag");
+	static Shader prefilteredMapShader("shaders/bake/ibl/vertex/cubemap.vert", "shaders/bake/ibl/fragment/pre-filtered_env.frag");
 
 	// 
 	// ** Bake equirectangular map to environment cube map **
 	// 
-	IblTextures env_textures;
+	IblTextures ibl_textures;
 
 	const unsigned int kEnvResolution = 512;
 	unsigned int captureFBO, captureRBO;
@@ -1543,15 +1544,15 @@ IblTextures BakeIblTex(const char* hdr_path, const unsigned int cubemap_vao) {
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
 
 	// Generate cube map
-	glGenTextures(1, &env_textures.environment);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, env_textures.environment);
+	glGenTextures(1, &ibl_textures.environment);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, ibl_textures.environment);
 	for (unsigned int i = 0; i < 6; i++) {
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, kEnvResolution, kEnvResolution, 0, GL_RGB, GL_FLOAT, NULL);
 	}
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Six face camera
@@ -1579,13 +1580,16 @@ IblTextures BakeIblTex(const char* hdr_path, const unsigned int cubemap_vao) {
 			GL_FRAMEBUFFER,
 			GL_COLOR_ATTACHMENT0,
 			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-			env_textures.environment,
+			ibl_textures.environment,
 			0
 		);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
+	// Generate mipmap
+	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
@@ -1593,8 +1597,8 @@ IblTextures BakeIblTex(const char* hdr_path, const unsigned int cubemap_vao) {
 	// ** Bake irradiance map **
 	// 
 	const unsigned int kIrrResolution = 32;
-	glGenTextures(1, &env_textures.irradiance);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, env_textures.irradiance);
+	glGenTextures(1, &ibl_textures.irradiance);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, ibl_textures.irradiance);
 	for (unsigned int i = 0; i < 6; i++) {
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, kIrrResolution, kIrrResolution, 0, GL_RGB, GL_FLOAT, NULL);
 	}
@@ -1615,7 +1619,7 @@ IblTextures BakeIblTex(const char* hdr_path, const unsigned int cubemap_vao) {
 
 	// Start baking irradiance map
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, env_textures.environment);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, ibl_textures.environment);
 	glBindVertexArray(cubemap_vao);
 	glViewport(0, 0, kIrrResolution, kIrrResolution);
 	for (unsigned int i = 0; i < 6; i++) {
@@ -1624,7 +1628,7 @@ IblTextures BakeIblTex(const char* hdr_path, const unsigned int cubemap_vao) {
 			GL_FRAMEBUFFER,
 			GL_COLOR_ATTACHMENT0,
 			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-			env_textures.irradiance,
+			ibl_textures.irradiance,
 			0
 		);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1633,9 +1637,60 @@ IblTextures BakeIblTex(const char* hdr_path, const unsigned int cubemap_vao) {
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+
+	//
+	// ** Bake pre-filtered map
+	//
+	const unsigned int kFilteredBasicResolution = 256;
+
+	glGenTextures(1, &ibl_textures.prefiltered);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, ibl_textures.prefiltered);
+	for (unsigned int i = 0; i < 6; i++) {
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, kFilteredBasicResolution, kFilteredBasicResolution, 0, GL_RGB, GL_FLOAT, NULL);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
+	prefilteredMapShader.use();
+	prefilteredMapShader.setInt("environment_map", 0);
+	prefilteredMapShader.setInt("env_resolution", kEnvResolution);
+	prefilteredMapShader.setMat4("projection", capture_projection);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, ibl_textures.environment);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+	unsigned int max_mip_level = 5;
+	glBindVertexArray(cubemap_vao);
+	for (unsigned int mip = 0; mip < max_mip_level; ++mip) {
+		// Resize framebuffer according to mip-level size
+		unsigned int mip_width  = kFilteredBasicResolution * std::pow(0.5, mip);
+		unsigned int mip_height = kFilteredBasicResolution * std::pow(0.5, mip);
+		glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mip_width, mip_height);
+		glViewport(0, 0, mip_width, mip_height);
+
+		float roughness = static_cast<float>(mip) / static_cast<float>(max_mip_level - 1);
+		prefilteredMapShader.setFloat("roughness", roughness);
+		for (unsigned int i = 0; i < 6; ++i) {
+			prefilteredMapShader.setMat4("view", capture_views[i]);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, ibl_textures.prefiltered, mip);
+
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
 	glDeleteRenderbuffers(1, &captureRBO);
 	glDeleteFramebuffers(1, &captureFBO);
 	glDeleteTextures(1, &hdr_map);
 
-	return env_textures;
+	return ibl_textures;
 }
