@@ -16,10 +16,11 @@ out vec4 FragColor;
 // --material--
 // PBR factors
 struct Material {
-	vec3  albedo;
-	float metallic;
-	float roughness;
-	float ao;
+	sampler2D  albedo;
+	sampler2D  metallic;
+	sampler2D  roughness;
+	sampler2D  normal;
+	sampler2D  ao;
 };
 
 // --direction light--
@@ -46,7 +47,6 @@ struct PointLight {
 };
 #define NUM_OF_POINTLIGHTS 32
 
-// --spot light
 struct SpotLight {
 	vec3 position;
 	vec3 direction;
@@ -75,11 +75,12 @@ struct EnvLight {
 #define PI 3.14159265359
 
 
+// Get normal from normal map
+vec3 GetNormalFromMap();
+
 // ** Function for Cook-Torrance BRDF **
 // Fresnel-Schlick function for F
 vec3 FresnelSchlick(float cosTheta, vec3 F0);
-// Fresnel-Schlick function, but take roughness into account
-vec3 FresnelSchlick(float cosTheta, vec3 F0, float roughness);
 // Trowbridge-Reitz GG normal distribution function for D
 float DistributionGGX(vec3 N, vec3 H, float roughness);
 // Schlick-GGX geometry function
@@ -87,11 +88,10 @@ float GeometrySchlickGGX(float N_dot_V, float roughness);
 // GeometrySmith geometry function for G
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
 
-
 // Function calculate each type of light
 vec3 CalcDirLight(DirLight light, vec3 N, vec3 V, vec3 F0);
-vec3 CalcPointLight(PointLight light, vec3 fragPos, vec3 N, vec3 V, vec3 F0);
-vec3 CalcSpotLight(SpotLight light, vec3 fragPos, vec3 N, vec3 V, vec3 F0);
+vec3 CalcPointLight(PointLight light, vec3 N, vec3 V, vec3 F0);
+vec3 CalcSpotLight(SpotLight light, vec3 N, vec3 V, vec3 F0);
 vec3 CalcEnvLight(vec3 N, vec3 V, vec3 F0);
 
 
@@ -112,28 +112,36 @@ void main() {
 	vec3 Lo = vec3(0.0);
 
 	// Properties
-	// Normal
-	vec3 N  = normalize(fs_in.normal);
 	// View direction
 	vec3 V  = normalize(viewPos - fs_in.fragPos);
+	// Normal
+	vec3 N  = GetNormalFromMap();
 	// Surface reflection at zero incidence
+	vec3  albedo   = texture(material.albedo, fs_in.texCoords).rgb;
+	float metallic = texture(material.metallic, fs_in.texCoords).r;
 	vec3 F0 = vec3(0.04);
-	F0      = mix(F0, material.albedo, material.metallic);
+	F0 = mix(F0, albedo, metallic);
 
 	// Phase 1: Directional lighting
 	for(int i = 0; i < NUM_OF_DIRLIGHTS; i++)
 		Lo += dirLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcDirLight(dirLights[i], N, V, F0);
 	// Phase 2: Point lights
 	for(int i = 0; i < NUM_OF_POINTLIGHTS; i++)
-		Lo += pointLights[i].position == NO_LIGHT ? vec3(0.0) : CalcPointLight(pointLights[i], fs_in.fragPos, N, V, F0);
+		Lo += pointLights[i].position == NO_LIGHT ? vec3(0.0) : CalcPointLight(pointLights[i], N, V, F0);
 	// Phase 3: Spot light
 	for(int i = 0; i < NUM_OF_SPOTLIGHTS; i++)
-		Lo += spotLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcSpotLight(spotLights[i], fs_in.fragPos, N, V, F0);
+		Lo += spotLights[i].direction == NO_LIGHT ? vec3(0.0) : CalcSpotLight(spotLights[i], N, V, F0);
 	
 	Lo += CalcEnvLight(N, V, F0);
-
+	
 	FragColor = vec4(Lo, 1.0);
 }
+
+vec3 GetNormalFromMap() {
+    vec3 tangentNormal = texture(material.normal, fs_in.texCoords).rgb * 2.0 - 1.0;
+    return normalize(fs_in.TBN * tangentNormal);
+}
+
 
 vec3 FresnelSchlick(float cosTheta, vec3 F0) {
 	return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
@@ -176,6 +184,12 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
 }
 
 vec3 CalcDirLight(DirLight light, vec3 N, vec3 V, vec3 F0) {
+	// Extract material attribution from texture
+	vec3  albedo    = texture(material.albedo, fs_in.texCoords).rgb;
+	float metallic  = texture(material.metallic, fs_in.texCoords).r;
+	float roughness = texture(material.roughness, fs_in.texCoords).r;
+	float ao        = texture(material.ao, fs_in.texCoords).r;
+
 	// Result for outgoing radiance
 	vec3 Lo = vec3(0.0);
 
@@ -189,15 +203,15 @@ vec3 CalcDirLight(DirLight light, vec3 N, vec3 V, vec3 F0) {
 
 	// Fresnel-Schlick
 	vec3  F   = FresnelSchlick(max(dot(H, V), 0.0), F0);
-	float NDF = DistributionGGX(N, H, material.roughness);
-	float G   = GeometrySmith(N, V, L, material.roughness);
+	float NDF = DistributionGGX(N, H, roughness);
+	float G   = GeometrySmith(N, V, L, roughness);
 
 	// Calculate the ratio for diffusion, F is for specular contribution
 	vec3 kS = F;
 	vec3 kD = vec3(1.0) - kS;
 	// Because metallic surfaces don't refract light and thus have no diffuse
 	// reflections we enforce this property by nullifying kD if the surface is metallic.
-	kD *= 1.0 - material.metallic;
+	kD *= 1.0 - metallic;
 
 	// Compute Cook-Torrance BRDF
 	vec3  numerator   = NDF * G * F;
@@ -206,15 +220,21 @@ vec3 CalcDirLight(DirLight light, vec3 N, vec3 V, vec3 F0) {
 
 	// Calculate diffuse term and result
 	float N_dot_L = max(dot(N, L), 0.0);
-	Lo += (kD * material.albedo / PI + specular) * radians * N_dot_L;
+	Lo += (kD * albedo / PI + specular) * radians * N_dot_L;
 
 	// Calculate ambient light
-	vec3 ambient = light.ambient * material.albedo * material.ao;
+	vec3 ambient = light.ambient * albedo * ao;
 
 	return ambient + Lo;
 }
 
-vec3 CalcPointLight(PointLight light, vec3 fragPos, vec3 N, vec3 V, vec3 F0) {
+vec3 CalcPointLight(PointLight light, vec3 N, vec3 V, vec3 F0) {
+	// Extract material attribution from texture
+	vec3  albedo    = texture(material.albedo, fs_in.texCoords).rgb;
+	float metallic  = texture(material.metallic, fs_in.texCoords).r;
+	float roughness = texture(material.roughness, fs_in.texCoords).r;
+	float ao        = texture(material.ao, fs_in.texCoords).r;
+
 	// Result for outgoing radiance
 	vec3 Lo = vec3(0.0);
 
@@ -231,15 +251,15 @@ vec3 CalcPointLight(PointLight light, vec3 fragPos, vec3 N, vec3 V, vec3 F0) {
 
 	// Fresnel-Schlick
 	vec3  F   = FresnelSchlick(max(dot(H, V), 0.0), F0);
-	float NDF = DistributionGGX(N, H, material.roughness);
-	float G   = GeometrySmith(N, V, L, material.roughness);
+	float NDF = DistributionGGX(N, H, roughness);
+	float G   = GeometrySmith(N, V, L, roughness);
 
 	// Calculate the ratio for diffusion, F is for specular contribution
 	vec3 kS = F;
 	vec3 kD = vec3(1.0) - kS;
 	// Because metallic surfaces don't refract light and thus have no diffuse
 	// reflections we enforce this property by nullifying kD if the surface is metallic.
-	kD *= 1.0 - material.metallic;
+	kD *= 1.0 - metallic;
 
 	// Compute Cook-Torrance BRDF
 	vec3  numerator   = NDF * G * F;
@@ -248,16 +268,22 @@ vec3 CalcPointLight(PointLight light, vec3 fragPos, vec3 N, vec3 V, vec3 F0) {
 
 	// Calculate diffuse term and result
 	float N_dot_L = max(dot(N, L), 0.0);
-	Lo += (kD * material.albedo / PI + specular) * radians * N_dot_L;
+	Lo += (kD * albedo / PI + specular) * radians * N_dot_L;
 
 	// Calculate ambient light
-	vec3 ambient = light.ambient * material.albedo * material.ao;
+	vec3 ambient = light.ambient * albedo * ao;
 	ambient *= attenuation;
 
 	return ambient + Lo;
 }
 
-vec3 CalcSpotLight(SpotLight light, vec3 fragPos, vec3 N, vec3 V, vec3 F0) {
+vec3 CalcSpotLight(SpotLight light, vec3 N, vec3 V, vec3 F0) {
+	// Extract material attribution from texture
+	vec3  albedo    = texture(material.albedo, fs_in.texCoords).rgb;
+	float metallic  = texture(material.metallic, fs_in.texCoords).r;
+	float roughness = texture(material.roughness, fs_in.texCoords).r;
+	float ao        = texture(material.ao, fs_in.texCoords).r;
+
 	// Result for outgoing radiance
 	vec3 Lo = vec3(0.0);
 
@@ -279,15 +305,15 @@ vec3 CalcSpotLight(SpotLight light, vec3 fragPos, vec3 N, vec3 V, vec3 F0) {
 
 	// Fresnel-Schlick
 	vec3  F   = FresnelSchlick(max(dot(H, V), 0.0), F0);
-	float NDF = DistributionGGX(N, H, material.roughness);
-	float G   = GeometrySmith(N, V, L, material.roughness);
+	float NDF = DistributionGGX(N, H, roughness);
+	float G   = GeometrySmith(N, V, L, roughness);
 
 	// Calculate the ratio for diffusion, F is for specular contribution
 	vec3 kS = F;
 	vec3 kD = vec3(1.0) - kS;
 	// Because metallic surfaces don't refract light and thus have no diffuse
 	// reflections we enforce this property by nullifying kD if the surface is metallic.
-	kD *= 1.0 - material.metallic;
+	kD *= 1.0 - metallic;
 
 	// Compute Cook-Torrance BRDF
 	vec3  numerator   = NDF * G * F;
@@ -296,27 +322,31 @@ vec3 CalcSpotLight(SpotLight light, vec3 fragPos, vec3 N, vec3 V, vec3 F0) {
 
 	// Calculate diffuse term and result
 	float N_dot_L = max(dot(N, L), 0.0);
-	Lo += (kD * material.albedo / PI + specular) * radians * N_dot_L;
+	Lo += (kD * albedo / PI + specular) * radians * N_dot_L;
 
 	// Calculate ambient light
-	vec3 ambient = light.ambient * material.albedo * material.ao;
+	vec3 ambient = light.ambient * albedo * ao;
 	ambient *= attenuation;
 
 	return ambient + Lo;
 }
 
 vec3 CalcEnvLight(vec3 N, vec3 V, vec3 F0) {
+	float roughness = texture(material.roughness, fs_in.texCoords).r;
+	float metallic  = texture(material.metallic, fs_in.texCoords).r;
+	vec3  albedo    = texture(material.albedo, fs_in.texCoords).rgb;
+	float ao        = texture(material.ao, fs_in.texCoords).r;
 	// Fresnel term
-	vec3 kS = FresnelSchlick(max(dot(N, V), 0.0), F0, material.roughness);
+	vec3 kS = FresnelSchlick(max(dot(N, V), 0.0), F0, roughness);
 	vec3 kD = 1.0 - kS;
-	kD *= 1.0 - material.metallic;
+	kD *= 1.0 - metallic;
 
 	// 
 	// ** Diffuse term **
 	// 
 	// Get irradiance from irradiance map
 	vec3 irradiance = texture(environment.irradiance, N).rgb;
-	vec3 diffuse    = irradiance * material.albedo;
+	vec3 diffuse    = irradiance * albedo;
 
 	
 	// 
@@ -325,15 +355,15 @@ vec3 CalcEnvLight(vec3 N, vec3 V, vec3 F0) {
 	vec3 R = normalize(reflect(-V, N));
 	// Sample the pre-filtered environment map according to the reflection vector and material roughness
 	const float kMaxReflectionLod = 4.0;
-	vec3 prefiltered_color = textureLod(environment.prefiltered, R, material.roughness * kMaxReflectionLod).rgb;
+	vec3 prefiltered_color = textureLod(environment.prefiltered, R, roughness * kMaxReflectionLod).rgb;
 	
 	// Sample the LUT according to the normal and view vector
-	vec2 env_brdf = texture(environment.preBrdf, vec2(max(dot(N, V), 0.0), material.roughness)).rg;
+	vec2 env_brdf = texture(environment.preBrdf, vec2(max(dot(N, V), 0.0), roughness)).rg;
 	vec3 specular = prefiltered_color * (kS * env_brdf.x + env_brdf.y);
 
 
 	// Combind both term to final result
-	vec3 ambient = (kD * diffuse + specular) * material.ao;
+	vec3 ambient = (kD * diffuse + specular) * ao;
 
 	return ambient;
 }

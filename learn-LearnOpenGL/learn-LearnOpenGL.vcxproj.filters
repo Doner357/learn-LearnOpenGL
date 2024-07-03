@@ -454,6 +454,9 @@
     <None Include="shaders\bake\ibl\vertex\regular_screen.vert">
       <Filter>Resource Files\shaders\bake\ibl\vertex</Filter>
     </None>
+    <None Include="shaders\pbr\lighting\fragment\pbr_global-image-based-lighting_texture.frag">
+      <Filter>Resource Files\shaders\pbr\lighting\fragment</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">

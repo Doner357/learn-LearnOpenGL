@@ -30,8 +30,8 @@ unsigned int LoadCubemap(std::vector<std::string> faces, bool gammaCorrection, b
 unsigned int CreateColorFramebuffer(const size_t numOfColorAttachment, unsigned int *frameColortextures, const unsigned int width, const unsigned int height, const bool multisample, const unsigned int samples, const bool hdr);
 
 // Screen Width and Height setting
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1920;
+const unsigned int SCR_HEIGHT = 1080;
 
 // Gamma value
 // This time we do gamma correction in screen post-processing shader
@@ -557,6 +557,8 @@ int main(void) {
 
 	pbrIblColorShader.use();
 	pbrIblColorShader.setInt("environment.irradiance", 0);
+	pbrIblColorShader.setInt("environment.prefiltered", 1);
+	pbrIblColorShader.setInt("environment.preBrdf", 2);
 
 
 	glUseProgram(0);
@@ -731,7 +733,7 @@ int main(void) {
 		glm::vec3(300.0f, 300.0f, 300.0f)
 	};
 
-	for (unsigned int i = 0; i < 4; i++) {
+	for (unsigned int i = 0; i < 0; i++) {
 		pointLight.position = light_positions[i];
 		pointLight.ambient  = light_colors[i] * glm::vec3(0.0f);
 		pointLight.diffuse  = light_colors[i];
@@ -928,6 +930,10 @@ int main(void) {
 		pbrIblColorShader.use();
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, ibl_textures_set[current_ibl_textures].irradiance);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, ibl_textures_set[current_ibl_textures].prefiltered);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, ibl_textures_set[current_ibl_textures].preBrdf);
 		for (unsigned int row = 0; row < nrRows; row++) {
 			for (unsigned int col = 0; col < nrColumns; col++) {
 
@@ -1145,7 +1151,7 @@ int main(void) {
 		screenShader.use();
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, ibl_textures_set[0].preBrdf);
+		glBindTexture(GL_TEXTURE_2D, ldr_final_screen_texture);
 
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
