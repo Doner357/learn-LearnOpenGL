@@ -448,6 +448,12 @@
     <None Include="shaders\bake\ibl\fragment\pre-filtered_env.frag">
       <Filter>Resource Files\shaders\bake\ibl\fragment</Filter>
     </None>
+    <None Include="shaders\bake\ibl\fragment\brdf_integration.frag">
+      <Filter>Resource Files\shaders\bake\ibl\fragment</Filter>
+    </None>
+    <None Include="shaders\bake\ibl\vertex\regular_screen.vert">
+      <Filter>Resource Files\shaders\bake\ibl\vertex</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Using libraries.txt">

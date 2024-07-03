@@ -17,8 +17,6 @@
 #include <cmath>
 #include <functional>
 #include <random>
-#include <chrono>
-#include <thread>
 
 // glfw windows call back function
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -100,7 +98,7 @@ int current_ibl_textures = 0;
 bool upKeyPressed = false, downKeyPressed = false;
 
 // Function used to bake IBL textures
-IblTextures BakeIblTex(const char *hdr_path, const unsigned int cubemap_vao);
+IblTextures BakeIblTex(const char *hdr_path, const unsigned int cubemap_vao, const unsigned int screen_quad_vao);
 
 
 
@@ -655,11 +653,11 @@ int main(void) {
 	 */
 
 	// Generate IBL textures
-	ibl_textures_set.push_back(BakeIblTex("textures/hdr/newport_loft.hdr", cubemapVAO));
-	ibl_textures_set.push_back(BakeIblTex("textures/hdr/cave_wall_1k.hdr", cubemapVAO));
-	ibl_textures_set.push_back(BakeIblTex("textures/hdr/kloofendal_48d_partly_cloudy_puresky_1k.hdr", cubemapVAO));
-	ibl_textures_set.push_back(BakeIblTex("textures/hdr/moonless_golf_1k.hdr", cubemapVAO));
-	ibl_textures_set.push_back(BakeIblTex("textures/hdr/winter_evening_1k.hdr", cubemapVAO));
+	ibl_textures_set.push_back(BakeIblTex("textures/hdr/newport_loft.hdr", cubemapVAO, quadVAO));
+	ibl_textures_set.push_back(BakeIblTex("textures/hdr/cave_wall_1k.hdr", cubemapVAO, quadVAO));
+	ibl_textures_set.push_back(BakeIblTex("textures/hdr/kloofendal_48d_partly_cloudy_puresky_1k.hdr", cubemapVAO, quadVAO));
+	ibl_textures_set.push_back(BakeIblTex("textures/hdr/moonless_golf_1k.hdr", cubemapVAO, quadVAO));
+	ibl_textures_set.push_back(BakeIblTex("textures/hdr/winter_evening_1k.hdr", cubemapVAO, quadVAO));
 
 
 
@@ -910,6 +908,8 @@ int main(void) {
 
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
+		glEnable(GL_BLEND);
+
 		// Render the spheres
 		/*
 		glActiveTexture(GL_TEXTURE0);
@@ -971,7 +971,7 @@ int main(void) {
 
 		// Bind cubemap
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, ibl_textures_set[current_ibl_textures].prefiltered);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, ibl_textures_set[current_ibl_textures].environment);
 
 		glBindVertexArray(cubemapVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -1145,7 +1145,7 @@ int main(void) {
 		screenShader.use();
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, ldr_final_screen_texture);
+		glBindTexture(GL_TEXTURE_2D, ibl_textures_set[0].preBrdf);
 
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -1499,7 +1499,7 @@ unsigned int CreateColorFramebuffer(const size_t numOfColorAttachment, unsigned 
 }
 
 // Bake given hdr equirectangular map into IBL textures
-IblTextures BakeIblTex(const char* hdr_path, const unsigned int cubemap_vao) {
+IblTextures BakeIblTex(const char* hdr_path, const unsigned int cubemap_vao, const unsigned int screen_quad_vao) {
 
 	// Load equirectangular map
 	stbi_set_flip_vertically_on_load(true);
@@ -1527,6 +1527,7 @@ IblTextures BakeIblTex(const char* hdr_path, const unsigned int cubemap_vao) {
 	static Shader equirToCubeShader("shaders/bake/ibl/vertex/cubemap.vert", "shaders/bake/ibl/fragment/equir_to_cube.frag");
 	static Shader irradianceMapShader("shaders/bake/ibl/vertex/cubemap.vert", "shaders/bake/ibl/fragment/irradiance_map.frag");
 	static Shader prefilteredMapShader("shaders/bake/ibl/vertex/cubemap.vert", "shaders/bake/ibl/fragment/pre-filtered_env.frag");
+	static Shader integratedBrdfMapShader("shaders/bake/ibl/vertex/regular_screen.vert", "shaders/bake/ibl/fragment/brdf_integration.frag");
 
 	// 
 	// ** Bake equirectangular map to environment cube map **
@@ -1686,6 +1687,34 @@ IblTextures BakeIblTex(const char* hdr_path, const unsigned int cubemap_vao) {
 		}
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	
+	// Pre-allocate enough memory for the LUT texture.
+	const unsigned int kPreBrdfResolution = 512;
+
+	glGenTextures(1, &ibl_textures.preBrdf);
+	glBindTexture(GL_TEXTURE_2D, ibl_textures.preBrdf);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, kPreBrdfResolution, kPreBrdfResolution, 0, GL_RG, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, kPreBrdfResolution, kPreBrdfResolution);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ibl_textures.preBrdf, 0);
+
+	integratedBrdfMapShader.use();
+	glViewport(0, 0, kPreBrdfResolution, kPreBrdfResolution);
+	// Disable blend is important
+	glDisable(GL_BLEND);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glBindVertexArray(screen_quad_vao);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 
 
 	glDeleteRenderbuffers(1, &captureRBO);
