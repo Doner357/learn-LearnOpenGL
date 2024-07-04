@@ -30,8 +30,8 @@ unsigned int LoadCubemap(std::vector<std::string> faces, bool gammaCorrection, b
 unsigned int CreateColorFramebuffer(const size_t numOfColorAttachment, unsigned int *frameColortextures, const unsigned int width, const unsigned int height, const bool multisample, const unsigned int samples, const bool hdr);
 
 // Screen Width and Height setting
-const unsigned int SCR_WIDTH = 1920;
-const unsigned int SCR_HEIGHT = 1080;
+const unsigned int SCR_WIDTH = 800;
+const unsigned int SCR_HEIGHT = 600;
 
 // Gamma value
 // This time we do gamma correction in screen post-processing shader
